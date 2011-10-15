@@ -3,7 +3,7 @@ import logging
 from api import api
 from flask import Flask
 from config import DefaultConfig
-from extensions import crud
+from extensions import guard
 from logging.handlers import RotatingFileHandler
 
 
@@ -21,7 +21,7 @@ def create_app(config=None, modules=None, dict_config=None):
 
     configure_app(app, config, dict_config)
     configure_extensions(app)
-    #configure_modules(app, modules)
+    configure_modules(app, modules)
     configure_logging(app)
 
     return app
@@ -43,7 +43,7 @@ def configure_modules(app, modules):
 
 
 def configure_extensions(app):
-    crud.init_app(app)
+    guard.init_app(app)
 
 
 def configure_logging(app):
