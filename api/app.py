@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 import logging
-from api import api
+from api.v1 import api_v1
 from flask import Flask
 from config import DefaultConfig
-from extensions import guard
+from extensions import db
+from extensions.guard import guard
 from logging.handlers import RotatingFileHandler
 
 
 DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
-    (api, "/v1"),
+    (api_v1, "/v1"),
 )
 
 
@@ -43,6 +44,7 @@ def configure_modules(app, modules):
 
 
 def configure_extensions(app):
+    db.init_app(app)
     guard.init_app(app)
 
 
