@@ -10,7 +10,7 @@ from logging.handlers import RotatingFileHandler
 DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
-    (api, ""),
+    (api, "/v1"),
 )
 
 

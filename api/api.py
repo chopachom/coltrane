@@ -6,7 +6,6 @@ from extensions import crud
 api = Blueprint('api', __name__)
 
 
-@api.route("/")
 @api.route('/<bucket>', methods=['GET', 'POST'])
 def resources(bucket=None):
     books = crud.all(bucket=bucket, page=1)
