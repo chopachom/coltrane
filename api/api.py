@@ -8,7 +8,10 @@ api = Blueprint('api', __name__)
 
 books = { 'books': [
     {'id':1, 'title': 'Vse o huyah', 'author': 'Nikita Shmakov'},
-    {'id':2, 'title': 'Vse o pezdah', 'author': 'Nikita Shmakov'}
+    {'id':2, 'title': 'Vse o pezdah', 'author': 'Nikita Shmakov'},
+    {'id':3, 'title': 'Big cock sucking. From notice to professional', 'author': 'Alexander Petrovich'},
+    {'id':4, 'title': 'Black cock phobia', 'author': 'Pavel Shkitin'},
+    {'id':5, 'title': 'Supermassive black cocks', 'author': 'Stephen Hawking'}
 ]}
 
 
