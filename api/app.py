@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
-import views
 import logging
-import os
+from api import api
 from flask import Flask
 from config import DefaultConfig
-from extensions import db
+from extensions import crud
 from logging.handlers import RotatingFileHandler
-from hooks import per_request_callbacks
 
 
-DEFAULT_APP_NAME = "bitstant"
+DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
-    (views.index, ""),
+    (api, ""),
 )
 
 
@@ -23,8 +21,7 @@ def create_app(config=None, modules=None, dict_config=None):
 
     configure_app(app, config, dict_config)
     configure_extensions(app)
-    configure_hooks(app)
-    configure_modules(app, modules)
+    #configure_modules(app, modules)
     configure_logging(app)
 
     return app
@@ -46,11 +43,7 @@ def configure_modules(app, modules):
 
 
 def configure_extensions(app):
-    db.init_app(app)
-
-
-def configure_hooks(app):
-    app.after_request(per_request_callbacks)
+    crud.init_app(app)
 
 
 def configure_logging(app):
