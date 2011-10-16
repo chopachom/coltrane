@@ -2,7 +2,7 @@ import unittest
 from app import create_app
 from config import API_VERSION
 
-__author__ = 'Pasha'
+__author__ = 'pshkitin'
 
 class ApiTestCase(unittest.TestCase):
 

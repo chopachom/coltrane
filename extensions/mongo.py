@@ -1,4 +1,5 @@
-__author__ = 'qweqwe'
+__author__ = 'apetrovich'
+
 from flask import _request_ctx_stack
 from flaskext.mongokit import MongoKit
 

@@ -1,4 +1,4 @@
-__author__ = 'PedoFinderGeneral'
+__author__ = 'apetrovich'
 from .mongo import MongoKitConnection
 
 db = MongoKitConnection()

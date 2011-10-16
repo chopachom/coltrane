@@ -6,6 +6,8 @@ from config import DefaultConfig, API_VERSION
 from logging.handlers import RotatingFileHandler
 from db import crud
 
+__author__ = 'apetrovich'
+
 
 DEFAULT_APP_NAME = "coltrane"
 
@@ -44,6 +46,8 @@ def configure_modules(app, modules):
 
 def configure_extensions(app):
     crud.init_app(app)
+    guard.init_app(app)
+    db.init_app(app)
 
 
 def configure_logging(app):

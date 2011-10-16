@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+__author__ = 'apetrovich'
 
 API_VERSION = '/v1'
 

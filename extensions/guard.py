@@ -1,4 +1,4 @@
-__author__ = 'PedoFinderGeneral'
+__author__ = 'apetrovich'
 
 from flask import request, current_app, g, abort
 

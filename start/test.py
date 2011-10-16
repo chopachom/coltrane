@@ -1,7 +1,7 @@
 import unittest
 from app import create_app
 
-__author__ = 'Pasha'
+__author__ = 'pshkitin'
 
 class AppTestCase(unittest.TestCase):
 
