@@ -1,22 +1,14 @@
 import json
 from flask import Blueprint, jsonify
 from flask.globals import request
-from flask.templating import render_template
 from flask.views import MethodView, View
 from db.crud import crud
 
-#ENTUTY_DELETED = jsonify({'status':1, 'message':'Entity has been deleted'})
-ENTUTY_DELETED = 2
 
-api = Blueprint('service', __name__)
+ENTITY_DELETED = 2
 
-#class UserAPI(MethodView):
-#
-#    def get(self):
-#        users = User.query.all()
-#
-#    def post(self):
-#        user = User.from_form_data(request.form)
+api = Blueprint('api_v1', __name__)
+
 
 def rate_limited(entityView):
     params = request.__dict__
@@ -78,16 +70,6 @@ api.add_url_rule('/<bucket>/', defaults={'id': None},
 
 api.add_url_rule('/<bucket>/<int:id>', view_func=entity_view,
                  methods=['GET', 'DELETE'])
-
-#@api.route('/<bucket>/', methods=['GET', 'POST'])
-#def resources(bucket=None):
-#    books = crud.all(page=1)
-#    return jsonify(**books)
-#
-#
-#@api.route('/<bucket>/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-#def resource(bucket=None, id=None):
-#    return jsonify(crud.get(bucket = bucket, id=id))
 
 
 if __name__ == '__main__':
