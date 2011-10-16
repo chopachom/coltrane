@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 import logging
-from api.v1 import api_v1
 from flask import Flask
+from api.v1 import api
 from config import DefaultConfig
-from extensions import db
-from extensions.guard import guard
 from logging.handlers import RotatingFileHandler
+from db import crud
 
 
 DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
-    (api_v1, "/v1"),
+    (api.api, ""),
 )
 
 
@@ -44,8 +43,7 @@ def configure_modules(app, modules):
 
 
 def configure_extensions(app):
-    db.init_app(app)
-    guard.init_app(app)
+    crud.init_app(app)
 
 
 def configure_logging(app):
@@ -56,7 +54,7 @@ def configure_logging(app):
         '%(asctime)s %(levelname)s: %(message)s '
         '[in %(pathname)s:%(lineno)d]')
 
-    debug_log = app.config['DEBUG_LOG']
+    debug_log = app.config['DEBUG_LOG_FILE']
     debug_file_handler = RotatingFileHandler(
         debug_log, maxBytes=100000, backupCount=10)
     debug_file_handler.setLevel(logging.DEBUG)
@@ -64,7 +62,7 @@ def configure_logging(app):
     app.logger.addHandler(debug_file_handler)
 
 
-    error_log = app.config['ERROR_LOG']
+    error_log = app.config['ERROR_LOG_FILE']
     error_file_handler =  RotatingFileHandler(
         error_log, maxBytes=100000, backupCount=10)
     error_file_handler.setLevel(logging.ERROR)
