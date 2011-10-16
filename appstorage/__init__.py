@@ -1,12 +1,10 @@
 __author__ = 'qweqwe'
 
 from  datetime import datetime
-import time
 import uuid
 from flaskext.mongokit import Document
-from pymongo.objectid import ObjectId
 from extensions import db
-from extensions.guard import guard
+
 
 
 #entities = db.connection.test_db.entities

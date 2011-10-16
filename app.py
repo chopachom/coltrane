@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 from flask import Flask
-from api.v1 import api
+from api import api_v1
 from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
 from db import crud
@@ -10,7 +10,7 @@ from db import crud
 DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
-    (api.api, ""),
+    (api_v1, "/v1"),
 )
 
 
