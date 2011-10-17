@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+API_VERSION = '/v1'
+
 class DefaultConfig(object):
     SECRET_KEY             = 'A0Zr98˙™£ª¶3yX R~XHH!jmMPC.s39 LWfk wN]LWX/,?RT'
     DEBUG_LOG_FILE         = '/web/logs/shareall/debug.log'

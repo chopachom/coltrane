@@ -2,22 +2,17 @@ import json
 from flask import Blueprint, jsonify
 from flask.globals import request
 from flask.views import MethodView, View
+from config import API_VERSION
 from db.crud import crud
 
 
-ENTITY_DELETED = 2
-
 api = Blueprint('api_v1', __name__)
 
-
-def rate_limited(entityView):
-    params = request.__dict__
 
 def fromJSON(obj):
     return json.loads(obj)
 
 class EntityView(MethodView):
-  #  decorators = [rate_limited]
     
     def get(self, bucket, id):
         if id is None:
@@ -65,10 +60,10 @@ class EntityView(MethodView):
             
 
 entity_view = EntityView.as_view('entity_view')
-api.add_url_rule('/<bucket>/', defaults={'id': None},
+api.add_url_rule('/<bucket>/', endpoint=API_VERSION, defaults={'id': None},
                  view_func=entity_view, methods=['GET', 'PUT', 'POST'])
 
-api.add_url_rule('/<bucket>/<int:id>', view_func=entity_view,
+api.add_url_rule('/<bucket>/<int:id>', endpoint=API_VERSION, view_func=entity_view,
                  methods=['GET', 'DELETE'])
 
 
