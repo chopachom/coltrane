@@ -18,7 +18,7 @@ class Crud(object):
             return books[bucket]
         else:
             for obj in books[bucket]:
-                if obj['id'] == id: return obj
+                if obj['id'] == int(id): return obj
 
     def save(self, bucket, obj, id=None):
         books[bucket].append(obj)
