@@ -1,7 +1,7 @@
 import json
 from flask import Blueprint, jsonify
 from flask.globals import request
-from flask.views import MethodView, View
+from flask.views import MethodView
 from db.crud import crud
 
 

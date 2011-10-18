@@ -2,6 +2,7 @@ __author__ = 'qweqwe'
 
 from  datetime import datetime
 import uuid
+from errors import EntryNotFoundError
 from flaskext.mongokit import Document
 from extensions import db
 
@@ -29,10 +30,12 @@ class Entity(Document):
         '__bucket__': unicode,
         '__created_at__': datetime,
         '__ip_address__': unicode,
+        '__deleted__': bool
     }
 
     required_fields = ['__app_id__', '__user_id__', '__bucket__',
                        '__created_at__', '__ip_address__',]
+    default_values = {'deleted': False}
 
     
 db.register([Entity])
@@ -54,6 +57,7 @@ def save(bucket=None, entry=None, key=None):
             entry[key] = value
 
     entry.save()
+    return key
 
         
 
@@ -65,18 +69,38 @@ def all(bucket=None, page=1):
     return list(db.Entity.find({
         '__user_id__': USER_ID,
         '__app_id__' : APP_ID,
+        '__deleted__': False,
         '__bucket__': bucket
-    }))
+    }).sort('__created_at__'))
+
 
 def get(bucket=None, key=None):
     """
     Retrieves document from a bucket by id
     """
-    return db.Entity.find_one({
+    entry = db.Entity.find_one({
         '__user_id__': USER_ID,
         '__app_id__' : APP_ID,
+        '__deleted__': False,
         '__bucket__': bucket,
         '_id': key
     })
 
+    if not entry:
+        raise EntryNotFoundError(key=key)
 
+    return entry
+
+
+def delete(bucket=None, key=None):
+    #TODO: raise error when key is not specified
+    entity = db.Entity.find_one({
+        '__user_id__': USER_ID,
+        '__app_id__' : APP_ID,
+        '__deleted__': False,
+        '__bucket__': bucket,
+        '_id': key
+    })
+    if entity:
+        entity['deleted'] = True
+        entity.save()
