@@ -16,7 +16,7 @@ class ApiTestCase(unittest.TestCase):
         pass
 
     def test_getAll_request(self):
-        rv = self.app.get('/books/')
+        rv = self.app.get('/v1/books')
         print "Get all: " + rv.data
         #assert 'No entries here so far' in rv.data
 

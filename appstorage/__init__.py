@@ -35,7 +35,7 @@ class Entity(Document):
 
     required_fields = ['__app_id__', '__user_id__', '__bucket__',
                        '__created_at__', '__ip_address__',]
-    default_values = {'deleted': False}
+    default_values = {'__deleted__': False}
 
     
 db.register([Entity])

@@ -3,6 +3,8 @@ from flask import Blueprint, jsonify
 from flask.globals import request
 from flask.views import MethodView
 from db.crud import crud
+import appstorage as storage
+from errors import EntryNotFoundError
 
 
 ENTITY_DELETED = 2
@@ -21,28 +23,27 @@ class EntityView(MethodView):
     
     def get(self, bucket, id):
         if id is None:
-            objects = crud.get(bucket=bucket)
+            objects = storage.all(bucket=bucket)
             return jsonify({bucket: objects})
         else:
-            return jsonify(crud.get(bucket=bucket, id=id))
+            return jsonify(storage.get(bucket=bucket, key=id))
 
     def post(self, bucket, id=None):
         obj = request.form['data']
         obj = fromJSON(obj)
-        res = crud.save(bucket=bucket, obj=obj, id=id)
-
-        if res > 0:
+        try:
+            res = storage.save(bucket=bucket, entry=obj, key=id)
             return jsonify({'response': res})
-        elif res == -1:
-            error_msg = 'Object of type [%s] couldn`t be saved due to some error.' % (bucket, id)
+        except EntryNotFoundError as e:
+            error_msg = 'Object of type [%s] with key %s couldn\'t be saved due to some error.' % (bucket, id)
             return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
 
 
     def delete(self, bucket, id):
-        res = crud.delete(bucket=bucket, id=id)
-        if res == 0:
+        try:
+            res = crud.delete(bucket=bucket, id=id)
             return jsonify({'response': 0})
-        elif res == 1:
+        except EntryNotFoundError as e:
             error_msg = 'Object of type [%s] with id [%d] couldn`t be deleted.' % (bucket, id)
             return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
 
