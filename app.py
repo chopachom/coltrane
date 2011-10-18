@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 import logging
-from api import api
 from flask import Flask
+from api.v1 import api
 from config import DefaultConfig
-from extensions import crud
 from logging.handlers import RotatingFileHandler
+from db import crud
 
 
 DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
-    (api, ""),
+    (api.api, ""),
 )
 
 
@@ -21,7 +21,7 @@ def create_app(config=None, modules=None, dict_config=None):
 
     configure_app(app, config, dict_config)
     configure_extensions(app)
-    #configure_modules(app, modules)
+    configure_modules(app, modules)
     configure_logging(app)
 
     return app
@@ -54,7 +54,7 @@ def configure_logging(app):
         '%(asctime)s %(levelname)s: %(message)s '
         '[in %(pathname)s:%(lineno)d]')
 
-    debug_log = app.config['DEBUG_LOG']
+    debug_log = app.config['DEBUG_LOG_FILE']
     debug_file_handler = RotatingFileHandler(
         debug_log, maxBytes=100000, backupCount=10)
     debug_file_handler.setLevel(logging.DEBUG)
@@ -62,7 +62,7 @@ def configure_logging(app):
     app.logger.addHandler(debug_file_handler)
 
 
-    error_log = app.config['ERROR_LOG']
+    error_log = app.config['ERROR_LOG_FILE']
     error_file_handler =  RotatingFileHandler(
         error_log, maxBytes=100000, backupCount=10)
     error_file_handler.setLevel(logging.ERROR)
