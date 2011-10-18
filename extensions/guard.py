@@ -1,6 +1,6 @@
-__author__ = 'PedoFinderGeneral'
+__author__ = 'apetrovich'
 
-from flask import request, current_app, g, abort
+from flask import request, g, abort
 
 
 class Guard(object):
@@ -11,7 +11,7 @@ class Guard(object):
 
     def init_app(self, app):
         self.app = app
-        #self.app.before_request(self._before_request)
+        self.app.before_request(self._before_request)
 
     @property
     def current_user_token(self):
@@ -22,12 +22,15 @@ class Guard(object):
         return g.current_ap
 
     def _before_request(self):
-        if request.cookies.get('auth_tkn'):
-            self.app.logger.debug("Got cookie %s: %s", 'auth_token', request.cookies['auth_tkn'])
-            g.user_token = request.cookies['auth_tkn']
-        if request.cookies.get('app_token'):
-            self.app.logger.debug("Got cookie %s: %s", 'app_token', request.cookies['app_tkn'])
-            g.app_token = request.cookies['app_tkn']
+        auth_tkn = request.cookies.get('auth_tkn', None)
+        app_tkn = request.cookies.get('app_token', None)
+
+        if auth_tkn:
+            self.app.logger.debug("Got cookie %s: %s", 'auth_token', auth_tkn)
+            g.user_token = auth_tkn
+        if app_tkn:
+            self.app.logger.debug("Got cookie %s: %s", 'app_token', app_tkn)
+            g.app_token = app_tkn
 
         if not getattr(g, 'user_token', False) or getattr(g, 'app_token', False):
             return abort(401)

@@ -1,4 +1,4 @@
-__author__ = 'qweqwe'
+__author__ = 'apetrovich'
 
 from  datetime import datetime
 import uuid

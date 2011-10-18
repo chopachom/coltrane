@@ -1,12 +1,13 @@
 import unittest
 from app import create_app
+from db.crud import crud
 
-__author__ = 'Pasha'
+__author__ = 'pshkitin'
 
 class AppTestCase(unittest.TestCase):
 
     def setUp(self):
-        app = create_app(dict_config=dict(
+        app = create_app(exts=(crud,), dict_config=dict(
             DEBUG=True,
             TESTING=True
         ))
