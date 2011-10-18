@@ -1,6 +1,6 @@
 __author__ = 'apetrovich'
 
-from flask import request, current_app, g, abort
+from flask import request, g, abort
 
 
 class Guard(object):

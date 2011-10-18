@@ -29,7 +29,7 @@ class ApiTestCase(unittest.TestCase):
 
     def test_post_request(self):
         rv = self.app.post(API_V1 + '/books', data=dict(
-            data='{"id":3, "title": "Title3", "author": "Pasha Shkitin"}'
+            data='{"key":3, "title": "Title3", "author": "Pasha Shkitin"}'
         ), follow_redirects=True)
         print "Post1: " + rv.data
 
@@ -43,7 +43,7 @@ class ApiTestCase(unittest.TestCase):
 
     def test_put_request(self):
         rv = self.app.put(API_V1 + '/books', data=dict(
-            data='{"id":2, "title": "Title3", "author": "Vasya Shkitin"}'
+            data='{"key":2, "title": "Title3", "author": "Vasya Shkitin"}'
         ), follow_redirects=True)
         print 'Put1: ' + rv.data
     

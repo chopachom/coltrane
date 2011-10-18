@@ -1,9 +1,9 @@
-__author__ = 'Pasha'
+__author__ = 'pshkitin'
 
 
 books = { 'books': [
-        {'id':1, 'title': 'Title1', 'author': 'Nikita Shmakov'},
-        {'id':2, 'title': 'Title2', 'author': 'Nikita Shmakov'}
+        {'key':1, 'title': 'Title1', 'author': 'Nikita Shmakov'},
+        {'key':2, 'title': 'Title2', 'author': 'Nikita Shmakov'}
 ]}
 
 counterId = 2
@@ -13,32 +13,32 @@ def init_app(app):
 
 class Crud(object):
 
-    def get(self, bucket, id=None):
-        if id is None:
+    def get(self, bucket, key=None):
+        if key is None:
             return books[bucket]
         else:
             for obj in books[bucket]:
-                if obj['id'] == int(id): return obj
+                if obj['key'] == int(key): return obj
 
-    def save(self, bucket, obj, id=None):
+    def save(self, bucket, obj, key=None):
         books[bucket].append(obj)
         global counterId
         counterId += 1
         obj['id'] = counterId
         return counterId
 
-    def delete(self, bucket, id):
+    def delete(self, bucket, key):
         l = books[bucket]
-        l2 = filter((lambda obj: True if obj['id'] == id else False), l)
+        l2 = filter((lambda obj: True if obj['key'] == key else False), l)
         if len(l2):
             l.remove(l2[0])
             return 0
         else:
             return 1
 
-    def update(self, bucket, id, obj):
+    def update(self, bucket, key, obj):
         l = books[bucket]
-        l2 = filter((lambda obj: True if obj['id'] == id else False), l)
+        l2 = filter((lambda obj: True if obj['key'] == key else False), l)
         if len(l2):
             l.remove(l2[0])
             l.append(obj)
