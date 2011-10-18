@@ -39,7 +39,7 @@ def post(bucket, key, obj):
     if res > 0:
         return jsonify({'response': res})
     elif res == -1:
-        error_msg = 'Object of type [%s] couldn`t be saved due to some error.' % bucket
+        error_msg = "Object of type [%s] couldn't be saved due to some error." % bucket
         return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
 
 
@@ -51,7 +51,7 @@ def delete(bucket, key=None):
     if res == 0:
         return jsonify({'response': 0})
     elif res == 1:
-        error_msg = 'Object of type [%s] with key [%d] couldn`t be deleted.' % (bucket, key)
+        error_msg = "Object of type [%s] with key [%d] couldn't be deleted." % (bucket, key)
         return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
 
 
@@ -65,12 +65,12 @@ def put(bucket, key, obj):
         if obj['key'] is not None:
             res = crud.update(bucket=bucket, key=obj['key'], obj=obj)
         else:
-            error_msg = 'Object of type [%s] couldn`t be updated due to no key specified.' % bucket
+            error_msg = "Object of type [%s] couldn't be updated due to no key specified." % bucket
             return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
     if res == 0:
         return jsonify({'response': 0})
     elif res == 1:
-        error_msg = 'Object of type [%s] with key [%d] couldn`t be updated.' % (bucket, key)
+        error_msg = "Object of type [%s] with key [%d] couldn't be updated." % (bucket, key)
         return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
 
 
