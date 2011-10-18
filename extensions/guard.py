@@ -11,7 +11,7 @@ class Guard(object):
 
     def init_app(self, app):
         self.app = app
-        #self.app.before_request(self._before_request)
+        self.app.before_request(self._before_request)
 
     @property
     def current_user_token(self):
