@@ -1,14 +1,10 @@
 import json
 from flask import Blueprint, jsonify
 from flask.globals import request
-from flask.views import MethodView, View
 from functools import wraps
-from config import API_VERSION
 from db.crud import crud
 
-
 api = Blueprint("api_v1", __name__)
-
 
 def fromJSON(obj):
     return json.loads(obj)
@@ -77,13 +73,6 @@ def put(bucket, id, obj):
         error_msg = 'Object of type [%s] with id [%d] couldn`t be updated.' % (bucket, id)
         return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
 
-
-#entity_view = EntityView.as_view('entity_view')
-#api.add_url_rule('/<bucket>/', endpoint=API_VERSION, defaults={'id': None},
-#                 view_func=entity_view, methods=['GET', 'PUT', 'POST'])
-#
-#api.add_url_rule('/<bucket>/<int:id>', endpoint=API_VERSION, view_func=entity_view,
-#                 methods=['GET', 'DELETE'])
 
 if __name__ == '__main__':
     api.run(debug=True, port=5001)

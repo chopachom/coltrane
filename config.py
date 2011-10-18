@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-__author__ = 'apetrovich'
+from api.v1 import api
 
-API_VERSION = '/v1'
+__author__ = 'apetrovich'
 
 class DefaultConfig(object):
     SECRET_KEY             = 'A0Zr98˙™£ª¶3yX R~XHH!jmMPC.s39 LWfk wN]LWX/,?RT'

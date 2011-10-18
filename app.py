@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
 from flask import Flask
-from api import api_v1
-from config import DefaultConfig, API_VERSION
+from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
 from db import crud
 from extensions import db
 from extensions.guard import guard
+from api import api_v1
 
 __author__ = 'apetrovich'
 
@@ -14,7 +14,7 @@ __author__ = 'apetrovich'
 DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
-    (api_v1, API_VERSION),
+    (api_v1, '/v1'),
 )
 
 DEFAULT_EXTENSIONS = (crud, guard, db)
