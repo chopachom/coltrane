@@ -5,6 +5,8 @@ from api import api_v1
 from config import DefaultConfig, API_VERSION
 from logging.handlers import RotatingFileHandler
 from db import crud
+from extensions import db
+from extensions.guard import guard
 
 __author__ = 'apetrovich'
 
@@ -15,15 +17,21 @@ DEFAULT_MODULES = (
     (api_v1, API_VERSION),
 )
 
+DEFAULT_EXTENSIONS = (crud, guard, db)
 
-def create_app(config=None, modules=None, dict_config=None):
+
+def create_app(exts = None, modules=None, config=None, dict_config=None):
     app = Flask(__name__)
 
-    if not modules: modules = DEFAULT_MODULES
+    if not exts:
+        exts = DEFAULT_EXTENSIONS
+        
+    if not modules:
+        modules = DEFAULT_MODULES
 
-    configure_app(app, config, dict_config)
-    configure_extensions(app)
+    configure_extensions(app, exts)
     configure_modules(app, modules)
+    configure_app(app, config, dict_config)
     configure_logging(app)
 
     return app
@@ -44,10 +52,9 @@ def configure_modules(app, modules):
         app.register_blueprint(module, url_prefix=url_prefix)
 
 
-def configure_extensions(app):
-    crud.init_app(app)
-    guard.init_app(app)
-    db.init_app(app)
+def configure_extensions(app, exts):
+    for ext in exts:
+        ext.init_app(app)
 
 
 def configure_logging(app):

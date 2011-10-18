@@ -1,4 +1,4 @@
-from service.app import create_app
+from app import create_app
 
 __author__ = 'pshkitin'
 

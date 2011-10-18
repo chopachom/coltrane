@@ -7,7 +7,7 @@ from config import API_VERSION
 from db.crud import crud
 
 
-api = Blueprint(API_VERSION, __name__)
+api = Blueprint("api_v1", __name__)
 
 
 def fromJSON(obj):
