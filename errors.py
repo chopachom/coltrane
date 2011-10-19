@@ -16,4 +16,5 @@ class EntryNotFoundError(StorageException):
     def __init__(self, *args, **kwargs):
         super(EntryNotFoundError, self).__init__(*args, **kwargs)
         self.key = kwargs.get('key')
+        self.bucket = kwargs.get('bucket')
 

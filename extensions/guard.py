@@ -18,7 +18,7 @@ class Guard(object):
         return g.app_token
 
     @property
-    def current_app(self):
+    def current_app_token(self):
         return g.current_ap
 
     def _before_request(self):
