@@ -16,10 +16,18 @@ def get_app_id():
 
 
 def key2id(bucket, key):
-    #timestamp = time.mktime(datetime.utcnow().utctimetuple())
     return u'{user_id}_{app_id}_{bucket}_{key}'.format(
         user_id=get_user_id(), app_id=get_app_id(), bucket=bucket, key=key
     )
+
+def extract_document_data(entity):
+    document = {k:v for k,v in entity.items()
+                if not str(k).startswith('__') and str(k) != '_id'}
+    # TheUserId_TheAppId_bucket1_20b6389b-76da-43de-8ea6-8c03acfc898f' to '20b6389b-76da-43de-8ea6-8c03acfc898f'
+    document[u'_id'] = entity[u'_id'].split('_')[-1]
+    document[u'_bucket'] = entity[u'__bucket__']
+    document[u'_created_at'] = entity[u'__created_at__']
+    return document
 
 class Entity(Document):
     use_schemaless = True
@@ -61,19 +69,20 @@ def save(bucket=None, document=None, key=None):
     entity.save()
     return key
 
-        
 
 def all(bucket=None, page=1):
     """
     Retrieves documents from a bucket sorted by date added (? This may change)
     """
     #using list to avoid TypeError: <mongokit.cursor.Cursor object at blablalbla> is not JSON serializable error
-    return list(db.Entity.find({
+    entities = db.Entity.find({
         '__user_id__': get_user_id(),
         '__app_id__' : get_app_id(),
         '__deleted__': False,
         '__bucket__': bucket
-    }).sort('__created_at__'))
+    }).sort('__created_at__')
+    
+    return map(extract_document_data, entities)
 
 
 def get(bucket=None, key=None):
@@ -81,22 +90,15 @@ def get(bucket=None, key=None):
     Retrieves document from a bucket by id
     """
     #TODO: raise error when no bucket and key specified
-    entry = db.Entity.find_one({
+    entity = db.Entity.find_one({
         '__deleted__': False,
         '_id': key2id(bucket, key)
     })
 
-    if not entry:
-        #raise EntryNotFoundError(key=key, bucket=bucket)
+    if not entity:
         return None
     else:
-        document = {k:v for k,v in entry.items()
-                if not str(k).startswith('__') and str(k) != '_id'}
-        # TheUserId_TheAppId_bucket1_20b6389b-76da-43de-8ea6-8c03acfc898f' to '20b6389b-76da-43de-8ea6-8c03acfc898f'
-        document[u'_id'] = entry[u'_id'].split('_')[-1]
-        document[u'_bucket'] = entry[u'__bucket__']
-        document[u'_created_at'] = entry[u'__created_at__']
-        return document
+        return extract_document_data(entity)
 
 
 def delete(bucket=None, key=None):
@@ -107,3 +109,5 @@ def delete(bucket=None, key=None):
     if entity:
         entity['__deleted__'] = True
         entity.save()
+    else:
+        raise EntryNotFoundError(bucket=bucket, key=key)

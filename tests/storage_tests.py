@@ -30,3 +30,6 @@ class StorageTestCase(unittest.TestCase):
         doc = storage.get(bucket=self.bucket, key=key)
         print doc
         assert doc is None
+
+if __name__ == '__main__':
+    unittest.main()
