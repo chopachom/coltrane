@@ -21,3 +21,12 @@ class StorageTestCase(unittest.TestCase):
         doc = storage.get(bucket=self.bucket, key=key)
         assert doc[u'_id'] == key
         assert doc[u'author'] == u'qweqwe'
+
+
+    def test_delete_document(self):
+        data = {'author': 'qweqwe'}
+        key = storage.save(bucket=self.bucket, document=data)
+        storage.delete(bucket=self.bucket, key=key)
+        doc = storage.get(bucket=self.bucket, key=key)
+        print doc
+        assert doc is None

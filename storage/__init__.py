@@ -82,11 +82,13 @@ def get(bucket=None, key=None):
     """
     #TODO: raise error when no bucket and key specified
     entry = db.Entity.find_one({
+        '__deleted__': False,
         '_id': key2id(bucket, key)
     })
 
     if not entry:
-        raise EntryNotFoundError(key=key, bucket=bucket)
+        #raise EntryNotFoundError(key=key, bucket=bucket)
+        return None
     else:
         document = {k:v for k,v in entry.items()
                 if not str(k).startswith('__') and str(k) != '_id'}
@@ -100,12 +102,8 @@ def get(bucket=None, key=None):
 def delete(bucket=None, key=None):
     #TODO: raise error when key is not specified
     entity = db.Entity.find_one({
-        '__user_id__': get_user_id(),
-        '__app_id__' : get_app_id(),
-        '__deleted__': False,
-        '__bucket__': bucket,
-        '_id': key
+        '_id': key2id(bucket=bucket, key=key)
     })
     if entity:
-        entity['deleted'] = True
+        entity['__deleted__'] = True
         entity.save()
