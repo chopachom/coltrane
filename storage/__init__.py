@@ -21,6 +21,15 @@ def key2id(bucket, key):
         user_id=get_user_id(), app_id=get_app_id(), bucket=bucket, key=key
     )
 
+def _clean_document(entry):
+    document = {k:v for k,v in entry.items()
+            if not str(k).startswith('__') and str(k) != '_id'}
+    # TheUserId_TheAppId_bucket1_20b6389b-76da-43de-8ea6-8c03acfc898f' to '20b6389b-76da-43de-8ea6-8c03acfc898f'
+    document[u'_id'] = entry[u'_id'].split('_')[-1]
+    document[u'_bucket'] = entry[u'__bucket__']
+    document[u'_created_at'] = entry[u'__created_at__']
+    return document
+
 class Entity(Document):
     use_schemaless = True
     __database__   = 'test_db'
@@ -68,12 +77,13 @@ def all(bucket=None, page=1):
     Retrieves documents from a bucket sorted by date added (? This may change)
     """
     #using list to avoid TypeError: <mongokit.cursor.Cursor object at blablalbla> is not JSON serializable error
-    return list(db.Entity.find({
+    docs = db.Entity.find({
         '__user_id__': get_user_id(),
         '__app_id__' : get_app_id(),
         '__deleted__': False,
         '__bucket__': bucket
-    }).sort('__created_at__'))
+    }).sort('__created_at__')
+    return [_clean_document(d) for d in docs]
 
 
 def get(bucket=None, key=None):
