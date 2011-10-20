@@ -11,6 +11,7 @@ from extensions.guard import guard
 def get_user_id():
     return guard.current_user_token
 
+
 def get_app_id():
     return guard.current_app_token
 
@@ -21,6 +22,7 @@ def key2id(bucket, key):
         user_id=get_user_id(), app_id=get_app_id(), bucket=bucket, key=key
     )
 
+
 def _clean_document(entry):
     document = {k:v for k,v in entry.items()
             if not str(k).startswith('__') and str(k) != '_id'}
@@ -29,6 +31,8 @@ def _clean_document(entry):
     document[u'_bucket'] = entry[u'__bucket__']
     document[u'_created_at'] = entry[u'__created_at__']
     return document
+
+
 
 class Entity(Document):
     use_schemaless = True
@@ -46,10 +50,12 @@ class Entity(Document):
 
     required_fields = ['__app_id__', '__user_id__', '__bucket__',
                        '__created_at__', '__ip_address__',]
+    
     default_values = {'__deleted__': False}
 
-    
 db.register([Entity])
+
+
 
 def save(bucket=None, document=None, key=None):
     #random uuid string if key is not specified
@@ -96,17 +102,8 @@ def get(bucket=None, key=None):
         '_id': key2id(bucket, key)
     })
 
-    if not entry:
-        #raise EntryNotFoundError(key=key, bucket=bucket)
-        return None
-    else:
-        document = {k:v for k,v in entry.items()
-                if not str(k).startswith('__') and str(k) != '_id'}
-        # TheUserId_TheAppId_bucket1_20b6389b-76da-43de-8ea6-8c03acfc898f' to '20b6389b-76da-43de-8ea6-8c03acfc898f'
-        document[u'_id'] = entry[u'_id'].split('_')[-1]
-        document[u'_bucket'] = entry[u'__bucket__']
-        document[u'_created_at'] = entry[u'__created_at__']
-        return document
+    if entry:
+        return _clean_document(entry)
 
 
 def delete(bucket=None, key=None):
@@ -117,3 +114,5 @@ def delete(bucket=None, key=None):
     if entity:
         entity['__deleted__'] = True
         entity.save()
+    else:
+        raise EntryNotFoundError(bucket=bucket, key=key)
