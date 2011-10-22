@@ -27,7 +27,7 @@ def _clean_document(entry):
     document = {k:v for k,v in entry.items()
             if not str(k).startswith('__') and str(k) != '_id'}
     # TheUserId_TheAppId_bucket1_20b6389b-76da-43de-8ea6-8c03acfc898f' to '20b6389b-76da-43de-8ea6-8c03acfc898f'
-    document[u'_id'] = entry[u'_id'].split('_')[-1]
+    document[u'_key'] = entry[u'_id'].split('_')[-1]
     document[u'_bucket'] = entry[u'__bucket__']
     document[u'_created_at'] = entry[u'__created_at__']
     return document

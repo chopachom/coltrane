@@ -1,4 +1,4 @@
 __author__ = 'apetrovich'
-from .mongo import MongoKitConnection
+from .mongodb import FlaskMongodb
 
-db = MongoKitConnection()
+db = FlaskMongodb()
