@@ -1,151 +1,189 @@
 from pymongo import Connection
-from pymongo.objectid import ObjectId
-from pymongo.errors import InvalidId
 from crud_exceptions import *
+from uuid import uuid4
 
 # protected constants
 _DICT_TYPE = type(dict())
+_DOCUMENT_ID_FORMAT = '{app_id}_{user_id}_{bucket}_{document_id}'
 
 # public contstants
 APP_ID_KEY = 'app_id'
 USER_ID_KEY = 'user_id'
-ENTITY_DATA_KEY = 'entity_data'
-ENTITY_TYPE_KEY = 'entity_type'
-ENTITY_ID_KEY = '_id'
-DEFAULT_ENTITY_TYPE = 'default'
+BUCKET_KEY = 'bucket'
+DOCUMENT_ID_KEY = '_id'
+DEFAULT_BUCKET_KEY = 'default'
 
 # PyMongo variables
 _con = Connection()
 _db = _con.test_database # for prototype purposes only
 _entities = _db.entities
 
-def create(app_id, user_id, entity_data, entity_type=DEFAULT_ENTITY_TYPE):
+def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
     """ Create operation for CRUD service.
+        Saves entity to db in this format:
+        {
+            app_id: $app_id,
+            user_id: $user_id,
+            bucket: $bucket,
+            $document,
+            _id: $id
+        }
+        $document saves in root of document.
+        Function creations new id and set it to _id field, when _id is not filled in user document.
+        If user document's _id already exists, InvalidDocumentIdException will be raised.
         Parameters:
         app_id: String, application id
         user_id: String, user id
-        entity_data: Dict, entity data
-        entity_type: String, type of entity
+        document: Dict, user document
+        bucket: String, document type (bucket)
         
         Returns id of inserted entity """
         
     # validations
-    if (app_id is None): 
+    if app_id is None: 
         raise InvalidAppIdException('app_id must be not null')
-    if (user_id is None):
+    if user_id is None:
         raise InvalidUserIdException('user_id must be not null')
-    if (entity_data is None):
-        raise InvalidEntityException('entity_data must be not null')
-    if (type(entity_data) is not _DICT_TYPE):
-        raise InvalidEntityException('entity_data must be instance of dict type')
-    
+    if document is None:
+        raise InvalidDocumentException('document must be not null')
+    if type(document) is not _DICT_TYPE:
+        raise InvalidDocumentException('document must be instance of dict type')
+             
     # logic
-    data = {APP_ID_KEY: str(app_id),
-            USER_ID_KEY: str(user_id),
-            ENTITY_TYPE_KEY: str(entity_type),
-            ENTITY_DATA_KEY: entity_data}
-    return str(_entities.insert(data))
+    document_to_save = {}
+    # generate id
+    if DOCUMENT_ID_KEY in document:
+        # check if id already exists
+        id = _generate_internal_id(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
+        criteria = _generate_criteria(app_id, user_id, id, bucket);
+        if _entities.find_one(criteria):
+            raise IvalidDocumentIdException('document id already exists')
+    else:
+        # generate new id
+        id = _generate_internal_id(app_id, user_id, uuid4(), bucket)
     
-def read(app_id, user_id, entity_id, entity_type=DEFAULT_ENTITY_TYPE):
+    # add required fields to document
+    document_to_save[DOCUMENT_ID_KEY] = id
+    document_to_save[APP_ID_KEY] = app_id
+    document_to_save[USER_ID_KEY] = user_id
+    document_to_save[BUCKET_KEY] = bucket
+    
+    # add user document values
+    for k, v in document.iteritems():
+        document_to_save[k] = v
+    
+    _entities.insert(document_to_save)
+    
+    return _get_public_id(document_to_save[DOCUMENT_ID_KEY])
+    
+def read(app_id, user_id, document_id, bucket=DEFAULT_BUCKET_KEY):
     """ Read operation for CRUD service.
         Parameters:
         app_id: String, application id
         user_id: String, user id
-        entity_id: String, entity id
-        entity_type: String, type of entity
+        document_id: String, document id
+        bucket: String, type of document
         
-        Returns founded entity object or None if object not found """
+        Returns founded document or None if object not found """
     
     # validations
-    if (app_id is None):
+    if app_id is None:
         raise InvalidAppIdException('app_id must be not null')
-    if (user_id is None):
+    if user_id is None:
         raise InvalidUserIdException('user_id must be not null')
-    if (entity_id is None):
-        raise InvalidEntityException('entity_id must be not null')
+    if document_id is None:
+        raise InvalidDocumentIdException('document_id must be not null')
     
     # logic
-    try:        
-        criteria = {APP_ID_KEY: str(app_id),
-                    USER_ID_KEY: str(user_id), 
-                    ENTITY_TYPE_KEY: str(entity_type),
-                    ENTITY_ID_KEY: ObjectId(entity_id)
-                    }
-    except InvalidId:
-        raise InvalidEntityException('entity_id is invalid')
-        
+    id = _generate_internal_id(app_id, user_id, document_id, bucket)
+    criteria = _generate_criteria(app_id, user_id, id, bucket)
     result = _entities.find_one(criteria);
-    if (result is None):
+    if result is None:
         return None
-    
-    # convert PyMongo's ObjectId to String value
-    result[ENTITY_ID_KEY] = str(result[ENTITY_ID_KEY])
     
     # remove unnecessary fields
     del result[APP_ID_KEY]
     del result[USER_ID_KEY]
-    del result[ENTITY_TYPE_KEY]
+    del result[BUCKET_KEY]
+    
+    # replace document id
+    result[DOCUMENT_ID_KEY] = _get_public_id(result[DOCUMENT_ID_KEY])
     
     return result
     
-def update(app_id, user_id, entity_data, entity_type=DEFAULT_ENTITY_TYPE):
+def update(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
     """ Update operation for CRUD service.
         Parameters:
         app_id: String, application id
         user_id: String, user id
-        entity_data: Dict, entity with entity_data['_id'] will be updated in db
-        entity_type: String, entity type """
+        document: Dict, document with given _id will be updated in db
+        bucket: String, document type """
         
     # validations
-    if (app_id is None):
+    if app_id is None:
         raise InvalidAppIdException('app_id must be not null')
-    if (user_id is None):
+    if user_id is None:
         raise InvalidUserIdException('user_id must be not null')
-    if (entity_data is None) :
-        raise InvalidEntityException('Entity for update cannot be null')
-    if (entity_data['_id'] is None):
-        raise InvalidEntityException('Id of entity for update cannot be null')
-    if (type(entity_data) is not _DICT_TYPE):
-        raise InvalidEntityException('entity_data must be instance of dict type')
+    if document is None:
+        raise InvalidDocumentException('Entity for update cannot be null')
+    if document['_id'] is None:
+        raise InvalidDocumentIdException('Id of entity for update cannot be null')
+    if type(document) is not _DICT_TYPE:
+        raise InvalidDocumentException('document must be instance of dict type')
     
     # check user access to this entity
-    _check_access(app_id, user_id, entity_data[ENTITY_ID_KEY], entity_type)
+    _check_access(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
     
     # logic
-    # replace String id by PyMongo ObjectId
-    entity_data[ENTITY_ID_KEY] = ObjectId(entity_data[ENTITY_ID_KEY])
+    document_to_update = {}
+    for k, v in document.iteritems():
+        if k is not DOCUMENT_ID_KEY:
+            document_to_update[k] = v
+        
+    id = _generate_internal_id(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
+    _entities.update({'_id': id}, # search by old id
+        {'$set': document_to_update}) # edit user document body
     
-    _entities.update({'_id': entity_data[ENTITY_ID_KEY]}, # search by old id
-        {'$set': {ENTITY_DATA_KEY: entity_data[ENTITY_DATA_KEY]}}, # replace entity body
-        upsert=True)
-    
-    # replace PyMongo ObjectId by String id
-    entity_data[ENTITY_ID_KEY] = str(entity_data[ENTITY_ID_KEY])
-    
-def delete(app_id, user_id, entity_id, entity_type=DEFAULT_ENTITY_TYPE):
+def delete(app_id, user_id, document_id, bucket=DEFAULT_BUCKET_KEY):
     """ Delete operation for CRUD service.
         Parameters:
         app_id: String, application id
         user_id: String, user id
-        entity_id: String, entity id
-        entity_type: String, type of entity """
+        document_id: String, document id
+        bucket: String, type of entity """
         
     # validations
-    if (app_id is None):
+    if app_id is None:
         raise InvalidAppIdException('app_id must be not null')
-    if (user_id is None):
+    if user_id is None:
         raise InvalidUserIdException('user_id must be not null')
-    if (entity_id is None):
-        raise InvalidEntityException('entity_id must be not null')
+    if document_id is None:
+        raise InvalidDocumentIdException('document_id must be not null')
     
     # logic
     # check user access to this entity
-    _check_access(app_id, user_id, entity_id, entity_type)
-    _entities.remove(ObjectId(entity_id))
+    _check_access(app_id, user_id, document_id, bucket)
+    
+    internal_id = _generate_internal_id(app_id, user_id, document_id, bucket)
+    _entities.remove(internal_id)
         
-def _check_access(app_id, user_id, entity_id, entity_type):
-    entity = read(app_id, user_id, entity_id, entity_type)
-    if (entity is None):
-        raise InvalidEntityException('User #{0} dont have access to entity with id #{1} ' +
-                                     'or this entity doesnt exists'
-                                     .format(user_id, entity_id))
+def _check_access(app_id, user_id, document_id, bucket):
+    entity = read(app_id, user_id, document_id, bucket)
+    if entity is None:
+        raise InvalidDocumentIdException('User #{0} dont have access to entity #{1}'
+                                         .format(user_id, document_id) + 
+                                         ' or this entity doesnt exists')
+        
+def _generate_internal_id(app_id, user_id, document_id, bucket):
+    return _DOCUMENT_ID_FORMAT.format(app_id=app_id, user_id=user_id, bucket=bucket, document_id=document_id)
+    
+def _get_public_id(internal_id):
+    return '_'.join(substr for substr in internal_id.split('_')[3:])
+    
+def _generate_criteria(app_id, user_id, document_id, bucket):
+    return  {
+                APP_ID_KEY: str(app_id),
+                USER_ID_KEY: str(user_id), 
+                BUCKET_KEY: str(bucket),
+                DOCUMENT_ID_KEY: document_id
+            }

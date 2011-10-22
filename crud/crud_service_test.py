@@ -11,17 +11,17 @@ class CRUDIntegrationTestCase(unittest.TestCase):
         
         expected_boobs = []
         boobs_count = 3
-        for i in range(boobs_count):
+        for _ in range(boobs_count):
             data = {'test': 'test_data'}
             id = crud_service.create(app_id, user_id, data, boobs_type)
-            boob = {crud_service.ENTITY_ID_KEY: id, crud_service.ENTITY_DATA_KEY: data}
-            expected_boobs.append(boob)
+            data[crud_service.DOCUMENT_ID_KEY] = id
+            expected_boobs.append(data)
             
-        for elem in expected_boobs:
-            actual_data = crud_service.read(app_id, user_id, elem[crud_service.ENTITY_ID_KEY], boobs_type)
+        for expected_data in expected_boobs:
+            actual_data = crud_service.read(app_id, user_id, expected_data[crud_service.DOCUMENT_ID_KEY], boobs_type)
             # asserts
-            assert actual_data[crud_service.ENTITY_ID_KEY] == elem[crud_service.ENTITY_ID_KEY]
-            assert actual_data[crud_service.ENTITY_DATA_KEY] == elem[crud_service.ENTITY_DATA_KEY]
+            assert actual_data[crud_service.DOCUMENT_ID_KEY] == expected_data[crud_service.DOCUMENT_ID_KEY]
+            assert actual_data == expected_data
         
     def test_delete_entity(self):
         app_id = '1'
@@ -50,7 +50,7 @@ class CRUDIntegrationTestCase(unittest.TestCase):
         id = crud_service.create(app_id, user_id, data, boobs_type)
         
         # another user tries to remove entity
-        with self.assertRaises(crud_service.InvalidEntityException):
+        with self.assertRaises(crud_service.InvalidDocumentIdException):
             crud_service.delete(app_id, another_user_id, id, boobs_type)
             
     def test_update_entity(self):
@@ -64,7 +64,8 @@ class CRUDIntegrationTestCase(unittest.TestCase):
         id = crud_service.create(app_id, user_id, data, boobs_type)
         
         # define new dict for update
-        updated_data = {crud_service.ENTITY_ID_KEY: id, crud_service.ENTITY_DATA_KEY: {'updated': 'updated_data'}}
+        updated_data = {'test': 'updated_data'}
+        updated_data[crud_service.DOCUMENT_ID_KEY] = id
         crud_service.update(app_id, user_id, updated_data, boobs_type)
         
         # assert entity was updated
