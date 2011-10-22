@@ -1,12 +1,8 @@
 __author__ = 'nik'
 
-from extensions import db
-from app_exceptions import *
+from extensions import mongodb
 from uuid import uuid4
-
-# protected constants
-_DICT_TYPE = type(dict())
-_DOCUMENT_ID_FORMAT = '{app_id}_{user_id}_{bucket}_{document_id}'
+from app_exceptions import *
 
 # public contstants
 APP_ID_KEY = 'app_id'
@@ -15,8 +11,13 @@ BUCKET_KEY = 'bucket'
 DOCUMENT_ID_KEY = '_id'
 DEFAULT_BUCKET_KEY = 'default'
 
+# internal constants
+_DICT_TYPE = type(dict())
+_DOCUMENT_ID_FORMAT = '{app_id}_{user_id}_{bucket}_{document_id}'
+_NOT_ALLOWED_KEYS = {USER_ID_KEY, BUCKET_KEY, DOCUMENT_ID_KEY}
+
 # PyMongo variables
-_con = db.connection
+_con = mongodb.connection
 _db = _con.test_database # for prototype purposes only
 _entities = _db.entities
 
@@ -50,9 +51,12 @@ def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
         raise InvalidDocumentException('document must be not null')
     if type(document) is not _DICT_TYPE:
         raise InvalidDocumentException('document must be instance of dict type')
+    for k in document.iterkeys():
+        if k in _NOT_ALLOWED_KEYS:
+            raise InvalidDocumentException('document contains not allowed key ' + k)
              
     # logic
-    document_to_save = {}
+    document_to_save = document.copy()
     # generate id
     if DOCUMENT_ID_KEY in document:
         # check if id already exists
@@ -69,10 +73,6 @@ def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
     document_to_save[APP_ID_KEY] = app_id
     document_to_save[USER_ID_KEY] = user_id
     document_to_save[BUCKET_KEY] = bucket
-    
-    # add user document values
-    for k, v in document.iteritems():
-        document_to_save[k] = v
     
     _entities.insert(document_to_save)
     
@@ -134,13 +134,10 @@ def update(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
         raise InvalidDocumentException('document must be instance of dict type')
     
     # check user access to this document
-    _check_access(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
+    _check_exists(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
     
     # logic
-    document_to_update = {}
-    for k, v in document.iteritems():
-        if k is not DOCUMENT_ID_KEY:
-            document_to_update[k] = v
+    document_to_update = {k:v for k, v in document.iteritems() if k is not DOCUMENT_ID_KEY}
         
     id = _generate_internal_id(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
     _entities.update({'_id': id}, # search by old id
@@ -164,12 +161,12 @@ def delete(app_id, user_id, document_id, bucket=DEFAULT_BUCKET_KEY):
     
     # logic
     # check user access to this document
-    _check_access(app_id, user_id, document_id, bucket)
+    _check_exists(app_id, user_id, document_id, bucket)
     
     internal_id = _generate_internal_id(app_id, user_id, document_id, bucket)
     _entities.remove(internal_id)
         
-def _check_access(app_id, user_id, document_id, bucket):
+def _check_exists(app_id, user_id, document_id, bucket):
     entity = read(app_id, user_id, document_id, bucket)
     if entity is None:
         raise InvalidDocumentIdException('User #{0} dont have access to entity #{1}'

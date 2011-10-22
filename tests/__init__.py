@@ -1,4 +1,4 @@
 __author__ = 'Pasha'
 
 from api_tests import ApiTestCase 
-from crud_service_test import CRUDIntegrationTestCase
+from document_storage_tests import DocumentStorageIntegrationTestCase
