@@ -137,7 +137,7 @@ def update(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
     _check_exists(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
     
     # logic
-    document_to_update = {k:v for k, v in document.iteritems() if k is not DOCUMENT_ID_KEY}
+    document_to_update = {k:v for k, v in document.iteritems() if k not in _NOT_ALLOWED_KEYS}
         
     id = _generate_internal_id(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
     _entities.update({'_id': id}, # search by old id
