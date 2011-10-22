@@ -1,5 +1,7 @@
-import crud_service
+__author__ = 'nik'
+
 import unittest
+from db import document_storage
 
 class CRUDIntegrationTestCase(unittest.TestCase):
 # TODO: switch to test db in tests
@@ -13,14 +15,14 @@ class CRUDIntegrationTestCase(unittest.TestCase):
         boobs_count = 3
         for _ in range(boobs_count):
             data = {'test': 'test_data'}
-            id = crud_service.create(app_id, user_id, data, boobs_type)
-            data[crud_service.DOCUMENT_ID_KEY] = id
+            id = document_storage.create(app_id, user_id, data, boobs_type)
+            data[document_storage.DOCUMENT_ID_KEY] = id
             expected_boobs.append(data)
             
         for expected_data in expected_boobs:
-            actual_data = crud_service.read(app_id, user_id, expected_data[crud_service.DOCUMENT_ID_KEY], boobs_type)
+            actual_data = document_storage.read(app_id, user_id, expected_data[document_storage.DOCUMENT_ID_KEY], boobs_type)
             # asserts
-            assert actual_data[crud_service.DOCUMENT_ID_KEY] == expected_data[crud_service.DOCUMENT_ID_KEY]
+            assert actual_data[document_storage.DOCUMENT_ID_KEY] == expected_data[document_storage.DOCUMENT_ID_KEY]
             assert actual_data == expected_data
         
     def test_delete_entity(self):
@@ -30,13 +32,13 @@ class CRUDIntegrationTestCase(unittest.TestCase):
         
         # create 1 boob :)
         data = {'test': 'test'}
-        id = crud_service.create(app_id, user_id, data, boobs_type)
+        id = document_storage.create(app_id, user_id, data, boobs_type)
         
         # try to remove this boob
-        crud_service.delete(app_id, user_id, id, boobs_type)
+        document_storage.delete(app_id, user_id, id, boobs_type)
         
         # assert boob was removed
-        boob = crud_service.read(app_id, user_id, id, boobs_type)
+        boob = document_storage.read(app_id, user_id, id, boobs_type)
         assert boob is None
         
     def test_access_to_another_user_entity(self):
@@ -47,11 +49,11 @@ class CRUDIntegrationTestCase(unittest.TestCase):
         
         # create entity
         data = {'test': 'test'}
-        id = crud_service.create(app_id, user_id, data, boobs_type)
+        id = document_storage.create(app_id, user_id, data, boobs_type)
         
         # another user tries to remove entity
-        with self.assertRaises(crud_service.InvalidDocumentIdException):
-            crud_service.delete(app_id, another_user_id, id, boobs_type)
+        with self.assertRaises(document_storage.InvalidDocumentIdException):
+            document_storage.delete(app_id, another_user_id, id, boobs_type)
             
     def test_update_entity(self):
         app_id = '1'
@@ -61,15 +63,15 @@ class CRUDIntegrationTestCase(unittest.TestCase):
         
         # create entity
         data = {'test': 'test'}
-        id = crud_service.create(app_id, user_id, data, boobs_type)
+        id = document_storage.create(app_id, user_id, data, boobs_type)
         
         # define new dict for update
         updated_data = {'test': 'updated_data'}
-        updated_data[crud_service.DOCUMENT_ID_KEY] = id
-        crud_service.update(app_id, user_id, updated_data, boobs_type)
+        updated_data[document_storage.DOCUMENT_ID_KEY] = id
+        document_storage.update(app_id, user_id, updated_data, boobs_type)
         
         # assert entity was updated
-        actual_data = crud_service.read(app_id, user_id, id, boobs_type)
+        actual_data = document_storage.read(app_id, user_id, id, boobs_type)
         assert actual_data == updated_data
 
 if __name__ == '__main__':

@@ -1,5 +1,7 @@
-from pymongo import Connection
-from crud_exceptions import *
+__author__ = 'nik'
+
+from extensions import db
+from app_exceptions import *
 from uuid import uuid4
 
 # protected constants
@@ -14,7 +16,7 @@ DOCUMENT_ID_KEY = '_id'
 DEFAULT_BUCKET_KEY = 'default'
 
 # PyMongo variables
-_con = Connection()
+_con = db.connection
 _db = _con.test_database # for prototype purposes only
 _entities = _db.entities
 
@@ -25,8 +27,8 @@ def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
             app_id: $app_id,
             user_id: $user_id,
             bucket: $bucket,
-            $document,
             _id: $id
+            $document
         }
         $document saves in root of document.
         Function creations new id and set it to _id field, when _id is not filled in user document.
@@ -131,7 +133,7 @@ def update(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
     if type(document) is not _DICT_TYPE:
         raise InvalidDocumentException('document must be instance of dict type')
     
-    # check user access to this entity
+    # check user access to this document
     _check_access(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
     
     # logic
@@ -161,7 +163,7 @@ def delete(app_id, user_id, document_id, bucket=DEFAULT_BUCKET_KEY):
         raise InvalidDocumentIdException('document_id must be not null')
     
     # logic
-    # check user access to this entity
+    # check user access to this document
     _check_access(app_id, user_id, document_id, bucket)
     
     internal_id = _generate_internal_id(app_id, user_id, document_id, bucket)
