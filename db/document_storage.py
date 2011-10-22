@@ -56,6 +56,7 @@ def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
             raise InvalidDocumentException('document contains not allowed key ' + k)
              
     # logic
+    # ignore not allowed keys
     document_to_save = {k:v for k, v in document.iteritems() if k not in _NOT_ALLOWED_KEYS}
     # generate id
     if DOCUMENT_ID_KEY in document:
@@ -133,10 +134,11 @@ def update(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
     if type(document) is not _DICT_TYPE:
         raise InvalidDocumentException('document must be instance of dict type')
     
-    # check user access to this document
+    # check existinf of this document
     _check_exists(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
     
     # logic
+    # ignore not allowed keys
     document_to_update = {k:v for k, v in document.iteritems() if k not in _NOT_ALLOWED_KEYS}
         
     id = _generate_internal_id(app_id, user_id, document[DOCUMENT_ID_KEY], bucket)
@@ -160,7 +162,7 @@ def delete(app_id, user_id, document_id, bucket=DEFAULT_BUCKET_KEY):
         raise InvalidDocumentIdException('document_id must be not null')
     
     # logic
-    # check user access to this document
+    # check existing of this document
     _check_exists(app_id, user_id, document_id, bucket)
     
     internal_id = _generate_internal_id(app_id, user_id, document_id, bucket)
