@@ -56,7 +56,7 @@ def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
             raise InvalidDocumentException('document contains not allowed key ' + k)
              
     # logic
-    document_to_save = document.copy()
+    document_to_save = {k:v for k, v in document.iteritems() if k not in _NOT_ALLOWED_KEYS}
     # generate id
     if DOCUMENT_ID_KEY in document:
         # check if id already exists
