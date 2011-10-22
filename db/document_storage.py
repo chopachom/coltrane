@@ -21,7 +21,7 @@ _db = _con.test_database # for prototype purposes only
 _entities = _db.entities
 
 def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
-    """ Create operation for CRUD service.
+    """ Create operation for CRUD.
         Saves entity to db in this format:
         {
             app_id: $app_id,
@@ -114,7 +114,7 @@ def read(app_id, user_id, document_id, bucket=DEFAULT_BUCKET_KEY):
     return result
     
 def update(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
-    """ Update operation for CRUD service.
+    """ Update operation for CRUD.
         Parameters:
         app_id: String, application id
         user_id: String, user id
@@ -147,7 +147,7 @@ def update(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
         {'$set': document_to_update}) # edit user document body
     
 def delete(app_id, user_id, document_id, bucket=DEFAULT_BUCKET_KEY):
-    """ Delete operation for CRUD service.
+    """ Delete operation for CRUD.
         Parameters:
         app_id: String, application id
         user_id: String, user id
