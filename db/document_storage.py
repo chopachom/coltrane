@@ -51,9 +51,6 @@ def create(app_id, user_id, document, bucket=DEFAULT_BUCKET_KEY):
         raise InvalidDocumentException('document must be not null')
     if type(document) is not _DICT_TYPE:
         raise InvalidDocumentException('document must be instance of dict type')
-    for k in document.iterkeys():
-        if k in _NOT_ALLOWED_KEYS:
-            raise InvalidDocumentException('document contains not allowed key ' + k)
              
     # logic
     # ignore not allowed keys
