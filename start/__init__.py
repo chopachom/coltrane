@@ -1,2 +1,2 @@
-__author__ = 'Pasha'
+__author__ = 'pshkitin'
   
