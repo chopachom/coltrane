@@ -2,7 +2,7 @@ import json
 from flask import Blueprint, jsonify
 from flask.globals import request
 from functools import wraps
-from db.crud import crud
+from ds import storage
 
 api = Blueprint("api_v1", __name__)
 
@@ -72,7 +72,3 @@ def put(bucket, key, obj):
     elif res == 1:
         error_msg = "Object of type [%s] with key [%d] couldn't be updated." % (bucket, key)
         return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})
-
-
-if __name__ == '__main__':
-    api.run(debug=True, port=5001)

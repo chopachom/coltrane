@@ -3,8 +3,7 @@ import logging
 from flask import Flask
 from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
-from db import crud
-from extensions import db
+from extensions import mongodb
 from extensions.guard import guard
 from api import api_v1
 
@@ -17,7 +16,7 @@ DEFAULT_MODULES = (
     (api_v1, '/v1'),
 )
 
-DEFAULT_EXTENSIONS = (crud, guard, db)
+DEFAULT_EXTENSIONS = (guard, mongodb)
 
 
 def create_app(exts = None, modules=None, config=None, dict_config=None):

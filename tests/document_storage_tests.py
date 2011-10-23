@@ -1,11 +1,16 @@
+from datetime import datetime
+
 __author__ = 'nik'
 
 import unittest
 from ds import storage
-from app_exceptions import *
+from errors import *
 
 class DocumentStorageIntegrationTestCase(unittest.TestCase):
 # TODO: switch to test db in tests
+
+    def setUp(self):
+        self.ip = '127.0.0.1'
 
     def test_create_and_read_entities(self):
         app_id = '1'
@@ -16,14 +21,18 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         boobs_count = 3
         for _ in range(boobs_count):
             data = {'test': 'test_data'}
-            id = storage.create(app_id, user_id, data, boobs_type)
-            data[storage.DOCUMENT_ID] = id
+            id = storage.create(app_id, user_id, self.ip, data, boobs_type)
+            data[storage.ext_fields.DOCUMENT_ID] = id
+            data[storage.ext_fields.BUCKET] = boobs_type
             expected_boobs.append(data)
             
         for expected_data in expected_boobs:
-            actual_data = storage.read(app_id, user_id, expected_data[storage.DOCUMENT_ID], boobs_type)
+            actual_data = storage.read(app_id, user_id,
+                                       expected_data[storage.ext_fields.DOCUMENT_ID],
+                                       boobs_type)
+            del actual_data[storage.ext_fields.CREATED_AT]
             # asserts
-            assert actual_data[storage.DOCUMENT_ID] == expected_data[storage.DOCUMENT_ID]
+            assert actual_data[storage.DOCUMENT_ID] == expected_data[storage.ext_fields.DOCUMENT_ID]
             assert actual_data == expected_data
         
     def test_delete_entity(self):
@@ -33,10 +42,10 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         
         # create 1 boob :)
         data = {'test': 'test'}
-        id = storage.create(app_id, user_id, data, boobs_type)
+        id = storage.create(app_id, user_id, self.ip, data, boobs_type)
         
         # try to remove this boob
-        storage.delete(app_id, user_id, id, boobs_type)
+        storage.delete(app_id, user_id, self.ip, id, boobs_type)
         
         # assert boob was removed
         boob = storage.read(app_id, user_id, id, boobs_type)
@@ -50,11 +59,11 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         
         # create entity
         data = {'test': 'test'}
-        id = storage.create(app_id, user_id, data, boobs_type)
+        id = storage.create(app_id, user_id, self.ip, data, boobs_type)
         
         # another user tries to remove entity
         with self.assertRaises(InvalidDocumentIdException):
-            storage.delete(app_id, another_user_id, id, boobs_type)
+            storage.delete(app_id, another_user_id, self.ip, id, boobs_type)
             
     def test_update_entity(self):
         app_id = '1'
@@ -64,14 +73,16 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         
         # create entity
         data = {'test': 'test'}
-        id = storage.create(app_id, user_id, data, boobs_type)
+        id = storage.create(app_id, user_id, self.ip, data, boobs_type)
         
         # define new dict for update
-        updated_data = {'test': 'updated_data', storage.DOCUMENT_ID: id}
-        storage.update(app_id, user_id, updated_data, boobs_type)
+        updated_data = {'test': 'updated_data', storage.DOCUMENT_ID: id,
+                        storage.ext_fields.BUCKET:boobs_type}
+        storage.update(app_id, user_id, self.ip, updated_data, boobs_type)
         
         # assert entity was updated
         actual_data = storage.read(app_id, user_id, id, boobs_type)
+        del actual_data[storage.ext_fields.CREATED_AT]
         assert actual_data == updated_data
         
     def test_create_with_not_allowed_key(self):
@@ -82,10 +93,10 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         # create entity with not allowed key
         data = {
             'test': 'test',
-            storage.BUCKET: 'not allowed' # not allowed key
+            storage.BUCKET: '__bucket__' # not allowed key
         }
         with self.assertRaises(InvalidDocumentException):
-            id = storage.create(app_id, user_id, data, boobs_type)
+            id = storage.create(app_id, user_id, self.ip, data, boobs_type)
     
 if __name__ == '__main__':
     unittest.main()
