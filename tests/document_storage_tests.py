@@ -74,19 +74,6 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         # assert entity was updated
         actual_data = document_storage.read(app_id, user_id, id, boobs_type)
         assert actual_data == updated_data
-        
-    def test_create_with_not_allowed_key(self):
-        app_id = '1'
-        user_id = '1'
-        boobs_type = 'boobs'
-        
-        # create entity with not allowed key
-        data = {
-            'test': 'test',
-            document_storage.BUCKET_KEY: 'not allowed' # not allowed key
-        }
-        with self.assertRaises(InvalidDocumentException):
-            id = document_storage.create(app_id, user_id, data, boobs_type)
     
 if __name__ == '__main__':
     unittest.main()
