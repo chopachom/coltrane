@@ -4,38 +4,26 @@ from extensions import mongodb
 from uuid import uuid4
 from datetime import datetime
 from errors import *
-from utils import attrdict
-
-
-APP_ID  = '__app_id__'
-USER_ID = '__user_id__'
-BUCKET  = '__bucket__'
-DOCUMENT_ID = '_id'
-DELETED     = '__deleted__'
-CREATED_AT  = '__created_at__'
-UPDATED_AT  = '__updated_at__'
-IP_ADDRESS  = '__ip_address__'
-DEFAULT_BUCKET = 'default'
+from utils import attrdict, Enum
 
 
 
-fields = attrdict(
-    APP_ID  ='__app_id__',
-    USER_ID ='__user_id__',
-    BUCKET  ='__bucket__',
-    DOCUMENT_ID ='_id',
-    DELETED     ='__deleted__',
-    CREATED_AT  ='__created_at__',
-    UPDATED_AT  ='__updated_at__',
-    IP_ADDRESS  ='__ip_address__',
+class int_fields(Enum):
+    APP_ID  = '__app_id__'
+    USER_ID = '__user_id__'
+    BUCKET  = '__bucket__'
+    DOCUMENT_ID = '_id'
+    DELETED     = '__deleted__'
+    CREATED_AT  = '__created_at__'
+    UPDATED_AT  = '__updated_at__'
+    IP_ADDRESS  = '__ip_address__'
     DEFAULT_BUCKET = 'default'
-)
 
-ext_fields = attrdict(
-    DOCUMENT_ID = '_id',
-    BUCKET      = '_bucket',
+
+class ext_fields(Enum):
+    DOCUMENT_ID = '_id'
+    BUCKET      = '_bucket'
     CREATED_AT  = '_created'
-)
 
 # internal constants
 _DICT_TYPE = type(dict())
@@ -48,7 +36,7 @@ _entities = _db.entities
 
 
 def create(app_id, user_id, ip_address, document,
-           bucket=fields.DEFAULT_BUCKET):
+           bucket=int_fields.DEFAULT_BUCKET):
     """ Create operation for CRUD.
         Saves entity to db in this format:
         {
@@ -79,15 +67,15 @@ def create(app_id, user_id, ip_address, document,
     if type(document) is not _DICT_TYPE:
         raise InvalidDocumentException('document must be instance of dict type')
     for k in document.keys():
-        if k in fields.values():
+        if k in int_fields.values():
             raise InvalidDocumentException(
                 'document contains not allowed key ' + k)
 
     document_to_save = _clean_document(document)
     # check if an id is already exists, if it isn't - generate new
-    if fields.DOCUMENT_ID in document:
+    if int_fields.DOCUMENT_ID in document:
         id = _generate_internal_id(app_id, user_id,
-                                   document[fields.DOCUMENT_ID],
+                                   document[int_fields.DOCUMENT_ID],
                                    bucket)
         criteria = _generate_criteria(app_id, user_id, id, bucket)
         if _entities.find_one(criteria):
@@ -96,20 +84,20 @@ def create(app_id, user_id, ip_address, document,
         id = _generate_internal_id(app_id, user_id, uuid4(), bucket)
 
     # add required fields to document
-    document_to_save[fields.DOCUMENT_ID] = id
-    document_to_save[fields.APP_ID] = app_id
-    document_to_save[fields.USER_ID] = user_id
-    document_to_save[fields.CREATED_AT] = datetime.utcnow()
-    document_to_save[fields.IP_ADDRESS] = ip_address
-    document_to_save[fields.BUCKET] = bucket
-    document_to_save[fields.DELETED] = False
+    document_to_save[int_fields.DOCUMENT_ID] = id
+    document_to_save[int_fields.APP_ID] = app_id
+    document_to_save[int_fields.USER_ID] = user_id
+    document_to_save[int_fields.CREATED_AT] = datetime.utcnow()
+    document_to_save[int_fields.IP_ADDRESS] = ip_address
+    document_to_save[int_fields.BUCKET] = bucket
+    document_to_save[int_fields.DELETED] = False
 
     _entities.insert(document_to_save)
 
-    return _get_public_id(document_to_save[fields.DOCUMENT_ID])
+    return _get_public_id(document_to_save[int_fields.DOCUMENT_ID])
 
 
-def read(app_id, user_id, document_id, bucket=fields.DEFAULT_BUCKET):
+def read(app_id, user_id, document_id, bucket=int_fields.DEFAULT_BUCKET):
     """ Read operation for CRUD service.
         Parameters:
         app_id: String, application id
@@ -137,7 +125,7 @@ def read(app_id, user_id, document_id, bucket=fields.DEFAULT_BUCKET):
     return _to_external(result)
 
 
-def update(app_id, user_id, ip_address, document, bucket=fields.DEFAULT_BUCKET):
+def update(app_id, user_id, ip_address, document, bucket=int_fields.DEFAULT_BUCKET):
     """ Update operation for CRUD.
         Parameters:
         app_id: String, application id
@@ -159,20 +147,20 @@ def update(app_id, user_id, ip_address, document, bucket=fields.DEFAULT_BUCKET):
         raise InvalidDocumentException('document must be instance of dict type')
 
     # check user access to this document
-    _check_exists(app_id, user_id, document[fields.DOCUMENT_ID], bucket)
+    _check_exists(app_id, user_id, document[int_fields.DOCUMENT_ID], bucket)
 
     document_to_update = _clean_document(document)
-    document_to_update[fields.IP_ADDRESS]=ip_address
-    document_to_update[fields.UPDATED_AT]=datetime.utcnow()
+    document_to_update[int_fields.IP_ADDRESS]=ip_address
+    document_to_update[int_fields.UPDATED_AT]=datetime.utcnow()
 
-    id = _generate_internal_id(app_id, user_id, document[fields.DOCUMENT_ID],
+    id = _generate_internal_id(app_id, user_id, document[int_fields.DOCUMENT_ID],
                                bucket)
     
     _entities.update({'_id': id}, {'$set': document_to_update}, safe=True)
 
 
 def delete(app_id, user_id, ip_address, document_id,
-           bucket=fields.DEFAULT_BUCKET):
+           bucket=int_fields.DEFAULT_BUCKET):
     """ Delete operation for CRUD.
         Parameters:
         app_id: String, application id
@@ -194,9 +182,9 @@ def delete(app_id, user_id, ip_address, document_id,
 
     internal_id = _generate_internal_id(app_id, user_id, document_id, bucket)
     _entities.update({'_id': internal_id},
-                     {'$set': {fields.DELETED:True,
-                               fields.IP_ADDRESS:ip_address,
-                               fields.UPDATED_AT:datetime.utcnow()}})
+                     {'$set': {int_fields.DELETED:True,
+                               int_fields.IP_ADDRESS:ip_address,
+                               int_fields.UPDATED_AT:datetime.utcnow()}})
 
 
 def _check_exists(app_id, user_id, document_id, bucket):
@@ -220,22 +208,22 @@ def _get_public_id(internal_id):
 def _generate_criteria(app_id, user_id, document_id, bucket):
     #Why we need all those fields? DOCUMENT_ID is already uniquely identifies document
     return  {
-        fields.APP_ID: str(app_id),
-        fields.USER_ID: str(user_id),
-        fields.BUCKET: str(bucket),
-        fields.DOCUMENT_ID: document_id,
-        fields.DELETED: False,
+        int_fields.APP_ID: str(app_id),
+        int_fields.USER_ID: str(user_id),
+        int_fields.BUCKET: str(bucket),
+        int_fields.DOCUMENT_ID: document_id,
+        int_fields.DELETED: False,
     }
 
 
 def _to_external(document):
     external = _clean_document(document)
-    external[ext_fields.DOCUMENT_ID] = _get_public_id(document[fields.DOCUMENT_ID])
-    external[ext_fields.BUCKET]      = document[fields.BUCKET]
-    external[ext_fields.CREATED_AT]  = document[fields.CREATED_AT]
+    external[ext_fields.DOCUMENT_ID] = _get_public_id(document[int_fields.DOCUMENT_ID])
+    external[ext_fields.BUCKET]      = document[int_fields.BUCKET]
+    external[ext_fields.CREATED_AT]  = document[int_fields.CREATED_AT]
 
     return external
 
 def _clean_document(document):
     return {k: v for k, v in document.items()
-                if not k in fields.values()}
+                if not k in int_fields.values()}

@@ -15,7 +15,7 @@ def get_remote_ip():
     request.get('remote_addr', None)
 
 
-def create(bucket, document, key=None):
+def save(bucket, document, key=None):
     if key is not None:
         document[storage.DOCUMENT_ID] = key
     return storage.create(get_app_id(), get_user_id(), get_remote_ip(),

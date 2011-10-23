@@ -2,7 +2,7 @@ import json
 from flask import Blueprint, jsonify
 from flask.globals import request
 from functools import wraps
-from ds import storage
+from . import storage
 
 api = Blueprint("api_v1", __name__)
 
@@ -22,10 +22,10 @@ def extract_form_data(f):
 @api.route('/<bucket>/<key>', methods=['GET'])
 def get(bucket, key=None):
     if key is None:
-        objects = crud.get(bucket=bucket)
+        objects = storage.get(bucket=bucket)
         return jsonify({bucket: objects})
     else:
-        obj = crud.get(bucket=bucket, key=key)
+        obj = storage.get(bucket=bucket, key=key)
         # obj may not be found
         return jsonify(obj)
 
@@ -34,7 +34,7 @@ def get(bucket, key=None):
 @api.route('/<bucket>/<key>', methods=['POST'])
 @extract_form_data
 def post(bucket, key, obj):
-    res = crud.save(bucket=bucket, obj=obj, key=key)
+    res = storage.save(bucket=bucket, obj=obj, key=key)
 
     if res > 0:
         return jsonify({'response': res})
@@ -47,7 +47,7 @@ def post(bucket, key, obj):
 @api.route('/<bucket>/<key>', methods=['DELETE'])
 def delete(bucket, key=None):
     key = int(key)
-    res = crud.delete(bucket=bucket, key=key)
+    res = storage.delete(bucket=bucket, key=key)
     if res == 0:
         return jsonify({'response': 0})
     elif res == 1:
@@ -60,10 +60,10 @@ def delete(bucket, key=None):
 @extract_form_data
 def put(bucket, key, obj):
     if key is not None:
-        res = crud.update(bucket=bucket, key=key, obj=obj)
+        res = storage.update(bucket=bucket, key=key, obj=obj)
     else:
         if obj['key'] is not None:
-            res = crud.update(bucket=bucket, key=obj['key'], obj=obj)
+            res = storage.update(bucket=bucket, key=obj['key'], obj=obj)
         else:
             error_msg = "Object of type [%s] couldn't be updated due to no key specified." % bucket
             return jsonify({'error': {'error_code': 1, 'error_msg': error_msg}})

@@ -32,7 +32,8 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
                                        boobs_type)
             del actual_data[storage.ext_fields.CREATED_AT]
             # asserts
-            assert actual_data[storage.DOCUMENT_ID] == expected_data[storage.ext_fields.DOCUMENT_ID]
+            assert actual_data[storage.ext_fields.DOCUMENT_ID] == \
+                   expected_data[storage.ext_fields.DOCUMENT_ID]
             assert actual_data == expected_data
         
     def test_delete_entity(self):
@@ -76,7 +77,8 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         id = storage.create(app_id, user_id, self.ip, data, boobs_type)
         
         # define new dict for update
-        updated_data = {'test': 'updated_data', storage.DOCUMENT_ID: id,
+        updated_data = {'test': 'updated_data',
+                        storage.ext_fields.DOCUMENT_ID: id,
                         storage.ext_fields.BUCKET:boobs_type}
         storage.update(app_id, user_id, self.ip, updated_data, boobs_type)
         
@@ -93,7 +95,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         # create entity with not allowed key
         data = {
             'test': 'test',
-            storage.BUCKET: '__bucket__' # not allowed key
+            storage.int_fields.BUCKET: '__bucket__' # not allowed key
         }
         with self.assertRaises(InvalidDocumentException):
             id = storage.create(app_id, user_id, self.ip, data, boobs_type)
