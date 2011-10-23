@@ -1,7 +1,7 @@
 __author__ = 'nik'
 
 import unittest
-from db import document_storage
+from ds import storage
 from app_exceptions import *
 
 class DocumentStorageIntegrationTestCase(unittest.TestCase):
@@ -16,14 +16,14 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         boobs_count = 3
         for _ in range(boobs_count):
             data = {'test': 'test_data'}
-            id = document_storage.create(app_id, user_id, data, boobs_type)
-            data[document_storage.DOCUMENT_ID_KEY] = id
+            id = storage.create(app_id, user_id, data, boobs_type)
+            data[storage.DOCUMENT_ID] = id
             expected_boobs.append(data)
             
         for expected_data in expected_boobs:
-            actual_data = document_storage.read(app_id, user_id, expected_data[document_storage.DOCUMENT_ID_KEY], boobs_type)
+            actual_data = storage.read(app_id, user_id, expected_data[storage.DOCUMENT_ID], boobs_type)
             # asserts
-            assert actual_data[document_storage.DOCUMENT_ID_KEY] == expected_data[document_storage.DOCUMENT_ID_KEY]
+            assert actual_data[storage.DOCUMENT_ID] == expected_data[storage.DOCUMENT_ID]
             assert actual_data == expected_data
         
     def test_delete_entity(self):
@@ -33,13 +33,13 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         
         # create 1 boob :)
         data = {'test': 'test'}
-        id = document_storage.create(app_id, user_id, data, boobs_type)
+        id = storage.create(app_id, user_id, data, boobs_type)
         
         # try to remove this boob
-        document_storage.delete(app_id, user_id, id, boobs_type)
+        storage.delete(app_id, user_id, id, boobs_type)
         
         # assert boob was removed
-        boob = document_storage.read(app_id, user_id, id, boobs_type)
+        boob = storage.read(app_id, user_id, id, boobs_type)
         assert boob is None
         
     def test_access_to_another_user_entity(self):
@@ -50,11 +50,11 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         
         # create entity
         data = {'test': 'test'}
-        id = document_storage.create(app_id, user_id, data, boobs_type)
+        id = storage.create(app_id, user_id, data, boobs_type)
         
         # another user tries to remove entity
         with self.assertRaises(InvalidDocumentIdException):
-            document_storage.delete(app_id, another_user_id, id, boobs_type)
+            storage.delete(app_id, another_user_id, id, boobs_type)
             
     def test_update_entity(self):
         app_id = '1'
@@ -64,15 +64,14 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         
         # create entity
         data = {'test': 'test'}
-        id = document_storage.create(app_id, user_id, data, boobs_type)
+        id = storage.create(app_id, user_id, data, boobs_type)
         
         # define new dict for update
-        updated_data = {'test': 'updated_data'}
-        updated_data[document_storage.DOCUMENT_ID_KEY] = id
-        document_storage.update(app_id, user_id, updated_data, boobs_type)
+        updated_data = {'test': 'updated_data', storage.DOCUMENT_ID: id}
+        storage.update(app_id, user_id, updated_data, boobs_type)
         
         # assert entity was updated
-        actual_data = document_storage.read(app_id, user_id, id, boobs_type)
+        actual_data = storage.read(app_id, user_id, id, boobs_type)
         assert actual_data == updated_data
         
     def test_create_with_not_allowed_key(self):
@@ -83,10 +82,10 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         # create entity with not allowed key
         data = {
             'test': 'test',
-            document_storage.BUCKET_KEY: 'not allowed' # not allowed key
+            storage.BUCKET: 'not allowed' # not allowed key
         }
         with self.assertRaises(InvalidDocumentException):
-            id = document_storage.create(app_id, user_id, data, boobs_type)
+            id = storage.create(app_id, user_id, data, boobs_type)
     
 if __name__ == '__main__':
     unittest.main()
