@@ -27,17 +27,21 @@ class attrdict(dict):
 class EnumMetaclass(type, DictMixin):
     """ EnumMetaclass
         Lets you define an enum metaclass
+
+        Classes that use Enum class behaves like dict allowing to iterate
+        though keys
+
         Usage:
         Enum = EnumMetaclass("Enum", (), {})
-        class fields(Enum):
-            APP_ID  = '__app_id__'
-            USER_ID = '__user_id__'
-            BUCKET  = '__bucket__'
+        >>> class fields(Enum):
+        ... APP_ID  = '__app_id__'
+        ... USER_ID = '__user_id__'
+        ... BUCKET  = '__bucket__'
 
-        print Fields['OLOLO']
+        >>> print fields['APP_ID']
 
-        for field in Fields.keys():
-            print field
+        >>> for field in fields.keys():
+        ... print field
     """
 
     def __new__(mcs, classname, bases, classDict):

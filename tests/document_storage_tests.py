@@ -63,7 +63,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         id = storage.create(app_id, user_id, self.ip, data, boobs_type)
         
         # another user tries to remove entity
-        with self.assertRaises(InvalidDocumentIdException):
+        with self.assertRaises(InvalidDocumentIdError):
             storage.delete(app_id, another_user_id, self.ip, id, boobs_type)
             
     def test_update_entity(self):
@@ -97,7 +97,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
             'test': 'test',
             storage.int_fields.BUCKET: '__bucket__' # not allowed key
         }
-        with self.assertRaises(InvalidDocumentException):
+        with self.assertRaises(InvalidDocumentError):
             id = storage.create(app_id, user_id, self.ip, data, boobs_type)
     
 if __name__ == '__main__':

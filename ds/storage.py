@@ -25,6 +25,10 @@ class ext_fields(Enum):
     BUCKET      = '_bucket'
     CREATED_AT  = '_created'
 
+#Convenient shortcuts
+int = int_fields
+ext = ext_fields
+
 # internal constants
 _DICT_TYPE = type(dict())
 _DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{document_id}'
@@ -48,7 +52,7 @@ def create(app_id, user_id, ip_address, document,
         }
         $document saves in root of document.
         Function creations new id and set it to _id field, when _id is not filled in user document.
-        If user document's _id already exists, InvalidDocumentIdException will be raised.
+        If user document's _id already exists, InvalidDocumentIdError will be raised.
         Parameters:
         app_id: String, application id
         user_id: String, user id
@@ -59,19 +63,19 @@ def create(app_id, user_id, ip_address, document,
 
     # validations
     if app_id is None:
-        raise InvalidAppIdException('app_id must be not null')
+        raise InvalidAppIdError('app_id must be not null')
     if user_id is None:
-        raise InvalidUserIdException('user_id must be not null')
+        raise InvalidUserIdError('user_id must be not null')
     if document is None:
-        raise InvalidDocumentException('document must be not null')
+        raise InvalidDocumentError('document must be not null')
     if type(document) is not _DICT_TYPE:
-        raise InvalidDocumentException('document must be instance of dict type')
+        raise InvalidDocumentError('document must be instance of dict type')
     for k in document.keys():
         if k in int_fields.values():
-            raise InvalidDocumentException(
+            raise InvalidDocumentError(
                 'document contains not allowed key ' + k)
 
-    document_to_save = _clean_document(document)
+    document_to_save = _get_cleaned_document(document)
     # check if an id is already exists, if it isn't - generate new
     if int_fields.DOCUMENT_ID in document:
         id = _generate_internal_id(app_id, user_id,
@@ -79,7 +83,7 @@ def create(app_id, user_id, ip_address, document,
                                    bucket)
         criteria = _generate_criteria(app_id, user_id, id, bucket)
         if _entities.find_one(criteria):
-            raise InvalidDocumentIdException('document id already exists')
+            raise InvalidDocumentIdError('document id already exists')
     else:
         id = _generate_internal_id(app_id, user_id, uuid4(), bucket)
 
@@ -109,11 +113,11 @@ def read(app_id, user_id, document_id, bucket=int_fields.DEFAULT_BUCKET):
 
     # validations
     if app_id is None:
-        raise InvalidAppIdException('app_id must be not null')
+        raise InvalidAppIdError('app_id must be not null')
     if user_id is None:
-        raise InvalidUserIdException('user_id must be not null')
+        raise InvalidUserIdError('user_id must be not null')
     if document_id is None:
-        raise InvalidDocumentIdException('document_id must be not null')
+        raise InvalidDocumentIdError('document_id must be not null')
 
     # logic
     id = _generate_internal_id(app_id, user_id, document_id, bucket)
@@ -122,7 +126,7 @@ def read(app_id, user_id, document_id, bucket=int_fields.DEFAULT_BUCKET):
     if result is None:
         return None
 
-    return _to_external(result)
+    return _get_external_document(result)
 
 
 def update(app_id, user_id, ip_address, document, bucket=int_fields.DEFAULT_BUCKET):
@@ -135,21 +139,21 @@ def update(app_id, user_id, ip_address, document, bucket=int_fields.DEFAULT_BUCK
 
     # validations
     if app_id is None:
-        raise InvalidAppIdException('app_id must be not null')
+        raise InvalidAppIdError('app_id must be not null')
     if user_id is None:
-        raise InvalidUserIdException('user_id must be not null')
+        raise InvalidUserIdError('user_id must be not null')
     if document is None:
-        raise InvalidDocumentException('Entity for update cannot be null')
+        raise InvalidDocumentError('Entity for update cannot be null')
     if document['_id'] is None:
-        raise InvalidDocumentIdException(
+        raise InvalidDocumentIdError(
             'Id of entity for update cannot be null')
     if type(document) is not _DICT_TYPE:
-        raise InvalidDocumentException('document must be instance of dict type')
+        raise InvalidDocumentError('document must be instance of dict type')
 
     # check user access to this document
     _check_exists(app_id, user_id, document[int_fields.DOCUMENT_ID], bucket)
 
-    document_to_update = _clean_document(document)
+    document_to_update = _get_cleaned_document(document)
     document_to_update[int_fields.IP_ADDRESS]=ip_address
     document_to_update[int_fields.UPDATED_AT]=datetime.utcnow()
 
@@ -170,11 +174,11 @@ def delete(app_id, user_id, ip_address, document_id,
 
     # validations
     if app_id is None:
-        raise InvalidAppIdException('app_id must be not null')
+        raise InvalidAppIdError('app_id must be not null')
     if user_id is None:
-        raise InvalidUserIdException('user_id must be not null')
+        raise InvalidUserIdError('user_id must be not null')
     if document_id is None:
-        raise InvalidDocumentIdException('document_id must be not null')
+        raise InvalidDocumentIdError('document_id must be not null')
 
     # logic
     # check user access to this document
@@ -190,10 +194,7 @@ def delete(app_id, user_id, ip_address, document_id,
 def _check_exists(app_id, user_id, document_id, bucket):
     entity = read(app_id, user_id, document_id, bucket)
     if entity is None:
-        raise InvalidDocumentIdException(
-            'User #{0} dont have access to entity #{1}'
-            .format(user_id, document_id) +
-            ' or this entity doesnt exists')
+        raise InvalidDocumentIdError(id=document_id)
 
 
 def _generate_internal_id(app_id, user_id, document_id, bucket):
@@ -216,14 +217,14 @@ def _generate_criteria(app_id, user_id, document_id, bucket):
     }
 
 
-def _to_external(document):
-    external = _clean_document(document)
+def _get_external_document(document):
+    external = _get_cleaned_document(document)
     external[ext_fields.DOCUMENT_ID] = _get_public_id(document[int_fields.DOCUMENT_ID])
     external[ext_fields.BUCKET]      = document[int_fields.BUCKET]
     external[ext_fields.CREATED_AT]  = document[int_fields.CREATED_AT]
 
     return external
 
-def _clean_document(document):
+def _get_cleaned_document(document):
     return {k: v for k, v in document.items()
                 if not k in int_fields.values()}
