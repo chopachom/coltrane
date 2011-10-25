@@ -12,11 +12,11 @@ class StorageException(Exception):
 
 
 class EntryNotFoundError(StorageException):
-    message = "Entry with id {id} was not found"
+    message = "Entry with key {key} was not found"
 
     def __init__(self, *args, **kwargs):
         super(EntryNotFoundError, self).__init__(*args, **kwargs)
-        self.id = kwargs.get('id')
+        self.id = kwargs.get('key')
         self.bucket = kwargs.get('bucket')
 
 
@@ -47,11 +47,11 @@ class InvalidUserIdError(StorageException):
         return self.msg
 
     
-class InvalidDocumentIdError(StorageException):
+class InvalidDocumentKeyError(StorageException):
     """Error is raised when document id is invalid"""
-    message = "Invalid document id {id}"
+    message = "Invalid document key {key}"
 
     def __init__(self, *args, **kwargs):
-        super(InvalidDocumentIdError, self).__init__(*args, **kwargs)
-        self.id = kwargs.get('id')
+        super(InvalidDocumentKeyError, self).__init__(*args, **kwargs)
+        self.id = kwargs.get('key')
         self.bucket = kwargs.get('bucket')

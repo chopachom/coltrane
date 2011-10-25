@@ -25,10 +25,7 @@ class FlaskMongodb(object):
         for k,v in self._default_config.items():
             app.config.setdefault(k, v)
 
-        if hasattr(app, 'teardown_request'):
-            app.teardown_request(self._teardown_request)
-        else:
-            app.after_request(self._teardown_request)
+        app.teardown_request(self._teardown_request)
 
         # register extension with app
         app.extensions = getattr(app, 'extensions', {})

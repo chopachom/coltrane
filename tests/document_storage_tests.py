@@ -22,18 +22,18 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         for _ in range(boobs_count):
             data = {'test': 'test_data'}
             id = storage.create(app_id, user_id, self.ip, data, boobs_type)
-            data[storage.ext_fields.DOCUMENT_ID] = id
+            data[storage.ext_fields.DOCUMENT_KEY] = id
             data[storage.ext_fields.BUCKET] = boobs_type
             expected_boobs.append(data)
             
         for expected_data in expected_boobs:
             actual_data = storage.read(app_id, user_id,
-                                       expected_data[storage.ext_fields.DOCUMENT_ID],
+                                       expected_data[storage.ext_fields.DOCUMENT_KEY],
                                        boobs_type)
             del actual_data[storage.ext_fields.CREATED_AT]
             # asserts
-            assert actual_data[storage.ext_fields.DOCUMENT_ID] == \
-                   expected_data[storage.ext_fields.DOCUMENT_ID]
+            assert actual_data[storage.ext_fields.DOCUMENT_KEY] == \
+                   expected_data[storage.ext_fields.DOCUMENT_KEY]
             assert actual_data == expected_data
         
     def test_delete_entity(self):
@@ -63,7 +63,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         id = storage.create(app_id, user_id, self.ip, data, boobs_type)
         
         # another user tries to remove entity
-        with self.assertRaises(InvalidDocumentIdError):
+        with self.assertRaises(InvalidDocumentKeyError):
             storage.delete(app_id, another_user_id, self.ip, id, boobs_type)
             
     def test_update_entity(self):
@@ -78,7 +78,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         
         # define new dict for update
         updated_data = {'test': 'updated_data',
-                        storage.ext_fields.DOCUMENT_ID: id,
+                        storage.ext_fields.DOCUMENT_KEY: id,
                         storage.ext_fields.BUCKET:boobs_type}
         storage.update(app_id, user_id, self.ip, updated_data, boobs_type)
         
