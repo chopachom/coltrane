@@ -6,9 +6,27 @@ from logging.handlers import RotatingFileHandler
 from extensions import mongodb
 from extensions.guard import guard
 from api import api_v1
+from utils import Enum
 
 __author__ = 'apetrovich'
 
+
+class HTTPStatusCodes(Enum):
+    OK              = 200
+    BAD_REQUEST     = 400
+    UNAUTHORIZED    = 401
+    NOT_FOUND       = 404
+    NOT_IMPLEMENTED = 501
+
+
+class RequestStatusCodes(Enum):
+    OK              = 0
+    BAD_REQUEST     = 1
+    APP_UNAUTHORIZED    = 2
+    USER_UNAUTHORIZED    = 3
+    NOT_FOUND       = 4
+    NOT_IMPLEMENTED = 5
+    NO_PERMISSIONS  = 6
 
 DEFAULT_APP_NAME = "coltrane"
 

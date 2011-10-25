@@ -2,11 +2,10 @@ import json
 from flask import Blueprint, jsonify
 from flask.globals import request
 from functools import wraps
+from app import RequestStatusCodes, HTTPStatusCodes
 from ds import storage
 from extensions.guard import guard
 from errors import *
-
-RESPONSE_OK = 0
 
 def get_user_id():
     return guard.current_user_token
@@ -37,10 +36,10 @@ def extract_form_data(f):
 @api.route('/<bucket>/<key>', methods=['GET'])
 def get(bucket, key=None):
     if key is None:
-        documents = storage.find_all(get_app_id(), get_user_id(), bucket)
+        documents = storage.get_all(get_app_id(), get_user_id(), bucket)
         return jsonify({'response': documents})
     else:
-        document = storage.read(get_app_id(), get_user_id(), key, bucket=bucket)
+        document = storage.find_by_key(get_app_id(), get_user_id(), key, bucket=bucket)
         if document is None:
             raise EntryNotFoundError(key=key, bucket=bucket)
 
@@ -68,7 +67,7 @@ def delete(bucket, key=None):
     """ Deletes all existing documents of the specified bucket
     """
     storage.delete_all(get_app_id(), get_user_id(), get_remote_ip(), bucket=bucket)
-    return jsonify({'response': RESPONSE_OK})
+    return jsonify({'response': RequestStatusCodes.OK})
 
 
 @api.route('/<bucket>/<key>', methods=['DELETE'])
@@ -78,7 +77,7 @@ def delete(bucket, key=None):
     storage.delete(
         get_app_id(), get_user_id(), get_remote_ip(),  key, bucket=bucket
     )
-    return jsonify({'response': {'key': key}})
+    return jsonify({'response': RequestStatusCodes.OK})
 
 
 @api.route('/<bucket>', defaults={'key': None}, methods=['PUT'])
@@ -89,26 +88,40 @@ def put(bucket, key, document):
     """
     if key is not None:
         document[storage.ext.DOCUMENT_KEY] = key
-        storage.update(
-            get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
-        )
-    else:
+    elif '_key' not in document:
         raise EntryNotFoundError(key=key, bucket=bucket)
-    
-    return jsonify({'response': {'key': key}})
 
+    storage.update(
+        get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
+    )
+    
+    return jsonify({'response': RequestStatusCodes.OK})
 
 
 @api.errorhandler(EntryNotFoundError)
-@api.errorhandler(InvalidDocumentKeyError)
 def not_found(error):
     error_msg = 'Document with bucket [%s] and key [%s] is not found' % (error.bucket, error.key)
     return jsonify({
-        'error': {'error_code': 0, 'error_msg': error_msg}
-    }),   404
+        'error': {'error_code': RequestStatusCodes.NOT_FOUND, 'error_msg': error_msg}
+    }),   HTTPStatusCodes.NOT_FOUND
 
 
 @api.errorhandler(InvalidDocumentError)
-def invalid_document():
+@api.errorhandler(InvalidDocumentKeyError)
+def invalid_document(error):
     """ Return response with http's bad request code """
-    return jsonify({'error': 'Invalid document'}), 400
+    return jsonify({'error': {'error_code': RequestStatusCodes.BAD_REQUEST,
+                              'error_msg': error.message}}), HTTPStatusCodes.BAD_REQUEST
+
+@api.errorhandler(InvalidAppIdError)
+def invalid_app_id(error):
+    """ Return response with http's bad request code """
+    return jsonify({'error': {'error_code': RequestStatusCodes.APP_UNAUTHORIZED,
+                              'error_msg': error.message}}), HTTPStatusCodes.UNAUTHORIZED
+
+@api.errorhandler(InvalidUserIdError)
+def invalid_user_id(error):
+    """ Return response with http's bad request code """
+    return jsonify({'error': {'error_code': RequestStatusCodes.USER_UNAUTHORIZED,
+                              'error_msg': error.message}}), HTTPStatusCodes.UNAUTHORIZED
+
