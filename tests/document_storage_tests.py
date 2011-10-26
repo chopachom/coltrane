@@ -86,7 +86,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         key = storage.create(app_id, user_id, self.ip, data, boobs_type)
 
         # try to remove this boob
-        storage.delete(app_id, user_id, self.ip, key, boobs_type)
+        storage.delete_by_key(app_id, user_id, self.ip, key, boobs_type)
 
         # assert boob was removed
         boob = storage.find_by_key(app_id, user_id, key, boobs_type)
@@ -109,11 +109,36 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         boobs = storage.get_all(app_id, user_id, boobs_type)
         assert len(boobs) == 3
         # remove all boobs
-        storage.delete_all(app_id, user_id, self.ip, boobs_type)
+        storage.delete_several(app_id, user_id, self.ip, boobs_type)
 
         # assert all boobs were removed
         boobs = storage.get_all(app_id, user_id, boobs_type)
         assert len(boobs) == 0
+
+
+    def test_delete_several_by_criteria(self):
+        app_id = '1'
+        user_id = '1'
+        boobs_type = 'boobs'
+
+        # create 1 boob :)
+        data = {'name': 'pasha'}
+        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        data = {'name': 'sasha'}
+        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        data = {'a': 'b'}
+        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        data = {'name': 'pasha'}
+        storage.create(app_id, user_id, self.ip, data, boobs_type)
+
+        boobs = storage.get_all(app_id, user_id, boobs_type)
+        assert len(boobs) == 4
+        # remove all boobs
+        storage.delete_several(app_id, user_id, self.ip, boobs_type, {'name': 'pasha'})
+
+        # assert all boobs were removed
+        boobs = storage.get_all(app_id, user_id, boobs_type)
+        assert len(boobs) == 2
 
 
     def test_access_to_another_user_entity(self):
@@ -127,8 +152,8 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         key = storage.create(app_id, user_id, self.ip, data, boobs_type)
 
         # another user tries to remove entity
-        with self.assertRaises(InvalidDocumentKeyError):
-            storage.delete(app_id, another_user_id, self.ip, key, boobs_type)
+        with self.assertRaises(DocumentNotFoundError):
+            storage.delete_by_key(app_id, another_user_id, self.ip, key, boobs_type)
 
 
     def test_update_entity(self):
@@ -170,7 +195,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         assert d['a'] == {'b': 'c'}
         assert d['a']['b'] == 'c'
         assert d['addition'] == [1,2,3]
-        
+
 
     def test_create_with_not_allowed_key(self):
         app_id = '1'

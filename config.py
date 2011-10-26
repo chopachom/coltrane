@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from api.v1 import api
-
 __author__ = 'apetrovich'
 
 class DefaultConfig(object):

@@ -95,7 +95,7 @@ def get_all(app_id, user_id, bucket):
     if user_id is None:
         raise InvalidUserIdError('user_id must be not null')
     criteria = _generate_criteria(app_id, user_id, bucket)
-    documents = _entities.find(criteria)
+    documents = list(_entities.find(criteria))
 
     return map(_get_external_document_view, documents)
 
@@ -150,7 +150,7 @@ def update(app_id, user_id, ip_address, document, bucket):
     document_key = document[ext_fields.DOCUMENT_KEY]
     document_id = _generate_document_id(app_id, user_id, document_key,
                                bucket)
-    assert_exists(document_id, document_key)
+    assert_exists(document_id, document_key, bucket)
 
     document_to_update = _get_without_internal_fields(document)
     document_to_update[int_fields.IP_ADDRESS] = ip_address
@@ -158,7 +158,7 @@ def update(app_id, user_id, ip_address, document, bucket):
 
     _entities.update({'_id': document_id}, {'$set': document_to_update})
 
-def delete_all(app_id, user_id, ip_address, bucket):
+def delete_several(app_id, user_id, ip_address, bucket, filter_opts=None):
     # validations
     if app_id is None:
         raise InvalidAppIdError('app_id must be not null')
@@ -166,10 +166,15 @@ def delete_all(app_id, user_id, ip_address, bucket):
         raise InvalidUserIdError('user_id must be not null')
 
     criteria = _generate_criteria(app_id, user_id, bucket)
+
+    if filter_opts:
+        for opt_key in filter_opts.keys():
+            criteria[opt_key] = filter_opts[opt_key]
+        
     _entities.update(criteria, {'$set': _get_fields_for_update_on_delete(ip_address)}, multi=True)
     
 
-def delete(app_id, user_id, ip_address, document_key, bucket):
+def delete_by_key(app_id, user_id, ip_address, document_key, bucket):
     """ Delete operation for CRUD.
         Parameters:
         app_id: String, application id
@@ -188,10 +193,14 @@ def delete(app_id, user_id, ip_address, document_key, bucket):
     # logic
     document_id = _generate_document_id(app_id, user_id, document_key, bucket)
     # check user access to this document
-    assert_exists(document_id, document_key)
+    assert_exists(document_id, document_key, bucket)
 
     _entities.update({'_id': document_id},
                      {'$set': _get_fields_for_update_on_delete(ip_address)})
+
+def is_document_exists(app_id, user_id, document_key, bucket):
+    document_id = _generate_document_id(app_id, user_id, document_key, bucket)
+    return _is_document_exists(document_id)
 
 
 def _is_document_exists(document_id):
@@ -209,6 +218,7 @@ def _is_document_exists(document_id):
         return False
     else:
         return True
+    
 
 def _generate_document_id(app_id, user_id, document_key, bucket):
     return _DOCUMENT_ID_FORMAT.format(app_id=app_id, user_id=user_id,
@@ -249,6 +259,6 @@ def _get_without_internal_fields(document):
     return {k: v for k, v in document.items()
                 if not k in int_fields.values()}
 
-def assert_exists(document_id, document_key):
+def assert_exists(document_id, document_key, bucket):
     if _is_document_exists(document_id) == False:
-        raise InvalidDocumentKeyError(key=document_key)
+        raise DocumentNotFoundError(key=document_key, bucket=bucket)

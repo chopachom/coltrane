@@ -17,12 +17,12 @@ class AppException(Exception):
     def __str__(self):
         return self.message
 
-class EntryNotFoundError(AppException):
+class DocumentNotFoundError(AppException):
     message = 'Document with bucket {bucket} and key {key} is not found'
 
     def __init__(self, *args, **kwargs):
-        super(EntryNotFoundError, self).__init__(*args, **kwargs)
-        self.id = kwargs.get('key')
+        super(DocumentNotFoundError, self).__init__(*args, **kwargs)
+        self.key = kwargs.get('key')
         self.bucket = kwargs.get('bucket')
 
 
@@ -52,9 +52,25 @@ class InvalidDocumentError(AppException):
 
 class InvalidDocumentKeyError(AppException):
     """Error is raised when document id is invalid"""
-    message = "Invalid document key {key}"
+    message = "No document with such key or invalid document key [{key}]"
 
     def __init__(self, message=None, *args, **kwargs):
         super(InvalidDocumentKeyError, self).__init__(message, *args, **kwargs)
         self.id = kwargs.get('key', None)
         self.bucket = kwargs.get('bucket', None)
+
+
+class JSONInvalidFormatException(AppException):
+    """
+    Error when user passes invalid json object
+    Parameters:
+    message: String. Have to have special format if json would be passed too.
+        Format sample: "Error while format JSON obj. JSON obj= {json}"
+    json=<json_obj>: should be passed with a key=value format
+    """
+
+    message = "Invalid json object."
+    
+    def __init__(self, message=None, *args, **kwargs):
+        super(InvalidDocumentKeyError, self).__init__(message, *args, **kwargs)
+        self.json = kwargs.get('json', None)

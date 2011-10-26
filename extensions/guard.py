@@ -34,5 +34,3 @@ class Guard(object):
 
         if not getattr(g, 'user_token', False) or getattr(g, 'app_token', False):
             return abort(401)
-
-guard = Guard()
