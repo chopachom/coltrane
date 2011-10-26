@@ -2,15 +2,14 @@ import json
 from flask import Blueprint, jsonify
 from flask.globals import request
 from functools import wraps
-from api.status import RequestStatusCodes, HTTPStatusCodes
 from ds import storage
 from ds.storage import ext_fields
 import errors
 from extensions import guard
+from api.statuses import *
 
 def get_user_id():
     return guard.current_user_token
-
 
 def get_app_id():
     return guard.current_app_token
@@ -37,21 +36,21 @@ def extract_form_data(f):
     return decorator
 
 
-@api.route('/<bucket>', defaults={'key': None}, methods=['GET'])
-@api.route('/<bucket>/<key>', methods=['GET'])
-def get_handler(bucket, key=None):
-    if not key:
-        documents = storage.get_all(get_app_id(), get_user_id(), bucket)
-        for o in documents:
-            del o['_created']
-        resp = json.dumps({'response': documents})
-        return jsonify({'response': documents})
-    else:
-        document = storage.find_by_key(get_app_id(), get_user_id(), key, bucket=bucket)
-        if document is None:
-            raise errors.DocumentNotFoundError(key=key, bucket=bucket)
+@api.route('/<bucket>', methods=['GET'])
+def get_many_handler(bucket):
+    documents = storage.get_all(get_app_id(), get_user_id(), bucket)
+    for o in documents:
+        del o['_created']
+    resp = json.dumps({'response': documents})
+    return jsonify({'response': documents})
 
-        return jsonify({'response': [document]})
+@api.route('/<bucket>/<key>', methods=['GET'])
+def get_one_handler(bucket, key=None):
+    document = storage.find_by_key(get_app_id(), get_user_id(), key, bucket=bucket)
+    if document is None:
+        raise errors.DocumentNotFoundError(key=key, bucket=bucket)
+
+    return jsonify({'response': [document]})
 
 
 @api.route('/<bucket>', defaults={'key': None}, methods=['POST'])
@@ -60,6 +59,7 @@ def get_handler(bucket, key=None):
 def post_handler(bucket, key, document):
     """ Create new document and get _key back
     """
+
     if key is not None:
         document[storage.ext_fields.DOCUMENT_KEY] = key
         
@@ -67,7 +67,7 @@ def post_handler(bucket, key, document):
 
 
 @api.route('/<bucket>/several/<filter_opts>', methods=['DELETE'])
-def delete_several_handler(bucket, filter_opts=None):
+def delete_many_handler(bucket, filter_opts=None):
     """ Deletes all existing documents of the specified bucket
     """
     if filter_opts is not None:
@@ -88,7 +88,7 @@ def delete_several_handler(bucket, filter_opts=None):
 
 
 @api.route('/<bucket>/<key>', methods=['DELETE'])
-def delete_by_key_handler(bucket, key):
+def delete_one_handler(bucket, key):
     """ Deletes existing document (C.O.)
     """
     return _delete_by_key_func(bucket, key)
@@ -109,8 +109,8 @@ def put_handler(bucket, key, document):
     return _update_func(document, bucket)
 
 
-def _post_func(bucket, document):
 
+def _post_func(bucket, document):
     # save new entity and returns its key
     document_key = storage.create(
         get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
@@ -127,13 +127,13 @@ def _delete_by_key_func(bucket, key):
     storage.delete_by_key(
         get_app_id(), get_user_id(), get_remote_ip(),  key, bucket=bucket
     )
-    return jsonify({'response': RequestStatusCodes.OK})
+    return jsonify({'response': app.OK})
 
 def _update_func(document, bucket):
     storage.update(
         get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
     )
-    return jsonify({'response': RequestStatusCodes.OK})
+    return jsonify({'response': app.OK})
 
 def _is_document_exists(bucket, key):
     
@@ -144,25 +144,29 @@ def _is_document_exists(bucket, key):
 def not_found(error):
     """ Return response as a error json structure when document is not found by its key """
     error_msg = 'Document with bucket [%s] and key [%s] is not found' % (error.bucket, error.key)
-    response_msg = json.dumps({'error': {'error_code': RequestStatusCodes.NOT_FOUND, 'error_msg': error_msg}})
-    return response_msg, HTTPStatusCodes.NOT_FOUND
+    response_msg = json.dumps({'error': {'error_code': app.NOT_FOUND,
+                                         'error_msg': error_msg}})
+    return response_msg, http.NOT_FOUND
 
 @api.errorhandler(errors.InvalidDocumentError)
 @api.errorhandler(errors.InvalidDocumentKeyError)
 def invalid_document(error):
     """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {'error_code': RequestStatusCodes.BAD_REQUEST, 'error_msg': error.message}})
-    return response_msg, HTTPStatusCodes.BAD_REQUEST
+    response_msg = json.dumps({'error': {'error_code': app.BAD_REQUEST,
+                                         'error_msg': error.message}})
+    return response_msg, http.BAD_REQUEST
 
 @api.errorhandler(errors.InvalidAppIdError)
 def invalid_app_id(error):
     """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {'error_code': RequestStatusCodes.APP_UNAUTHORIZED, 'error_msg': error.message}})
-    return response_msg, HTTPStatusCodes.UNAUTHORIZED
+    response_msg = json.dumps({'error': {'error_code': app.APP_UNAUTHORIZED,
+                                         'error_msg': error.message}})
+    return response_msg, http.UNAUTHORIZED
 
 @api.errorhandler(errors.InvalidUserIdError)
 def invalid_user_id(error):
     """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {'error_code': RequestStatusCodes.USER_UNAUTHORIZED, 'error_msg': error.message}})
-    return response_msg, HTTPStatusCodes.UNAUTHORIZED
+    response_msg = json.dumps({'error': {'error_code': app.USER_UNAUTHORIZED,
+                                         'error_msg': error.message}})
+    return response_msg, http.UNAUTHORIZED
 
