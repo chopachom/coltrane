@@ -121,7 +121,7 @@ def find_by_key(app_id, user_id, document_key, bucket):
     id = _generate_document_id(app_id, user_id, document_key, bucket)
     result = _entities.find_one({'_id': id, int_fields.DELETED: False})
     if result is None:
-        return None
+        raise EntryNotFoundError(id=document_id, bucket=bucket)
 
     return _get_external_document_view(result)
 

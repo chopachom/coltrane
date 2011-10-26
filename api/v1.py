@@ -123,7 +123,6 @@ def _delete_several_func(bucket, filter_opts=None):
     return jsonify({'response': RequestStatusCodes.OK})
 
 
-    
 def _delete_by_key_func(bucket, key):
     storage.delete_by_key(
         get_app_id(), get_user_id(), get_remote_ip(),  key, bucket=bucket
@@ -147,7 +146,6 @@ def not_found(error):
     error_msg = 'Document with bucket [%s] and key [%s] is not found' % (error.bucket, error.key)
     response_msg = json.dumps({'error': {'error_code': RequestStatusCodes.NOT_FOUND, 'error_msg': error_msg}})
     return response_msg, HTTPStatusCodes.NOT_FOUND
-
 
 @api.errorhandler(errors.InvalidDocumentError)
 @api.errorhandler(errors.InvalidDocumentKeyError)
