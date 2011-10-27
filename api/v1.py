@@ -100,18 +100,13 @@ def delete_by_key_handler(bucket, key):
 def put_handler(bucket, key, document):
     """ Update existing document
     """
-    if key or ext_fields.DOCUMENT_KEY in document:
-        if key:
-            document[ext_fields.DOCUMENT_KEY] = key
-        if not _is_document_exists(bucket, key):
-            return _post_func(bucket, document)
-
-    elif ext_fields.DOCUMENT_KEY not in document:
+    if key:
+        document[ext_fields.DOCUMENT_KEY] = key
+    if (ext_fields.DOCUMENT_KEY not in document or not
+         _is_document_exists(bucket, document[ext_fields.DOCUMENT_KEY])):
         return _post_func(bucket, document)
-        #raise DocumentNotFoundError(key=key, bucket=bucket)
 
     return _update_func(document, bucket)
-
 
 
 def _post_func(bucket, document):
