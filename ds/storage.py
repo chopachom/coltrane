@@ -68,13 +68,13 @@ def create(app_id, user_id, ip_address, document, bucket):
 
     # check if a key is already exists, if it isn't - generate new
     if ext_fields.DOCUMENT_KEY in document:
-        document_id = _generate_document_id(app_id, user_id,
+        document_id = _internal_id(app_id, user_id,
                                    document[ext_fields.DOCUMENT_KEY],
                                    bucket)
         if _is_document_exists(document_id):
             raise InvalidDocumentKeyError('Document with key [%s] already exists' % document[ext_fields.DOCUMENT_KEY])
     else:
-        document_id = _generate_document_id(app_id, user_id, uuid4(), bucket)
+        document_id = _internal_id(app_id, user_id, uuid4(), bucket)
 
     # add required fields to document
     document[int_fields.DOCUMENT_ID] = document_id
@@ -87,7 +87,7 @@ def create(app_id, user_id, ip_address, document, bucket):
 
     _entities.insert(document)
 
-    return _extract_document_key(document_id)
+    return _external_key(document_id)
 
 def get_all(app_id, user_id, bucket):
     if app_id is None:
@@ -97,7 +97,7 @@ def get_all(app_id, user_id, bucket):
     criteria = _generate_criteria(app_id, user_id, bucket)
     documents = list(_entities.find(criteria))
 
-    return map(_get_external_document_view, documents)
+    return map(_external_document, documents)
 
 def find_by_key(app_id, user_id, document_key, bucket):
     """ Read operation for CRUD service.
@@ -118,12 +118,12 @@ def find_by_key(app_id, user_id, document_key, bucket):
         raise InvalidDocumentKeyError('document_key must be not null')
 
     # logic
-    id = _generate_document_id(app_id, user_id, document_key, bucket)
+    id = _internal_id(app_id, user_id, document_key, bucket)
     result = _entities.find_one({'_id': id, int_fields.DELETED: False})
     if result is None:
         raise EntryNotFoundError(id=document_id, bucket=bucket)
 
-    return _get_external_document_view(result)
+    return _external_document(result)
 
 
 def update(app_id, user_id, ip_address, document, bucket):
@@ -148,11 +148,11 @@ def update(app_id, user_id, ip_address, document, bucket):
 
     # check user access to this document
     document_key = document[ext_fields.DOCUMENT_KEY]
-    document_id = _generate_document_id(app_id, user_id, document_key,
+    document_id = _internal_id(app_id, user_id, document_key,
                                bucket)
-    assert_exists(document_id, document_key, bucket)
+    _assert_exists(document_id, document_key, bucket)
 
-    document_to_update = _get_without_internal_fields(document)
+    document_to_update = _original_document(document)
     document_to_update[int_fields.IP_ADDRESS] = ip_address
     document_to_update[int_fields.UPDATED_AT] = datetime.utcnow()
 
@@ -171,7 +171,7 @@ def delete_several(app_id, user_id, ip_address, bucket, filter_opts=None):
         for opt_key in filter_opts.keys():
             criteria[opt_key] = filter_opts[opt_key]
         
-    _entities.update(criteria, {'$set': _get_fields_for_update_on_delete(ip_address)}, multi=True)
+    _entities.update(criteria, {'$set': _fields_for_update_on_delete(ip_address)}, multi=True)
     
 
 def delete_by_key(app_id, user_id, ip_address, document_key, bucket):
@@ -191,15 +191,15 @@ def delete_by_key(app_id, user_id, ip_address, document_key, bucket):
         raise InvalidDocumentKeyError('Document key must be not null')
 
     # logic
-    document_id = _generate_document_id(app_id, user_id, document_key, bucket)
+    document_id = _internal_id(app_id, user_id, document_key, bucket)
     # check user access to this document
-    assert_exists(document_id, document_key, bucket)
+    _assert_exists(document_id, document_key, bucket)
 
     _entities.update({'_id': document_id},
-                     {'$set': _get_fields_for_update_on_delete(ip_address)})
+                     {'$set': _fields_for_update_on_delete(ip_address)})
 
 def is_document_exists(app_id, user_id, document_key, bucket):
-    document_id = _generate_document_id(app_id, user_id, document_key, bucket)
+    document_id = _internal_id(app_id, user_id, document_key, bucket)
     return _is_document_exists(document_id)
 
 
@@ -220,12 +220,12 @@ def _is_document_exists(document_id):
         return True
     
 
-def _generate_document_id(app_id, user_id, document_key, bucket):
+def _internal_id(app_id, user_id, document_key, bucket):
     return _DOCUMENT_ID_FORMAT.format(app_id=app_id, user_id=user_id,
                                       bucket=bucket, document_key=document_key)
 
 
-def _extract_document_key(internal_id):
+def _external_key(internal_id):
     return '|'.join(substr for substr in internal_id.split('|')[3:])
 
 
@@ -241,24 +241,24 @@ def _generate_criteria(app_id, user_id, bucket, document_id=None):
 
     return criteria
 
-def _get_fields_for_update_on_delete(ip_address):
+def _fields_for_update_on_delete(ip_address):
     dict = {int_fields.DELETED:True,
                    int_fields.IP_ADDRESS:ip_address,
                    int_fields.UPDATED_AT:datetime.utcnow()}
     return dict
 
-def _get_external_document_view(document):
-    external = _get_without_internal_fields(document)
-    external[ext_fields.DOCUMENT_KEY] = _extract_document_key(document[int_fields.DOCUMENT_ID])
+def _external_document(document):
+    external = _original_document(document)
+    external[ext_fields.DOCUMENT_KEY] = _external_key(document[int_fields.DOCUMENT_ID])
     external[ext_fields.BUCKET]      = document[int_fields.BUCKET]
     external[ext_fields.CREATED_AT]  = document[int_fields.CREATED_AT]
 
     return external
 
-def _get_without_internal_fields(document):
+def _original_document(document):
     return {k: v for k, v in document.items()
                 if not k in int_fields.values()}
 
-def assert_exists(document_id, document_key, bucket):
-    if _is_document_exists(document_id) == False:
+def _assert_exists(document_id, document_key, bucket):
+    if _is_document_exists(document_id):
         raise DocumentNotFoundError(key=document_key, bucket=bucket)
