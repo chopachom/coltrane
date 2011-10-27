@@ -60,7 +60,7 @@ class InvalidDocumentKeyError(AppException):
         self.bucket = kwargs.get('bucket', None)
 
 
-class JSONInvalidFormatException(AppException):
+class JSONInvalidFormatError(AppException):
     """
     Error when user passes invalid json object
     Parameters:
@@ -72,5 +72,5 @@ class JSONInvalidFormatException(AppException):
     message = "Invalid json object."
     
     def __init__(self, message=None, *args, **kwargs):
-        super(InvalidDocumentKeyError, self).__init__(message, *args, **kwargs)
+        super(JSONInvalidFormatError, self).__init__(message, *args, **kwargs)
         self.json = kwargs.get('json', None)

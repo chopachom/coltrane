@@ -20,18 +20,18 @@ def get_remote_ip():
 
 api = Blueprint("api_v1", __name__)
 
-def fromJSON(obj):
+def from_json(obj):
     try:
         return json.loads(obj)
     except Exception:
-        raise errors.JSONInvalidFormatException("Invalid json object [%s]" % obj)
+        raise errors.JSONInvalidFormatError("Invalid json object [%s]" % obj)
     
 
 def extract_form_data(f):
     @wraps(f)
     def decorator(bucket, key):
         obj = request.form['data']
-        obj = fromJSON(obj)
+        obj = from_json(obj)
         return f(bucket, key, obj)
     return decorator
 
@@ -39,10 +39,8 @@ def extract_form_data(f):
 @api.route('/<bucket>', methods=['GET'])
 def get_many_handler(bucket):
     documents = storage.get_all(get_app_id(), get_user_id(), bucket)
-    for o in documents:
-        del o['_created']
-    resp = json.dumps({'response': documents})
     return jsonify({'response': documents})
+
 
 @api.route('/<bucket>/<key>', methods=['GET'])
 def get_one_handler(bucket, key=None):
@@ -63,28 +61,7 @@ def post_handler(bucket, key, document):
     if key is not None:
         document[storage.ext_fields.DOCUMENT_KEY] = key
         
-    return _post_func(bucket, document)
-
-
-@api.route('/<bucket>/several/<filter_opts>', methods=['DELETE'])
-def delete_many_handler(bucket, filter_opts=None):
-    """ Deletes all existing documents of the specified bucket
-    """
-    if filter_opts is not None:
-        filter_opts = fromJSON(filter_opts)
-
-    # if filter_opts is empty
-    if not filter_opts:
-        return _delete_several_func(bucket)
-
-    # if filter_opts contains _key field
-    elif ext_fields.DOCUMENT_KEY in filter_opts:
-        key = filter_opts[ext_fields.DOCUMENT_KEY]
-        return _delete_by_key_func(bucket, key)
-
-    # if filter_opts contains not _key field
-    else:
-        return _delete_several_func(bucket, filter_opts)
+    return save(bucket, document)
 
 
 @api.route('/<bucket>/<key>', methods=['DELETE'])
@@ -104,13 +81,13 @@ def put_handler(bucket, key, document):
         document[ext_fields.DOCUMENT_KEY] = key
     if (ext_fields.DOCUMENT_KEY not in document or not
          _is_document_exists(bucket, document[ext_fields.DOCUMENT_KEY])):
-        return _post_func(bucket, document)
+        return save(bucket, document)
 
     return _update_func(document, bucket)
 
 
 
-def _post_func(bucket, document):
+def save(bucket, document):
     # save new entity and returns its key
     document_key = storage.create(
         get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
@@ -120,7 +97,7 @@ def _post_func(bucket, document):
 
 def _delete_several_func(bucket, filter_opts=None):
     storage.delete_several(get_app_id(), get_user_id(), get_remote_ip(), bucket=bucket)
-    return jsonify({'response': RequestStatusCodes.OK})
+    return jsonify({'response': app.OK})
 
 
 def _delete_by_key_func(bucket, key):

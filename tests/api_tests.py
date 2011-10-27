@@ -1,7 +1,7 @@
 import json
 import unittest
 from api import api_v1, v1
-from api.v1 import fromJSON
+from api.v1 import from_json
 from api.status import RequestStatusCodes
 from app import create_app
 from ds import storage
@@ -17,11 +17,15 @@ class ApiTestCase(unittest.TestCase):
         v1.get_app_id = lambda : 'app_id1'
         v1.get_remote_ip = lambda : '127.0.0.1'
         v1.get_user_id = lambda : 'user_id1'
-        
-        app = create_app(modules=((api_v1, API_V1),), exts=(mongodb,), dict_config=dict(
-            DEBUG=False,
-            TESTING=True
-        ))
+
+        app = create_app(
+            modules=((api_v1, API_V1),),
+            exts=(mongodb,),
+            dict_config=dict(
+                DEBUG=False,
+                TESTING=True
+            )
+        )
         self.app = app.test_client()
 
     def tearDown(self):
@@ -29,20 +33,24 @@ class ApiTestCase(unittest.TestCase):
 
     def test_getAll_request(self):
         rv = self.app.get(API_V1 + '/books')
-        res = fromJSON(rv.data)
+        res = from_json(rv.data)
         assert res == {'response': []}
 
     def test_get_by_not_existing_key(self):
         rv = self.app.get(API_V1 + '/books/1')
-        res = fromJSON(rv.data)
-        assert res == {"error":
-                               {"error_code": RequestStatusCodes.NOT_FOUND, "error_msg": "Document with bucket [books] and key [1] is not found"}}
+        res = from_json(rv.data)
+        assert res == {
+            "error": {
+                "error_code": RequestStatusCodes.NOT_FOUND,
+                "error_msg": "Document with bucket [books] and key [1] is not found"
+            }
+        }
 
     def test_post_request_without_specified_key(self):
         rv = self.app.post(API_V1 + '/books', data=dict(
             data='{"title": "Title3", "author": "Pasha Shkitin"}'
         ), follow_redirects=True)
-        key = fromJSON(rv.data)['response']['key']
+        key = from_json(rv.data)['response']['key']
         assert key is not None and isinstance(key, basestring) and len(key) > 0
 
     def test_success_delete_request(self):
@@ -51,14 +59,14 @@ class ApiTestCase(unittest.TestCase):
         data = json.dumps(src)
 
         resp = self.app.post(API_V1 + '/books/' + key, data={'data': data}, follow_redirects=True)
-        assert fromJSON(resp.data)['response']['key'] == key
-        
+        assert from_json(resp.data)['response']['key'] == key
+
         resp = self.app.delete(API_V1 + '/books/' + key)
-        assert fromJSON(resp.data)['response'] == RequestStatusCodes.OK
+        assert from_json(resp.data)['response'] == RequestStatusCodes.OK
 
     def test_fail_delete_request(self):
         rv = self.app.delete(API_V1 + '/books/4')
-        assert fromJSON(rv.data)['error']['error_code'] == RequestStatusCodes.NOT_FOUND
+        assert from_json(rv.data)['error']['error_code'] == RequestStatusCodes.NOT_FOUND
         print "Fail delete: " + rv.data
 
 
@@ -74,15 +82,15 @@ class ApiTestCase(unittest.TestCase):
         ), follow_redirects=True)
 
         resp = self.app.get(API_V1 + '/books')
-        books = fromJSON(resp.data)['response']
+        books = from_json(resp.data)['response']
         assert len(books) == 3
 
         resp = self.app.delete(API_V1 + '/books/several/{}')
-        status = fromJSON(resp.data)['response']
+        status = from_json(resp.data)['response']
         assert status == RequestStatusCodes.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = fromJSON(resp.data)['response']
+        books = from_json(resp.data)['response']
         assert len(books) == 0
 
 
@@ -91,7 +99,7 @@ class ApiTestCase(unittest.TestCase):
             data='{"title": "Title3", "author": "Vasya Shkitin"}'
         ), follow_redirects=True)
 
-        data = fromJSON(rv.data)
+        data = from_json(rv.data)
         key = data['response']['key']
         assert isinstance(key, basestring) and len(key) > 0
         print 'Put1: ' + rv.data
@@ -105,7 +113,7 @@ class ApiTestCase(unittest.TestCase):
         ), follow_redirects=True)
 
         print rv.data
-        data = fromJSON(rv.data)
+        data = from_json(rv.data)
         key = data['response']['key']
         assert src_key == key
 
@@ -118,7 +126,7 @@ class ApiTestCase(unittest.TestCase):
         ), follow_redirects=True)
 
         print rv.data
-        data = fromJSON(rv.data)
+        data = from_json(rv.data)
         key = data['response']['key']
         assert 'new_key' == key
 
@@ -129,7 +137,7 @@ class ApiTestCase(unittest.TestCase):
             data= json.dumps(src)
         ), follow_redirects=True)
 
-        data = fromJSON(rv.data)
+        data = from_json(rv.data)
         key = data['response']['key']
         assert isinstance(key, basestring) and len(key) > 0
 
@@ -138,9 +146,9 @@ class ApiTestCase(unittest.TestCase):
             data=json.dumps(src)
         ), follow_redirects=True)
 
-        data = fromJSON(rv.data)
+        data = from_json(rv.data)
         assert data['response'] == RequestStatusCodes.OK
-        
-    
+
+
 if __name__ == '__main__':
     unittest.main()
