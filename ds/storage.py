@@ -10,14 +10,14 @@ class int_fields(Enum):
     APP_ID  = '__app_id__'
     USER_ID = '__user_id__'
     BUCKET  = '__bucket__'
-    DOCUMENT_ID = '_id'
+    ID = '_id'
     DELETED     = '__deleted__'
     CREATED_AT  = '__created_at__'
     UPDATED_AT  = '__updated_at__'
     IP_ADDRESS  = '__ip_address__'
 
 class ext_fields(Enum):
-    DOCUMENT_KEY = '_key'
+    KEY = '_key'
     BUCKET      = '_bucket'
     CREATED_AT  = '_created'
 
@@ -67,17 +67,17 @@ def create(app_id, user_id, ip_address, document, bucket):
             raise InvalidDocumentError('Document contains reserved key [%s]' % k)
 
     # check if a key is already exists, if it isn't - generate new
-    if ext_fields.DOCUMENT_KEY in document:
-        document_id = _internal_id(app_id, user_id,
-                                   document[ext_fields.DOCUMENT_KEY],
+    if ext_fields.KEY in document:
+        document_id = _document_id(app_id, user_id,
+                                   document[ext_fields.KEY],
                                    bucket)
         if _is_document_exists(document_id):
-            raise InvalidDocumentKeyError('Document with key [%s] already exists' % document[ext_fields.DOCUMENT_KEY])
+            raise InvalidDocumentKeyError('Document with key [%s] already exists' % document[ext_fields.KEY])
     else:
-        document_id = _internal_id(app_id, user_id, uuid4(), bucket)
+        document_id = _document_id(app_id, user_id, uuid4(), bucket)
 
     # add required fields to document
-    document[int_fields.DOCUMENT_ID] = document_id
+    document[int_fields.ID] = document_id
     document[int_fields.APP_ID] = app_id
     document[int_fields.USER_ID] = user_id
     document[int_fields.CREATED_AT] = datetime.utcnow()
@@ -87,7 +87,7 @@ def create(app_id, user_id, ip_address, document, bucket):
 
     _entities.insert(document)
 
-    return _external_key(document_id)
+    return _document_key(document_id)
 
 def get_all(app_id, user_id, bucket):
     if app_id is None:
@@ -118,10 +118,10 @@ def find_by_key(app_id, user_id, document_key, bucket):
         raise InvalidDocumentKeyError('document_key must be not null')
 
     # logic
-    id = _internal_id(app_id, user_id, document_key, bucket)
+    id = _document_id(app_id, user_id, document_key, bucket)
     result = _entities.find_one({'_id': id, int_fields.DELETED: False})
     if result is None:
-        raise EntryNotFoundError(id=document_id, bucket=bucket)
+        return None
 
     return _external_document(result)
 
@@ -147,8 +147,8 @@ def update(app_id, user_id, ip_address, document, bucket):
         raise InvalidDocumentKeyError('Document key for update cannot be null')
 
     # check user access to this document
-    document_key = document[ext_fields.DOCUMENT_KEY]
-    document_id = _internal_id(app_id, user_id, document_key,
+    document_key = document[ext_fields.KEY]
+    document_id = _document_id(app_id, user_id, document_key,
                                bucket)
     _assert_exists(document_id, document_key, bucket)
 
@@ -171,7 +171,9 @@ def delete_several(app_id, user_id, ip_address, bucket, filter_opts=None):
         for opt_key in filter_opts.keys():
             criteria[opt_key] = filter_opts[opt_key]
         
-    _entities.update(criteria, {'$set': _fields_for_update_on_delete(ip_address)}, multi=True)
+    _entities.update(
+        criteria, {'$set': _fields_for_update_on_delete(ip_address)}, multi=True
+    )
     
 
 def delete_by_key(app_id, user_id, ip_address, document_key, bucket):
@@ -191,7 +193,7 @@ def delete_by_key(app_id, user_id, ip_address, document_key, bucket):
         raise InvalidDocumentKeyError('Document key must be not null')
 
     # logic
-    document_id = _internal_id(app_id, user_id, document_key, bucket)
+    document_id = _document_id(app_id, user_id, document_key, bucket)
     # check user access to this document
     _assert_exists(document_id, document_key, bucket)
 
@@ -199,33 +201,33 @@ def delete_by_key(app_id, user_id, ip_address, document_key, bucket):
                      {'$set': _fields_for_update_on_delete(ip_address)})
 
 def is_document_exists(app_id, user_id, document_key, bucket):
-    document_id = _internal_id(app_id, user_id, document_key, bucket)
+    document_id = _document_id(app_id, user_id, document_key, bucket)
     return _is_document_exists(document_id)
 
 
 def _is_document_exists(document_id):
-    """ This function checks whether db contains document with specified id or not.
+    """ This function checks whether db contains document with specified id.
            Parameters:
            document_id: String, document id.
            Returns: True if document is exists with specified id and False if not."""
 
     # query document with one field (_id) to decrease network traffic. It is necessary fields minimum.
-    if type(document_id) != str:
-        raise RuntimeError("You must pass only string object as a document id.")
     
-    found_id =  _entities.find_one({'_id': document_id}, fields=['_id'])
-    if found_id is None:
-        return False
-    else:
+    found =  _entities.find_one(
+            {'_id': document_id, int_fields.DELETED: False},  fields=['_id']
+    )
+    if found:
         return True
+    else:
+        return False
     
 
-def _internal_id(app_id, user_id, document_key, bucket):
+def _document_id(app_id, user_id, document_key, bucket):
     return _DOCUMENT_ID_FORMAT.format(app_id=app_id, user_id=user_id,
                                       bucket=bucket, document_key=document_key)
 
 
-def _external_key(internal_id):
+def _document_key(internal_id):
     return '|'.join(substr for substr in internal_id.split('|')[3:])
 
 
@@ -237,7 +239,7 @@ def _generate_criteria(app_id, user_id, bucket, document_id=None):
         int_fields.DELETED: False,
     }
     if document_id:
-        criteria[int_fields.DOCUMENT_ID] = document_id
+        criteria[int_fields.ID] = document_id
 
     return criteria
 
@@ -248,8 +250,11 @@ def _fields_for_update_on_delete(ip_address):
     return dict
 
 def _external_document(document):
+    if not document:
+        return None
+
     external = _original_document(document)
-    external[ext_fields.DOCUMENT_KEY] = _external_key(document[int_fields.DOCUMENT_ID])
+    external[ext_fields.KEY] = _document_key(document[int_fields.ID])
     external[ext_fields.BUCKET]      = document[int_fields.BUCKET]
     external[ext_fields.CREATED_AT]  = document[int_fields.CREATED_AT]
 
@@ -260,5 +265,5 @@ def _original_document(document):
                 if not k in int_fields.values()}
 
 def _assert_exists(document_id, document_key, bucket):
-    if _is_document_exists(document_id):
+    if not _is_document_exists(document_id):
         raise DocumentNotFoundError(key=document_key, bucket=bucket)

@@ -1,4 +1,5 @@
 import json
+import datetime
 from flask import Blueprint, jsonify
 from flask.globals import request
 from functools import wraps
@@ -42,7 +43,10 @@ def extract_form_data(f):
 @api.route('/<bucket>', methods=['GET'])
 def get_many_handler(bucket):
     documents = storage.get_all(get_app_id(), get_user_id(), bucket)
-    return jsonify({'response': documents})
+    dthandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
+
+    js = json.dumps({'response': documents}, default=dthandler)
+    return js
 
 
 @api.route('/<bucket>/<key>', methods=['GET'])
@@ -63,7 +67,7 @@ def post_handler(bucket, key, document):
     """
 
     if key is not None:
-        document[storage.ext_fields.DOCUMENT_KEY] = key
+        document[storage.ext_fields.KEY] = key
 
     return _save(bucket, document)
 
@@ -72,7 +76,7 @@ def post_handler(bucket, key, document):
 def delete_one_handler(bucket, key):
     """ Deletes existing document (C.O.)
     """
-    return _delete_by_key_func(bucket, key)
+    return _delete_one(bucket, key)
 
 
 @api.route('/<bucket>', defaults={'key': None}, methods=['PUT'])
@@ -82,10 +86,10 @@ def put_handler(bucket, key, document):
     """ Update existing document
     """
     if key:
-        document[ext_fields.DOCUMENT_KEY] = key
+        document[ext_fields.KEY] = key
     # upsert
-    if ext_fields.DOCUMENT_KEY not in document or not\
-        _is_document_exists(bucket, document[ext_fields.DOCUMENT_KEY]):
+    if ext_fields.KEY not in document or not\
+        _is_document_exists(bucket, document[ext_fields.KEY]):
         return _save(bucket, document)
 
     return _update(document, bucket)
@@ -99,13 +103,13 @@ def _save(bucket, document):
     return jsonify({'response': {'key': document_key}})
 
 
-def _delete_several_func(bucket, filter_opts=None):
+def _delete_many(bucket, filter_opts=None):
     storage.delete_several(get_app_id(), get_user_id(), get_remote_ip(),
                            bucket=bucket)
     return jsonify({'response': app.OK})
 
 
-def _delete_by_key_func(bucket, key):
+def _delete_one(bucket, key):
     storage.delete_by_key(
         get_app_id(), get_user_id(), get_remote_ip(), key, bucket=bucket
     )
@@ -126,8 +130,8 @@ def _is_document_exists(bucket, key):
 @api.errorhandler(errors.DocumentNotFoundError)
 def not_found(error):
     """ Return response as a error json structure when document is not found by its key """
-    message = ('Document with bucket {bucket} and '
-               'key {key} was not found').format(bucket=error.bucket,
+    message = ('Document with bucket [{bucket}] and '
+               'key [{key}] was not found').format(bucket=error.bucket,
                                                    key=error.key)
     response_msg = json.dumps({'error': {'code': app.NOT_FOUND,
                                          'message': message}})

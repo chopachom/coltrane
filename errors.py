@@ -18,7 +18,7 @@ class AppException(Exception):
         return self.message
 
 class DocumentNotFoundError(AppException):
-    message = 'Document with bucket {bucket} and key {key} is not found'
+    message = 'Document with bucket [{bucket}] and key [{key}] was not found'
 
     def __init__(self, *args, **kwargs):
         super(DocumentNotFoundError, self).__init__(*args, **kwargs)
@@ -56,8 +56,8 @@ class InvalidDocumentKeyError(AppException):
 
     def __init__(self, message=None, *args, **kwargs):
         super(InvalidDocumentKeyError, self).__init__(message, *args, **kwargs)
-        self.id = kwargs.get('key', None)
-        self.bucket = kwargs.get('bucket', None)
+        self.id = kwargs.get('key')
+        self.bucket = kwargs.get('bucket')
 
 
 class JSONInvalidFormatError(AppException):
@@ -73,4 +73,4 @@ class JSONInvalidFormatError(AppException):
     
     def __init__(self, message=None, *args, **kwargs):
         super(JSONInvalidFormatError, self).__init__(message, *args, **kwargs)
-        self.json = kwargs.get('json', None)
+        self.json = kwargs.get('json')

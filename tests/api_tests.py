@@ -1,8 +1,9 @@
 import json
 import unittest
-from api import api_v1, v1
+from api import api_v1
+from api import v1
 from api.v1 import from_json
-from api.status import RequestStatusCodes
+from api.statuses import app
 from app import create_app
 from ds import storage
 from extensions import mongodb
@@ -41,8 +42,9 @@ class ApiTestCase(unittest.TestCase):
         res = from_json(rv.data)
         assert res == {
             "error": {
-                "error_code": RequestStatusCodes.NOT_FOUND,
-                "error_msg": "Document with bucket [books] and key [1] is not found"
+                "code": app.NOT_FOUND,
+                "message": ("Document with bucket [books] and "
+                            "key [1] was not found")
             }
         }
 
@@ -62,36 +64,36 @@ class ApiTestCase(unittest.TestCase):
         assert from_json(resp.data)['response']['key'] == key
 
         resp = self.app.delete(API_V1 + '/books/' + key)
-        assert from_json(resp.data)['response'] == RequestStatusCodes.OK
+        assert from_json(resp.data)['response'] == app.OK
 
     def test_fail_delete_request(self):
         rv = self.app.delete(API_V1 + '/books/4')
-        assert from_json(rv.data)['error']['error_code'] == RequestStatusCodes.NOT_FOUND
+        assert from_json(rv.data)['error']['code'] == app.NOT_FOUND
         print "Fail delete: " + rv.data
 
 
-    def test_delete_all_with_filter_opts(self):
-        self.app.post(API_V1 + '/books', data=dict(
-            data='{"title": "Title1", "author": "author1"}'
-        ), follow_redirects=True)
-        self.app.post(API_V1 + '/books', data=dict(
-            data='{"title": "Title2", "author": "author2"}'
-        ), follow_redirects=True)
-        self.app.post(API_V1 + '/books', data=dict(
-            data='{"title": "Title3", "author": "author3"}'
-        ), follow_redirects=True)
-
-        resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
-        assert len(books) == 3
-
-        resp = self.app.delete(API_V1 + '/books/several/{}')
-        status = from_json(resp.data)['response']
-        assert status == RequestStatusCodes.OK
-
-        resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
-        assert len(books) == 0
+#    def test_delete_all_with_filter_opts(self):
+#        self.app.post(API_V1 + '/books', data=dict(
+#            data='{"title": "Title1", "author": "author1"}'
+#        ), follow_redirects=True)
+#        self.app.post(API_V1 + '/books', data=dict(
+#            data='{"title": "Title2", "author": "author2"}'
+#        ), follow_redirects=True)
+#        self.app.post(API_V1 + '/books', data=dict(
+#            data='{"title": "Title3", "author": "author3"}'
+#        ), follow_redirects=True)
+#
+#        resp = self.app.get(API_V1 + '/books')
+#        books = from_json(resp.data)['response']
+#        assert len(books) == 3
+#
+#        resp = self.app.delete(API_V1 + '/books/several/{}')
+#        status = from_json(resp.data)['response']
+#        assert status == app.OK
+#
+#        resp = self.app.get(API_V1 + '/books')
+#        books = from_json(resp.data)['response']
+#        assert len(books) == 0
 
 
     def test_put_not_existing_document_without_key(self):
@@ -107,7 +109,7 @@ class ApiTestCase(unittest.TestCase):
 
     def test_put_not_existing_document_with_key(self):
         src_key = "my_key"
-        src = {ext_fields.DOCUMENT_KEY: src_key, "title": "Title3", "author": "Vasya Shkitin"}
+        src = {ext_fields.KEY: src_key, "title": "Title3", "author": "Vasya Shkitin"}
         rv = self.app.put(API_V1 + '/books', data=dict(
             data=json.dumps(src)
         ), follow_redirects=True)
@@ -120,7 +122,7 @@ class ApiTestCase(unittest.TestCase):
 
     def test_put_not_existing_document_with_key_in_url(self):
         src_key = "my_key"
-        src = {ext_fields.DOCUMENT_KEY: src_key, "title": "Title3", "author": "Vasya Shkitin"}
+        src = {ext_fields.KEY: src_key, "title": "Title3", "author": "Vasya Shkitin"}
         rv = self.app.put(API_V1 + '/books/new_key', data=dict(
             data=json.dumps(src)
         ), follow_redirects=True)
@@ -147,7 +149,7 @@ class ApiTestCase(unittest.TestCase):
         ), follow_redirects=True)
 
         data = from_json(rv.data)
-        assert data['response'] == RequestStatusCodes.OK
+        assert data['response'] == app.OK
 
 
 if __name__ == '__main__':

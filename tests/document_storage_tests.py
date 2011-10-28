@@ -25,18 +25,18 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         for _ in range(boobs_count):
             data = {'test': 'test_data'}
             key = storage.create(app_id, user_id, self.ip, data, bucket=boobs_type)
-            data[storage.ext_fields.DOCUMENT_KEY] = key
+            data[storage.ext_fields.KEY] = key
             data[storage.ext_fields.BUCKET] = boobs_type
             expected_boobs.append(data)
 
         for boob in expected_boobs:
             document = storage.find_by_key(app_id, user_id,
-                boob[storage.ext_fields.DOCUMENT_KEY],
+                boob[storage.ext_fields.KEY],
                 bucket=boobs_type)
             del document[storage.ext_fields.CREATED_AT]
             # asserts
-            assert document[storage.ext_fields.DOCUMENT_KEY] ==\
-                   boob[storage.ext_fields.DOCUMENT_KEY]
+            assert document[storage.ext_fields.KEY] ==\
+                   boob[storage.ext_fields.KEY]
             for key in document.keys():
                 val1 = document[key]
                 val2 = boob[key]
@@ -168,7 +168,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # define new dict for update
         updated_data = {'test': 'updated_data',
-                        storage.ext_fields.DOCUMENT_KEY: key,
+                        storage.ext_fields.KEY: key,
                         storage.ext_fields.BUCKET: boobs_type}
         storage.update(app_id, user_id, self.ip, updated_data, boobs_type)
 
