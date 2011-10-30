@@ -14,7 +14,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         self.ip = '127.0.0.1'
 
     def tearDown(self):
-        storage._entities.drop()
+        storage._entities().drop()
 
     def test_create_and_read_entities(self):
         app_id = '1'

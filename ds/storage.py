@@ -30,9 +30,10 @@ _DICT_TYPE = type(dict())
 _DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{document_key}'
 
 # PyMongo variables
-_con = mongodb.connection
-_db = _con.test_database # for prototype purposes only
-_entities = _db.entities
+#_con = mongodb.connection
+#_db = _con.test_database # for prototype purposes only
+#_entities = _db.entities
+_entities = lambda : mongodb.connection.test_database.entities
 
 def create(app_id, user_id, ip_address, document, bucket):
     """ Create operation for CRUD.
@@ -86,7 +87,7 @@ def create(app_id, user_id, ip_address, document, bucket):
     document[int_fields.BUCKET] = bucket
     document[int_fields.DELETED] = False
 
-    _entities.insert(document)
+    _entities().insert(document)
 
     return _document_key(document_id)
 
@@ -110,8 +111,9 @@ def get_by_key(app_id, user_id, bucket, key):
         raise InvalidDocumentKeyError('document_key must be not null')
 
     # logic
+
     document_id = _document_id(app_id, user_id, bucket, key)
-    res = _entities.find_one({int_fields.ID: document_id, int_fields.DELETED: False})
+    res = _entities().find_one({int_fields.ID: document_id, int_fields.DELETED: False})
     if res is None:
         return None
 
@@ -128,7 +130,7 @@ def get_by_filter(app_id, user_id, bucket, filter_opts=None):
 
     _delete_redundant_opts(criteria)
         
-    documents = list(_entities.find(criteria))
+    documents = list(_entities().find(criteria))
     return map(_external_document, documents)
 
 
@@ -165,7 +167,7 @@ def update_by_filter(app_id, user_id, ip_address, bucket, document, filter_opts=
     document_to_update = _filter_int_fields(_filter_ext_fields(document))
     document_to_update[int_fields.IP_ADDRESS] = ip_address
     document_to_update[int_fields.UPDATED_AT] = datetime.utcnow()
-    _entities.update(criteria, {'$set': document_to_update}, multi=True)
+    _entities().update(criteria, {'$set': document_to_update}, multi=True)
 
 
 def delete_by_key(app_id, user_id, ip_address, bucket, key):
@@ -185,10 +187,11 @@ def delete_by_filter(app_id, user_id, ip_address, bucket, filter_opts=None):
 
     _delete_redundant_opts(criteria)
         
-    _entities.update(
+    _entities().update(
         criteria, {'$set': _fields_for_update_on_delete(ip_address)}, multi=True
     )
     
+
 
 def is_document_exists(app_id, user_id, bucket, criteria=None):
     """ Function for the external performing
@@ -225,7 +228,7 @@ def _is_document_exists(criteria):
         raise RuntimeError('Criteria object must not be None')
 
     # query document with one field (_id) to decrease network traffic. It is necessary fields minimum.
-    found =  _entities.find_one(criteria,  fields=['_id'])
+    found =  _entities().find_one(criteria,  fields=['_id'])
     if found:
         return True
     else:

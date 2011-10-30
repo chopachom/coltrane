@@ -12,9 +12,3 @@ class GuardManager(object):
 
     def authenticate_app(self):
         pass
-
-    def get_auth_token(self):
-        pass
-
-    def get_app_token(self):
-        pass

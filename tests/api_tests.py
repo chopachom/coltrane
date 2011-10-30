@@ -31,7 +31,7 @@ class ApiTestCase(unittest.TestCase):
         self.app = app.test_client()
 
     def tearDown(self):
-        storage._entities.drop()
+        storage._entities().drop()
 
 
     def test_response_after_post(self):
