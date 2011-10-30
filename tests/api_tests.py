@@ -12,6 +12,7 @@ from ds.storage import ext_fields
 __author__ = 'pshkitin'
 
 API_V1 = '/v1'
+
 class ApiTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -32,7 +33,7 @@ class ApiTestCase(unittest.TestCase):
     def tearDown(self):
         storage._entities.drop()
 
-    def test_getAll_request(self):
+    def test_get_all_request(self):
         rv = self.app.get(API_V1 + '/books')
         res = from_json(rv.data)
         assert res == {'response': []}

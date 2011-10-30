@@ -10,11 +10,11 @@ from extensions import guard
 from api.statuses import *
 
 def get_user_id():
-    return guard.current_user_token
+    return guard.current_user.id
 
 
 def get_app_id():
-    return guard.current_app_token
+    return guard.current_app.id
 
 
 def get_remote_ip():
