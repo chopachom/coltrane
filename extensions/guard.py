@@ -13,14 +13,16 @@ class Guard(object):
 
 
     def init_app(self, app):
+        self.app = app
         if not hasattr(self, 'manager'):
             raise RuntimeError('Manager instance is not defined')
         self.init_manager()
-        self.app = app
         self.app.before_request(self._before_request)
 
 
     def init_manager(self):
+        # Dirty, dirty, dirty,  dirty,  dirty,  dirty, sucka
+        self.manager = self.manager(self.app)
         self._authenticate_user = self.manager.authenticate_user
         self._authenticate_app = self.manager.authenticate_app
         if hasattr(self.manager, 'get_auth_token'):

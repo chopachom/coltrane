@@ -6,9 +6,13 @@ import sys
 from flask import Flask
 from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
-from extensions import mongodb
-from extensions import guard
-from api import api_v1, converters
+
+from extensions import mongodb, guard
+from misc.guard_manager import GuardManager
+from api import api_v1
+
+
+guard.manager = GuardManager
 
 DEFAULT_APP_NAME = "coltrane"
 
@@ -32,8 +36,8 @@ def create_app(exts = None, modules=None, config=None, dict_config=None):
     if not modules:
         modules = DEFAULT_MODULES
 
-    configure_extensions(app, exts)
     configure_app(app, config, dict_config)
+    configure_extensions(app, exts)
     configure_modules(app, modules)
     configure_logging(app)
 

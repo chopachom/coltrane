@@ -23,7 +23,7 @@ class app(Enum):
 
 class FakeGuardManager(object):
 
-    def __init__(self):
+    def __init__(self, app):
         pass
 
     def authenticate_user(self, token):
@@ -41,4 +41,4 @@ class FakeGuardManager(object):
         return APP_TOKEN
 
 guard = Guard()
-guard.manager = FakeGuardManager()
+guard.manager = FakeGuardManager

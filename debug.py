@@ -1,6 +1,7 @@
 from app import create_app
 from config import DebugConfig
 
+
 __author__ = 'pshkitin'
 
 if __name__ == '__main__':
