@@ -83,5 +83,8 @@ class EnumMetaclass(type, DictMixin):
     def keys(self):
         return self._enum_values.keys()
 
+    def __add__(self, obj):
+        return self.values() + obj.values()
+
 
 Enum = EnumMetaclass("Enum", (), {})

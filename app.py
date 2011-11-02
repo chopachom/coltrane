@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from api.converters import KeysConverter
+
 __author__ = 'apetrovich'
 
 import logging
@@ -7,7 +9,7 @@ from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
 from extensions import mongodb
 from extensions import guard
-from api import api_v1
+from api import api_v1, converters
 
 DEFAULT_APP_NAME = "coltrane"
 
@@ -20,7 +22,11 @@ DEFAULT_EXTENSIONS = (guard, mongodb)
 
 def create_app(exts = None, modules=None, config=None, dict_config=None):
     app = Flask(__name__)
-
+    
+    # init url converters
+    for key in converters.keys():
+        app.url_map.converters[key] = converters[key]
+        
     if not exts:
         exts = DEFAULT_EXTENSIONS
         

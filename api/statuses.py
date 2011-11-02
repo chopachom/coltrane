@@ -1,6 +1,8 @@
 __author__ = 'qweqwe'
 from utils import Enum
 
+STATUS_CODE = 'code'
+
 class http(Enum):
     OK              = 200
     BAD_REQUEST     = 400
