@@ -65,9 +65,6 @@ def create(app_id, user_id, ip_address, document, bucket):
     if type(document) is not _DICT_TYPE:
         raise InvalidDocumentError('Document must be instance of dict type')
     
-    for k in document.keys():
-        if k in int_fields.values():
-            raise InvalidDocumentError('Document contains reserved key [%s]' % k)
 
     # check if a key is already exists, if it isn't - generate new
     if ext_fields.KEY in document:

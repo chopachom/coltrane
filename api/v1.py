@@ -80,6 +80,8 @@ def post_handler(bucket, key):
     """
     document = extract_form_data()
 
+    validate_on_forbidden_fields(document, int_fields.values())
+
     if key is not None:
         document[storage.ext_fields.KEY] = key
 
