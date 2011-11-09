@@ -11,7 +11,7 @@ class TestConfig(object):
     MONGODB_SLAVE_OKAY = False
     MONGODB_USERNAME   = None
     MONGODB_PASSWORD   = None
-    APP_DATABASE       = 'coltrane_test'
+    APPDATA_COLLECTION = 'appdata'
     USERS_COLLECTION   = 'users'
     APPS_COLLECTION    = 'apps'
 

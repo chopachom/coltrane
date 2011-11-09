@@ -32,13 +32,13 @@ class Guard(object):
 
     def get_auth_token(self):
         auth_tkn = request.cookies.get('auth_tkn', None)
-        self.app.logger.debug("Got cookie %s: %s", 'get_auth_token', auth_tkn)
+        self.app.logger.debug("Got cookie %s: %s", 'auth_token', auth_tkn)
         return auth_tkn
 
 
     def get_app_token(self):
-        app_tkn = request.cookies.get('get_app_token', None)
-        self.app.logger.debug("Got cookie %s: %s", 'get_app_token', app_tkn)
+        app_tkn = request.cookies.get('app_token', None)
+        self.app.logger.debug("Got cookie %s: %s", 'app_token', app_tkn)
         return app_tkn
 
 

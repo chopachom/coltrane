@@ -3,11 +3,11 @@ __author__ = 'qweqwe'
 from extensions import mongodb
 
 class GuardManager(object):
-
+    
     def __init__(self, app):
         c = app.config
-        self.users = mongodb.connection[c.get('APP_DATABASE')][c.get('USERS_COLLECTION')]
-        self.apps = mongodb.connection[c.get('APP_DATABASE')][c.get('APPS_COLLECTION')]
+        self.users = mongodb.connection[c.get('MONGODB_DATABASE')][c.get('USERS_COLLECTION')]
+        self.apps = mongodb.connection[c.get('MONGODB_DATABASE')][c.get('APPS_COLLECTION')]
 
     def authenticate_user(self, token):
         self.users.find_one({'token': token})
