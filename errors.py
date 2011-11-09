@@ -18,13 +18,13 @@ class AppException(Exception):
         return self.message
 
 class DocumentNotFoundError(AppException):
-    message = 'Document with bucket [{bucket}] and key [{key}] was not found'
+    DOCUMENT_BY_CRITERIA = 'Document with bucket [{bucket}] and criteria [{criteria}] was not found'
+    DOCUMENT_BY_KEY = 'Document with bucket [{bucket}] and key [{key}] was not found'
 
-    def __init__(self, *args, **kwargs):
-        super(DocumentNotFoundError, self).__init__(*args, **kwargs)
-        self.key = kwargs.get('key')
-        self.bucket = kwargs.get('bucket')
+    message = DOCUMENT_BY_CRITERIA
 
+    def __init__(self, message=None, **kwargs):
+        super(DocumentNotFoundError, self).__init__(message, **kwargs)
 
 class InvalidAppIdError(AppException):
     """Error raised when application is unauthorized or app id is invalid"""
@@ -46,6 +46,8 @@ class InvalidUserIdError(AppException):
 
 class InvalidDocumentError(AppException):
     """Error raised when document is invalid"""
+    FORBIDDEN_FIELDS_MSG = 'Document contains forbidden fields [%s]'
+    
     def __init__(self, message, **kwargs):
         super(InvalidDocumentError, self).__init__(message, **kwargs)
 
@@ -60,7 +62,7 @@ class InvalidDocumentKeyError(AppException):
         self.bucket = kwargs.get('bucket')
 
 
-class JSONInvalidFormatError(AppException):
+class InvalidJSONFormatError(AppException):
     """
     Error when user passes invalid json object
     Parameters:
@@ -72,5 +74,13 @@ class JSONInvalidFormatError(AppException):
     message = "Invalid json object."
     
     def __init__(self, message=None, *args, **kwargs):
-        super(JSONInvalidFormatError, self).__init__(message, *args, **kwargs)
+        super(InvalidJSONFormatError, self).__init__(message, *args, **kwargs)
         self.json = kwargs.get('json')
+
+
+class InvalidRequestError(AppException):
+    message = "Invalid request syntax."
+
+    def __init__(self, message=None, *args, **kwargs):
+        super(InvalidRequestError, self).__init__(message, *args, **kwargs)
+        self.req_url = kwargs.get('req_url')
