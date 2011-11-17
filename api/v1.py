@@ -4,8 +4,9 @@ import logging
 from flask import Blueprint, jsonify
 from flask.globals import request
 from api.validators import SimpleValidator, RecursiveValidator
-from ds import storage
-from ds.storage import ext_fields, int_fields
+from data import storage
+from data.storage import ext_fields, int_fields
+
 from extensions import guard
 from api.statuses import *
 

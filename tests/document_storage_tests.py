@@ -1,10 +1,10 @@
 from datetime import datetime
-from ds.storage import ext_fields
+from data.storage import ext_fields
 
 __author__ = 'nik'
 
 import unittest
-from ds import storage
+from data import storage
 from errors import *
 
 class DocumentStorageIntegrationTestCase(unittest.TestCase):

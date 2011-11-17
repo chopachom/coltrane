@@ -1,0 +1,85 @@
+* {
+	margin: 0;
+}
+html, body {
+	height: 100%;
+}
+#wrapper {
+	min-height: 100%;
+	height: auto !important;
+	height: 100%;
+	margin: 0 auto -101px; /* the bottom margin is the negative value of the footer's height */
+}
+#footer, #push {
+    height: 100px;
+    clear: both;
+}
+#footer {
+     margin-top: -100px;
+}
+
+.page-header h1 small a {
+    color: #778899;
+}
+
+#profile .page-header h1 small {
+    color: #888;
+}
+
+table caption {
+    padding: 10px 10px 9px;
+    line-height: 13.5px;
+    vertical-align: middle;
+    border-bottom: 1px solid #DDD;
+    /*text-align: left;*/
+    font-weight:bold;
+    color:#555;
+    font-size:14px;
+}
+
+table {
+   margin: 0 0 36px 0;
+}
+
+#masthead .inner.small {
+    padding: 16px 0 !important;
+}
+
+#masthead .inner.small h1{
+    font-size: 26px;
+    font-weight: normal;
+    margin-bottom: 0;
+    text-align: left;
+}
+
+.well.withdrew{
+    text-align: center;
+}
+
+.help-block.error {
+    color: #b85b3d;
+}
+
+
+.nav.secondary-nav .menu span{
+    color:#d3d3d3;
+    display: block;
+    float: none;
+    padding: 10px 10px 11px;
+    line-height: 19px;
+}
+.nav.secondary-nav .menu.signup a {
+    font-weight: bold;
+    color: #e29b55;
+}
+.nav.secondary-nav .menu.signup a::after {
+    content: ' ›';
+}
+
+.prettyprint.lang-py .pln {
+    color: #584949;
+}
+
+.prettyprint.lang-py .pun {
+    color: #bfa8a0;
+}

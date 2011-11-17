@@ -5,10 +5,10 @@ from api import v1
 from api.v1 import from_json, forbidden_fields
 from api.statuses import app, STATUS_CODE
 from app import create_app
-from ds import storage
+from data import storage
 import errors
 from extensions import mongodb
-from ds.storage import ext_fields, int_fields
+from data.storage import ext_fields, int_fields
 
 __author__ = 'pshkitin'
 
