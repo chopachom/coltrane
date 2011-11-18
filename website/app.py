@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import views
 import logging
-import os
 from flask import Flask
 from config import DefaultConfig
 from extensions import db

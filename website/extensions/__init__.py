@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
-from flaskext.mongoengine import MongoEngine
+from flaskext.sqlalchemy import SQLAlchemy
 #from extensions.authentication import AuthManager
-db = MongoEngine()
+db = SQLAlchemy()

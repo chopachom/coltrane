@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from flask import Blueprint, render_template, request, url_for, redirect
-from forms import RegistrationForm, LoginForm
-from models import  User
-from extensions.authentication import authentic
+from website.forms import RegistrationForm, LoginForm
+from website.models import  User
+from website.extensions import db
+from website.extensions.authentication import authentic
 
 
 auth = Blueprint('login',__name__)
@@ -20,7 +21,8 @@ def register():
         user = User(username=form.username.data,
                     email=form.email.data,
                     password=form.password.data)
-        user.save()
+        db.session.add(user)
+        db.session.commit()
         return redirect(url_for('index.main'))
     return render_template('register.html', form=form)
 
@@ -36,4 +38,4 @@ def login():
 
 @auth.route('/users')
 def users():
-    return render_template('users.html', users=User.objects)
+    return render_template('users.html', users=User.query.all())
