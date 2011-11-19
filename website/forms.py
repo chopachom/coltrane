@@ -8,7 +8,7 @@ from flaskext.bcrypt import check_password_hash
 
 class RegistrationForm(Form):
 
-    username = TextField("Username", [
+    nickname = TextField("Username", [
         validators.Length(min=2, max=255),
         validators.Required(),
         validators.Regexp(r'^[a-zA-Z0-9_-]{2,255}$',

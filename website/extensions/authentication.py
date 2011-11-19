@@ -8,6 +8,9 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 
+COOKIE_AUTH_TOKEN = 'auth_tkn'
+
+
 class AuthManager(object):
 
     def __init__(self, app=None):
@@ -28,12 +31,12 @@ class AuthManager(object):
             return None
 
     def cookie_login(self):
-        if request.cookies.get('auth_tkn'):
+        if request.cookies.get(COOKIE_AUTH_TOKEN):
             #print request.cookies.get('auth_tkn')
-            self.login_by_token(request.cookies.get('auth_tkn'))
+            self.login_by_token(request.cookies.get(COOKIE_AUTH_TOKEN))
 
     def login_by_token(self, token):
-        user = User.objects(tknhash = sha256(token).hexdigest()).first()
+        user = User.query.filter(User.auth_hash == sha256(token).hexdigest()).first()
         if user:
             g.current_user = user
             return True
@@ -72,7 +75,7 @@ class AuthManager(object):
             user.regenerate_auth_tokens()
             after_this_request(
                 lambda resp: resp.set_cookie(
-                    'auth_tkn',
+                    COOKIE_AUTH_TOKEN,
                     user.auth_token,
                     expires=datetime.utcnow() + timedelta(days=14),
                     httponly=True) or resp # using 'or' because set_cookie returns NoneType without it
@@ -90,7 +93,7 @@ class AuthManager(object):
 
         after_this_request(
             lambda resp: resp.set_cookie(
-                'auth_tkn',
+                COOKIE_AUTH_TOKEN,
                 '',
                 expires=datetime(1971,01,01),
                 httponly=True) or resp # using 'or' because set_cookie returns NoneType
