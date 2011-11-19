@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from flask import request, g, session
 from flaskext.bcrypt import check_password_hash
-from models import User
-from hooks import after_this_request
+from website.models import User
+from website.hooks import after_this_request
 from hashlib import sha256
 from functools import wraps
 from datetime import datetime, timedelta
@@ -55,13 +55,13 @@ class AuthManager(object):
 
         success = False
 
-        # assuming that if passwords isn't given then we have a user object
+        # assuming that if password isn't given then we have a user object
         if password is None:
             session['user_id'] = user.id
             success = True
         # otherwise we have a username
         else:
-            user = User.objects(username = user).first()
+            user = User.query.filter(User.nickname == user).first()
             if not user:
                 return False
             if check_password_hash(user.pwdhash, password):
@@ -69,7 +69,7 @@ class AuthManager(object):
                 success = True
 
         if success:
-            user._generate_tokens()
+            user.regenerate_auth_tokens()
             after_this_request(
                 lambda resp: resp.set_cookie(
                     'auth_tkn',

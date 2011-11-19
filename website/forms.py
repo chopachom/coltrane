@@ -42,7 +42,7 @@ class LoginForm(Form):
     password = PasswordField("Password", [validators.Required()])
 
     def validate_username(self, field):
-        self.user = User.objects(username=field.data).first()
+        self.user = User.query.filter(User.nickname == field.data).first()
         if not self.user:
             raise ValidationError("Wrong username")
 
@@ -50,6 +50,6 @@ class LoginForm(Form):
         if not self.user:
             raise ValidationError("Wrong password")
         else:
-            if not check_password_hash(self.user.pwdhash, field.data):
+            if not check_password_hash(self.user.pwd_hash, field.data):
                 self.user = None
                 raise ValidationError("Wrong password")
