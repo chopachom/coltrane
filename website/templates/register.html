@@ -1,4 +1,4 @@
-{% from "_formhelpers.html" import render_field_div %}
+{% from "_formhelpers.html" import render_field %}
 {% extends "layout.html" %}
 {% block content %}
     <div class="page-header">
@@ -11,10 +11,10 @@
         {{ form.hidden_tag() }}
           <fieldset>
 {#          <legend>Example form legend</legend>#}
-              {{ render_field_div(form.username) }}
-              {{ render_field_div(form.email) }}
-              {{ render_field_div(form.password) }}
-              {{ render_field_div(form.confirm) }}
+              {{ render_field(form.username) }}
+              {{ render_field(form.email) }}
+              {{ render_field(form.password) }}
+              {{ render_field(form.confirm) }}
             <div class="actions">
               <input type="submit" class="btn primary" value="Register">&nbsp;<button type="reset" class="btn">Cancel</button>
             </div>
