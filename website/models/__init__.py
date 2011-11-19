@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+__author__ = 'qweqwe'
+
 from extensions import db
 from sqlalchemy.dialects.mysql import BIGINT
 from datetime import datetime

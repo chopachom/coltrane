@@ -2,7 +2,7 @@
 import os
 
 MYSQL_DEBUG_URI = os.environ.get('COLTRANE_MYSQL_DEBUG_URI') or \
-                  'mysql://root:qweqwe@127.0.0.1:3306/coltrane'
+                  'mysql://root@127.0.0.1:3306/coltrane'
 
 
 class DefaultConfig(object):
