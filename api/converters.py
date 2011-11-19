@@ -5,11 +5,13 @@ __author__ = 'Pasha'
 class KeysConverter(BaseConverter):
     def to_python(self, value):
         keys = value.split(',')
-        keys = map(lambda k: k.strip(), keys)
+        res_keys = []
+        for k in keys:
+            k = k.strip()
+            if len(k):
+                res_keys.append(k)
 
-        if len(keys) == 0:
-            raise RuntimeError('At least one key must be passed.')
-        return keys
+        return res_keys
 
     def to_url(self, values):
         return ','.join(BaseConverter.to_url(value)

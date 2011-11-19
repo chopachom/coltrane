@@ -91,6 +91,10 @@ def post_handler(bucket, key):
 @api.route('/<bucket>/<keys:keys>', methods=['GET'])
 def get_by_keys_handler(bucket, keys):
     documents = []
+
+    if not len(keys):
+            raise errors.InvalidRequestError('At least one key must be passed.')
+    
     for key in keys:
         doc = storage.get_by_key(get_app_id(), get_user_id(),
                                    bucket, key)
@@ -114,6 +118,8 @@ def get_by_filter_handler(bucket):
 def delete_by_keys_handler(bucket, keys):
     """ Deletes existing document (C.O.)
     """
+    if not len(keys):
+            raise errors.InvalidRequestError('At least one key must be passed.')
     res = []
     for key in keys:
         filter_opts = {ext_fields.KEY: key}
@@ -140,6 +146,8 @@ def put_by_keys_handler(bucket, keys):
     """ Update existing documents by keys.
     If document with any key doesn't exist then create it
     """
+    if not len(keys):
+            raise errors.InvalidRequestError('At least one key must be passed.')
     document = extract_form_data()
     force = is_force_mode()
 

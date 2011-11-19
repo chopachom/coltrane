@@ -15,7 +15,6 @@ __author__ = 'pshkitin'
 API_V1 = '/v1'
 
 class ApiTestCase(unittest.TestCase):
-
     def setUp(self):
         v1.get_app_id = lambda : 'app_id1'
         v1.get_remote_ip = lambda : '127.0.0.1'
@@ -93,6 +92,11 @@ class ApiTestCase(unittest.TestCase):
         assert len(res) == 2
 
 
+    def test_get_with_no_keys(self):
+        rv = self.app.get(API_V1 + '/books/  ,  ')
+        assert  from_json(rv.data)['error'] == {'message': "At least one key must be passed.", "code": app.BAD_REQUEST}
+
+
     def test_post_request_without_specified_key(self):
         rv = self.app.post(API_V1 + '/books', data=dict(
             data='{"title": "Title3", "author": "Pasha Shkitin"}'
@@ -101,7 +105,7 @@ class ApiTestCase(unittest.TestCase):
         assert key is not None and isinstance(key, basestring) and len(key) > 0
 
     def test_success_delete_request(self):
-        src = {'a':[1,2,3]}
+        src = {'a': [1, 2, 3]}
         key = 'key_2'
         data = json.dumps(src)
 
@@ -114,7 +118,8 @@ class ApiTestCase(unittest.TestCase):
     def test_fail_delete_request(self):
         rv = self.app.delete(API_V1 + '/books/4')
         assert  from_json(rv.data)['response'] == [{'4': app.NOT_FOUND}]
-#        assert from_json(rv.data)['error']['code'] == app.NOT_FOUND
+
+    #        assert from_json(rv.data)['error']['code'] == app.NOT_FOUND
 #        print "Fail delete: " + rv.data
 
 class ApiUpdateManyCase(unittest.TestCase):
@@ -161,13 +166,13 @@ class ApiUpdateManyCase(unittest.TestCase):
         print rv.data
         data = from_json(rv.data)
         res = data['response']
-        assert res == [{src_key:app.NOT_FOUND}]
+        assert res == [{src_key: app.NOT_FOUND}]
 
 
     def test_put_with_forbidden_fields(self):
         src_key = "my_key"
         src = {ext_fields.KEY: src_key, int_fields.APP_ID: "123", ext_fields.BUCKET: "books",
-               int_fields.CREATED_AT:"12.12.1222", "title": "Title3", "author": "Vasya Shkitin"}
+               int_fields.CREATED_AT: "12.12.1222", "title": "Title3", "author": "Vasya Shkitin"}
         rv = self.app.put(API_V1 + '/books/' + src_key, data=dict(
             data=json.dumps(src)
         ), follow_redirects=True)
@@ -181,8 +186,8 @@ class ApiUpdateManyCase(unittest.TestCase):
 
     def test_put_by_filter_with_force(self):
         src_key = "my_key"
-        src = {ext_fields.KEY: src_key, "a":"Math", "b":"Programming", "title": "Souls", "author": "Gogol"}
-        rv = self.app.put(API_V1 + '/books?force=true&filter=' + json.dumps({"a":"Programming"}), data=dict(
+        src = {ext_fields.KEY: src_key, "a": "Math", "b": "Programming", "title": "Souls", "author": "Gogol"}
+        rv = self.app.put(API_V1 + '/books?force=true&filter=' + json.dumps({"a": "Programming"}), data=dict(
             data=json.dumps(src)
         ), follow_redirects=True)
 
@@ -201,13 +206,13 @@ class ApiUpdateManyCase(unittest.TestCase):
         print rv.data
         data = from_json(rv.data)
         res = data['response']
-        assert res == [{'new_key':app.NOT_FOUND}]
+        assert res == [{'new_key': app.NOT_FOUND}]
 
 
     def test_put_existing_document(self):
         src = {"_key": "my_key", "title": "Title3", "author": "Pasha Shkitin"}
         rv = self.app.post(API_V1 + '/books', data=dict(
-            data= json.dumps(src)
+            data=json.dumps(src)
         ), follow_redirects=True)
         del src['_key']
 
@@ -221,10 +226,9 @@ class ApiUpdateManyCase(unittest.TestCase):
         ), follow_redirects=True)
 
         data = from_json(rv.data)
-        assert data['response'] == [{'my_key':app.OK}]
+        assert data['response'] == [{'my_key': app.OK}]
 
     def test_update_all(self):
-
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
         assert len(books) == 5
@@ -234,7 +238,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         resp = self.app.put(API_V1 + '/books?filter=' + filter_opts,
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
-        assert status == {STATUS_CODE:app.OK}
+        assert status == {STATUS_CODE: app.OK}
 
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
@@ -243,13 +247,12 @@ class ApiUpdateManyCase(unittest.TestCase):
 
 
     def test_update_filter1(self):
-
         src_update = {"age": 50}
-        filter_opts = {"age":{"$lt":20}}
+        filter_opts = {"age": {"$lt": 20}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
-        assert status == {STATUS_CODE:app.OK}
+        assert status == {STATUS_CODE: app.OK}
 
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
@@ -257,13 +260,12 @@ class ApiUpdateManyCase(unittest.TestCase):
         assert len(res) == 4
 
     def test_update_filter2(self):
-
         src_update = {"age": 50}
-        filter_opts = {"age":{"$lt":20}, "name": "Pasha"}
+        filter_opts = {"age": {"$lt": 20}, "name": "Pasha"}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
-        assert status == {STATUS_CODE:app.OK}
+        assert status == {STATUS_CODE: app.OK}
 
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
@@ -271,13 +273,12 @@ class ApiUpdateManyCase(unittest.TestCase):
         assert len(res) == 1
 
     def test_update_filter3(self):
-
         src_update = {"age": 50, "cources.two": 5}
-        filter_opts = {"age":{"$lt":20}, "cources.one": {"$lt": 3}}
+        filter_opts = {"age": {"$lt": 20}, "cources.one": {"$lt": 3}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
-        assert status == {STATUS_CODE:app.OK}
+        assert status == {STATUS_CODE: app.OK}
 
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
@@ -286,7 +287,6 @@ class ApiUpdateManyCase(unittest.TestCase):
 
 
     def test_update_newfield(self):
-
         src_update = {"new_field": 100}
         filter_opts = "all"
         resp = self.app.put(API_V1 + '/books?filter=' + filter_opts,
@@ -301,7 +301,6 @@ class ApiUpdateManyCase(unittest.TestCase):
 
 
     def test_update_multiple_keys(self):
-
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
         assert len(books) == 5
@@ -310,12 +309,12 @@ class ApiUpdateManyCase(unittest.TestCase):
         resp = self.app.put(API_V1 + '/books/1,2,5,not_existing',
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
-        assert status == [{'1':app.OK}, {'2':app.OK}, {'5':app.OK}, {'not_existing':app.NOT_FOUND}]
+        assert status == [{'1': app.OK}, {'2': app.OK}, {'5': app.OK}, {'not_existing': app.NOT_FOUND}]
 
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
         for b in books:
-            if b['_key'] in ['1','2','5', 'not_existing']:
+            if b['_key'] in ['1', '2', '5', 'not_existing']:
                 assert b['age'] == 50
             else:
                 assert b['age'] != 50
@@ -356,7 +355,6 @@ class ApiDeleteManyCase(unittest.TestCase):
         storage._entities.drop()
 
     def test_delete_all_with_filter_opts(self):
-
         resp = self.app.get(API_V1 + '/books?filter=all')
         books = from_json(resp.data)['response']
         assert len(books) == 5
@@ -371,7 +369,6 @@ class ApiDeleteManyCase(unittest.TestCase):
         assert len(books) == 0
 
     def test_delete_two_by_age(self):
-
         filter_opts = '{"age":10}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         status = from_json(resp.data)['response']
@@ -390,7 +387,6 @@ class ApiDeleteManyCase(unittest.TestCase):
 
 
     def test_delete_one_by_filter(self):
-
         filter_opts = '{"age":10, "name":"Sasha"}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         status = from_json(resp.data)['response']
@@ -402,7 +398,6 @@ class ApiDeleteManyCase(unittest.TestCase):
 
 
     def test_delete_by_LT_filter(self):
-
         filter_opts = '{"age": { "$lt" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         status = from_json(resp.data)['response']
@@ -420,7 +415,6 @@ class ApiDeleteManyCase(unittest.TestCase):
         assert success
 
     def test_delete_by_GT_filter(self):
-
         filter_opts = '{"age": { "$gt" : 10 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         status = from_json(resp.data)['response']
@@ -439,7 +433,6 @@ class ApiDeleteManyCase(unittest.TestCase):
 
 
     def test_delete_by_NE_filter(self):
-
         filter_opts = '{"age": { "$ne" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         status = from_json(resp.data)['response']
@@ -458,7 +451,6 @@ class ApiDeleteManyCase(unittest.TestCase):
 
 
     def test_delete_by_NE_and_other_filter(self):
-
         filter_opts = '{"age": { "$ne" : 15 }, "name": {"$ne" : "Sasha"}}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         status = from_json(resp.data)['response']
@@ -477,7 +469,6 @@ class ApiDeleteManyCase(unittest.TestCase):
 
 
     def test_delete_nothing(self):
-
         filter_opts = '{"age":10, "name":"Sergey"}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         error_code = from_json(resp.data)['response']
