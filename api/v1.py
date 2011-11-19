@@ -49,14 +49,11 @@ def extract_filter_opts():
     filter_opts = request.args.get('filter', None)
     if filter_opts is not None:
         filter_opts = filter_opts.strip()
-
-    if filter_opts is None or filter_opts == '{}':
-        raise errors.InvalidRequestError('Invalid request syntax. There is no filters opts.')
-    elif filter_opts == 'all':
-        filter_opts = None
-    else:
         filter_opts = from_json(filter_opts)
-
+        validate_on_forbidden_fields(filter_opts, int_fields.values())
+        if not len(filter_opts):
+            raise errors.InvalidRequestError('Invalid request syntax. There is no filters opts.')
+    
     return filter_opts
 
 

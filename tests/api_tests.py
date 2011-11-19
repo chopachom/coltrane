@@ -62,7 +62,7 @@ class ApiTestCase(unittest.TestCase):
 
 
     def test_get_all_request(self):
-        rv = self.app.get(API_V1 + '/books?filter=all')
+        rv = self.app.get(API_V1 + '/books')
         res = from_json(rv.data)
         assert res == {'response': []}
 
@@ -229,18 +229,18 @@ class ApiUpdateManyCase(unittest.TestCase):
         assert data['response'] == [{'my_key': app.OK}]
 
     def test_update_all(self):
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 5
 
         src_update = {"age": 50}
         filter_opts = '   all   '
-        resp = self.app.put(API_V1 + '/books?filter=' + filter_opts,
+        resp = self.app.put(API_V1 + '/books',
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
         assert status == {STATUS_CODE: app.OK}
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         for b in books:
             assert b['age'] == 50
@@ -254,7 +254,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == {STATUS_CODE: app.OK}
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         res = filter(lambda b: b['age'] == 50, books)
         assert len(res) == 4
@@ -267,7 +267,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == {STATUS_CODE: app.OK}
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         res = filter(lambda b: b['age'] == 50 and b['name'] == 'Pasha', books)
         assert len(res) == 1
@@ -280,7 +280,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == {STATUS_CODE: app.OK}
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         res = filter(lambda b: b['age'] == 50 and b['cources']['two'] == 5, books)
         assert len(res) == 2
@@ -288,20 +288,19 @@ class ApiUpdateManyCase(unittest.TestCase):
 
     def test_update_newfield(self):
         src_update = {"new_field": 100}
-        filter_opts = "all"
-        resp = self.app.put(API_V1 + '/books?filter=' + filter_opts,
+        resp = self.app.put(API_V1 + '/books',
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
         assert status == {STATUS_CODE: app.OK}
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         res = filter(lambda b: b.get('new_field') == 100, books)
         assert len(res) == 5
 
 
     def test_update_multiple_keys(self):
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 5
 
@@ -311,7 +310,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == [{'1': app.OK}, {'2': app.OK}, {'5': app.OK}, {'not_existing': app.NOT_FOUND}]
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         for b in books:
             if b['_key'] in ['1', '2', '5', 'not_existing']:
@@ -355,18 +354,21 @@ class ApiDeleteManyCase(unittest.TestCase):
         storage._entities.drop()
 
     def test_delete_all_with_filter_opts(self):
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 5
 
-        filter_opts = '   all   '
-        resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
+        resp = self.app.delete(API_V1 + '/books')
         status = from_json(resp.data)['response']
         assert status == app.OK
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 0
+
+    def test_delete_all_with_wrong_filter(self):
+        resp = self.app.get(API_V1 + '/books?filter=all')
+        assert from_json(resp.data)['error'] == {'message': 'Invalid json object "all"', 'code': app.BAD_REQUEST}
 
     def test_delete_two_by_age(self):
         filter_opts = '{"age":10}'
@@ -374,7 +376,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == app.OK
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 3
 
@@ -392,7 +394,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == app.OK
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 4
 
@@ -403,7 +405,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == app.OK
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 3
 
@@ -420,7 +422,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == app.OK
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 2
 
@@ -438,7 +440,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == app.OK
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 2
 
@@ -456,7 +458,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         status = from_json(resp.data)['response']
         assert status == app.OK
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 4
 
@@ -474,7 +476,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         error_code = from_json(resp.data)['response']
         assert error_code == app.NOT_FOUND
 
-        resp = self.app.get(API_V1 + '/books?filter=all')
+        resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
         assert len(books) == 5
 
@@ -492,12 +494,6 @@ class ApiDeleteManyCase(unittest.TestCase):
     def test_delete_without_filter_opts(self):
         filter_opts = '{}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        resp = from_json(resp.data)
-        expected = {
-            'error': {STATUS_CODE: app.BAD_REQUEST, 'message': 'Invalid request syntax. There is no filters opts.'}}
-        assert resp == expected
-
-        resp = self.app.delete(API_V1 + '/books')
         resp = from_json(resp.data)
         expected = {
             'error': {STATUS_CODE: app.BAD_REQUEST, 'message': 'Invalid request syntax. There is no filters opts.'}}
