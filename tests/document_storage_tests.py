@@ -232,18 +232,5 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         assert d['addition'] == [1,2,3]
 
 
-    def test_create_with_not_allowed_key(self):
-        app_id = '1'
-        user_id = '1'
-        boobs_type = 'boobs'
-
-        # create entity with not allowed key
-        data = {
-            'test': 'test',
-            storage.int_fields.BUCKET: '__bucket__' # not allowed key
-        }
-        with self.assertRaises(InvalidDocumentError):
-            storage.create(app_id, user_id, self.ip, data, boobs_type)
-
 if __name__ == '__main__':
     unittest.main()
