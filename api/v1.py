@@ -20,7 +20,7 @@ def post_handler(bucket, key):
     """
     document = extract_form_data()
 
-    validate(document)
+    validate_document(document)
 
     if key is not None:
         document[storage.ext_fields.KEY] = key
@@ -97,7 +97,7 @@ def put_by_keys_handler(bucket, keys):
     document = extract_form_data()
     force = is_force_mode()
 
-    validate(document)
+    validate_document(document)
 
     res = []
     for key in keys:
@@ -124,7 +124,7 @@ def put_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     force = is_force_mode()
 
-    validate(document)
+    validate_document(document)
 
     if not storage.is_document_exists(get_app_id(), get_user_id(), bucket, filter_opts):
         if force:
@@ -189,13 +189,16 @@ def invalid_json_format(error):
     return response_msg, http.BAD_REQUEST
 
 
-def validate(document):
+def validate_document(document):
     # assert that document not contains forbidden fields
     fields = [key for key in document if key in int_fields.values()]
     if len(fields):
         raise errors.InvalidDocumentError(
             errors.InvalidDocumentError.FORBIDDEN_FIELDS_MSG % ','.join(fields))
 
+def validate_filter(filter):
+    "TODO: re-implement this function in right way"
+    validate_document(filter)
     
 def get_user_id():
     return guard.current_user.id
@@ -236,7 +239,7 @@ def extract_filter_opts():
     if filter_opts is not None:
         filter_opts = filter_opts.strip()
         filter_opts = from_json(filter_opts)
-        validate(filter_opts)
+        validate_filter(filter_opts)
         if not len(filter_opts):
             raise errors.InvalidRequestError('Invalid request syntax. There is no filters opts.')
 
