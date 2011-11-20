@@ -1,7 +1,7 @@
 __author__ = 'apetrovich'
 
-from .rest.converters import KeysConverter, BucketConverter, SpecialBucketConverter
-from .rest.v1 import api as api_v1
+from .converters import KeysConverter, BucketConverter, SpecialBucketConverter
+from .v1 import api as api_v1
 
 converters = {
     'keys': KeysConverter,

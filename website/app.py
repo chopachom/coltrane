@@ -4,7 +4,7 @@ import logging
 from flask import Flask
 from config import DefaultConfig
 from extensions import db
-from extensions.authentication import authentic
+from extensions.warden import warden
 from logging.handlers import RotatingFileHandler
 from hooks import per_request_callbacks
 
@@ -14,6 +14,7 @@ DEFAULT_APP_NAME = "bitstant"
 DEFAULT_MODULES = (
     (views.index, ""),
     (views.user, ""),
+    (views.developer, "/developer")
 )
 
 
@@ -48,7 +49,7 @@ def configure_modules(app, modules):
 
 def configure_extensions(app):
     db.init_app(app)
-    authentic.init_app(app)
+    warden.init_app(app)
 
 
 def configure_hooks(app):

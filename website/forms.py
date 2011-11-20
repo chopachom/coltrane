@@ -53,3 +53,19 @@ class LoginForm(Form):
             if not check_password_hash(self.user.pwd_hash, field.data):
                 self.user = None
                 raise ValidationError("Wrong password")
+
+
+
+class CreateAppForm(Form):
+
+    app_name =  TextField("App name", [
+        validators.Length(min=2, max=255),
+        validators.Required()
+    ])
+
+    app_domain = TextField("App domain", [
+        validators.Length(min=2, max=255),
+        validators.Required(),
+        validators.Regexp(r'^[a-zA-Z0-9]{1}[a-zA-Z0-9_-]{2,253}[a-zA-Z0-9]{1}$',
+            message="App domain may consist only of latin letters, numbers and dashes")
+    ])

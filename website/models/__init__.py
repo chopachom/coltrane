@@ -72,6 +72,13 @@ class Developer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 
+    user = db.relationship(User, uselist=False)
+
+
+    def __init__(self, user):
+        self.user = user
+
+
     def __repr__(self):
         return "<Developer {0} user_id: {1} at {2:x}>".format(
                 self.id, self.user_id, id(self))
@@ -84,7 +91,8 @@ class Application(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     developer_id = db.Column(db.Integer, db.ForeignKey("developers.id"))
-    name = db.Column(db.String(255))
+    name   = db.Column(db.String(255))
+    domain = db.Column(db.String(255))
 
 
     def __repr__(self):

@@ -6,10 +6,16 @@ import sys
 from flask import Flask
 from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
-
-from extensions import mongodb, guard
+#<<<<<<< HEAD
+#
+#from extensions import mongodb, guard
+#from misc.guard_manager import GuardManager
+#from api import api_v1, converters
+#=======
 from misc.guard_manager import GuardManager
-from api import api_v1, converters
+from extensions import mongodb
+from extensions import guard
+from rest import api_v1, converters
 
 
 guard.manager = GuardManager

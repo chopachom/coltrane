@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 COOKIE_AUTH_TOKEN = 'auth_tkn'
 
 
-class AuthManager(object):
+class Warden(object):
 
     def __init__(self, app=None):
         if app is not None:
@@ -99,4 +99,14 @@ class AuthManager(object):
                 httponly=True) or resp # using 'or' because set_cookie returns NoneType
             )
 
-authentic = AuthManager()
+
+    def protect(self, blueprint):
+        """ Makes routes of blueprint private, i.e. only logged in users have
+            access to its routes.
+        """
+        @blueprint.before_request
+        def protector():
+            if not self.current_user():
+                return "Protected area"
+
+warden = Warden()
