@@ -2,7 +2,7 @@
 
 from flask import Blueprint, render_template, request, url_for, redirect
 from website.forms import CreateAppForm
-from models import  Developer, Application
+from db import  Developer, Application
 from website.extensions import db
 from website.extensions.warden import warden
 

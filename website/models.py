@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'qweqwe'
 
-from extensions import db
-from sqlalchemy.dialects.mysql import BIGINT
+from website.extensions import db
 from datetime import datetime
 from flaskext.bcrypt import generate_password_hash, check_password_hash
 from hashlib import sha256, sha224
@@ -64,7 +63,6 @@ class User(db.Model):
 
 
 
-
 class Developer(db.Model):
 
     __tablename__ = 'developers'
@@ -74,10 +72,8 @@ class Developer(db.Model):
 
     user = db.relationship(User, uselist=False)
 
-
     def __init__(self, user):
         self.user = user
-
 
     def __repr__(self):
         return "<Developer {0} user_id: {1} at {2:x}>".format(
@@ -98,3 +94,34 @@ class Application(db.Model):
     def __repr__(self):
         return "<Application {0} name: {1} developer_id: {2} at {3:x}>".format(
                 self.id, self.name, self.developer_id, id(self))
+
+
+class AppToken(db.Model):
+
+    __tablename__ = 'apptokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    app_id  = db.Column(db.Integer, db.ForeignKey("applications.id"))
+    token   = db.Column(db.String(255))
+
+
+    user = db.relationship(User, uselist=False)
+    application = db.relationship(Application, uselist=False)
+
+
+
+    def __init__(self, user, application):
+        self.user = user
+        self.application = application
+        self.token = self.generate()
+
+
+
+    def generate(self):
+        return sha256(
+            str(datetime.utcnow()) +
+            str(self.user_id) +
+            str(self.app_id)  +
+            str(urandom(12))
+        ).hexdigest()

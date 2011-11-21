@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from  flaskext.wtf import (Form, TextField, PasswordField, DecimalField,
                            ValidationError, validators)
-from models import User
+from db import User
 from flaskext.bcrypt import check_password_hash
 
 
