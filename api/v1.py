@@ -2,6 +2,7 @@ import json
 import datetime
 from flask import Blueprint, jsonify
 from flask.globals import request
+from api.validators import SimpleValidator, RecursiveValidator
 from ds import storage
 from ds.storage import ext_fields, int_fields
 import errors
@@ -11,6 +12,9 @@ from api.statuses import *
 DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
 
 api = Blueprint("api_v1", __name__)
+
+class forbidden_fields(Enum):
+    WHERE      = '$where'
 
 
 @api.route('/<bucket>', defaults={'key': None}, methods=['POST'])
@@ -190,11 +194,9 @@ def invalid_json_format(error):
 
 
 def validate_document(document):
-    # assert that document not contains forbidden fields
-    fields = [key for key in document if key in int_fields.values()]
-    if len(fields):
-        raise errors.InvalidDocumentError(
-            errors.InvalidDocumentError.FORBIDDEN_FIELDS_MSG % ','.join(fields))
+    valid1 = RecursiveValidator(document, forbidden_fields.values())
+    valid2 = SimpleValidator(document, int_fields.values(), valid1)
+    valid2.validate()
 
 def validate_filter(filter):
     "TODO: re-implement this function in right way"
