@@ -21,6 +21,9 @@ class Validator():
         next_validator - (object of any subclass of Validator).
             The next validator in the chain after current validator.
         """
+        if type(doc) is not dict:
+            raise RuntimeError('Document [%s] is not dict type.' % doc)
+
         self.doc = doc
         self.forbidden_fields = forbidden_fields
         self.next_validator = next_validator
@@ -63,9 +66,6 @@ class RecursiveValidator(Validator):
     """
     def _forbidden_fields_from_doc(self, doc):
         found_fields = []
-        if type(doc) is not dict:
-            return found_fields
-        
         for key in doc:
             if key in self.forbidden_fields:
                 found_fields.append(key)

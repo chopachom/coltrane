@@ -205,6 +205,7 @@ def invalid_json_format(error):
 def validate_document(document):
     if not document:
         return
+
     valid1 = RecursiveValidator(document, forbidden_fields.values())
     valid2 = SimpleValidator(document, int_fields.values(), valid1)
     valid2.validate()
