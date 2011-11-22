@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from flask import request, g, session
 from flaskext.bcrypt import check_password_hash
-from db import User
+from website.models import User
 from website.hooks import after_this_request
 from hashlib import sha256
 from functools import wraps

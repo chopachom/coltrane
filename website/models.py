@@ -61,6 +61,11 @@ class User(db.Model):
         return self.auth_token
 
 
+    @classmethod
+    def get(cls, nickname):
+        return cls.query.filter(User.nickname == nickname).first()
+
+
 
 
 class Developer(db.Model):
@@ -86,14 +91,22 @@ class Application(db.Model):
     __tablename__ = 'applications'
 
     id = db.Column(db.Integer, primary_key=True)
-    developer_id = db.Column(db.Integer, db.ForeignKey("developers.id"))
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     name   = db.Column(db.String(255))
     domain = db.Column(db.String(255))
 
+    author = db.relationship(User, uselist=False)
+
+
+    def __init__(self, app_name, app_domain, user):
+        self.name = app_name
+        self.domain = app_domain
+        self.author = user
+
 
     def __repr__(self):
-        return "<Application {0} name: {1} developer_id: {2} at {3:x}>".format(
-                self.id, self.name, self.developer_id, id(self))
+        return "<Application {0} name: {1} domain: {2} author_id: {3} at {4:x}>".format(
+                self.id, self.name, self.domain, self.author_id, id(self))
 
 
 class AppToken(db.Model):

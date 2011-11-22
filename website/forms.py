@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from  flaskext.wtf import (Form, TextField, PasswordField, DecimalField,
                            ValidationError, validators)
-from db import User
+from website.models import User
 from flaskext.bcrypt import check_password_hash
 
 
@@ -42,7 +42,7 @@ class LoginForm(Form):
     password = PasswordField("Password", [validators.Required()])
 
     def validate_username(self, field):
-        self.user = User.query.filter(User.nickname == field.data).first()
+        self.user = User.get(nickname=field.data)
         if not self.user:
             raise ValidationError("Wrong username")
 
