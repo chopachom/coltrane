@@ -159,7 +159,27 @@ class ApiTestCase(unittest.TestCase):
         ), follow_redirects=True)
         res = from_json(rv.data)['error']
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code":1}
+
+
+    def test_where_field_as_string(self):
+        self.app.post(API_V1 + '/books', data=dict(
+            data=json.dumps({'a':1})
+        ), follow_redirects=True)
+        self.app.post(API_V1 + '/books', data=dict(
+            data=json.dumps({'a':3})
+        ), follow_redirects=True)
+        self.app.post(API_V1 + '/books', data=dict(
+            data=json.dumps({'a':5})
+        ), follow_redirects=True)
+        self.app.post(API_V1 + '/books', data=dict(
+            data=json.dumps({'a':7})
+        ), follow_redirects=True)
+
+        rv = self.app.get(API_V1 + '/books?filter=\'this.a > 3\'')
+        res = from_json(rv.data)['error']
+        assert res == {"message": "Invalid json object \"\'this.a > 3\'\"", "code": 1}
+
 
 
 class ApiUpdateManyCase(unittest.TestCase):
