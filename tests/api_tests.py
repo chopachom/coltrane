@@ -2,7 +2,7 @@ import json
 import unittest
 from api import api_v1
 from api import v1
-from api.v1 import from_json
+from api.v1 import from_json, forbidden_fields
 from api.statuses import app, STATUS_CODE
 from app import create_app
 from ds import storage
@@ -119,8 +119,48 @@ class ApiTestCase(unittest.TestCase):
         rv = self.app.delete(API_V1 + '/books/4')
         assert  from_json(rv.data)['response'] == [{'4': app.NOT_FOUND}]
 
-    #        assert from_json(rv.data)['error']['code'] == app.NOT_FOUND
-#        print "Fail delete: " + rv.data
+
+    def test_forbidden_where_field(self):
+        rv = self.app.post(API_V1 + '/books', data=dict(
+            data=json.dumps({int_fields.ID:'id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
+        ), follow_redirects=True)
+        res = from_json(rv.data)['error']
+        assert res == {"message": "Document contains forbidden fields [%s,%s]" %
+                                  (int_fields.ID, forbidden_fields.WHERE), "code": 1}
+
+        filter = {'a':21, int_fields.APP_ID:'app_id', 'b':[1,2,3],
+                  'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
+        rv = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
+        res = from_json(rv.data)['error']
+        assert res == {"message": "Document contains forbidden fields [%s,%s]" %
+                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+
+        filter = {'a':21, int_fields.APP_ID:'app_id', 'b':[1,2,3],
+                  'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
+        rv = self.app.delete(API_V1 + '/books?filter=' + json.dumps(filter))
+        res = from_json(rv.data)['error']
+        assert res == {"message": "Document contains forbidden fields [%s,%s]" %
+                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+
+        filter = {'a':21, int_fields.APP_ID:'app_id', 'b':[1,2,3],
+                  'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
+        rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter), data=dict(
+            data=json.dumps({'a':'b'})
+        ), follow_redirects=True)
+        res = from_json(rv.data)['error']
+        assert res == {"message": "Document contains forbidden fields [%s,%s]" %
+                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+
+
+        filter = {'a':21, 'b':[1,2,3],
+                  'c': {'d': {'e': [1,2,3]}}}
+        rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter), data=dict(
+            data=json.dumps({int_fields.APP_ID:'app_id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
+        ), follow_redirects=True)
+        res = from_json(rv.data)['error']
+        assert res == {"message": "Document contains forbidden fields [%s,%s]" %
+                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+
 
 class ApiUpdateManyCase(unittest.TestCase):
     def setUp(self):
