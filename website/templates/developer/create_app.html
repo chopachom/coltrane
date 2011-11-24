@@ -11,8 +11,9 @@
         {{ form.hidden_tag() }}
           <fieldset>
 {#          <legend>Example form legend</legend>#}
-              {{ render_field(form.app_name) }}
-              {{ render_field(form.app_domain) }}
+              {{ render_field(form.name) }}
+              {{ render_field(form.domain) }}
+              {{ render_field(form.description) }}
             <div class="actions">
               <input type="submit" class="btn primary" value="Create">&nbsp;<button type="reset" class="btn">Cancel</button>
             </div>

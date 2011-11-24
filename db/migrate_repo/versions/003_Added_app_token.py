@@ -6,6 +6,8 @@ from datetime import datetime
 
 Base = declarative_base()
 
+c_description = Column("description", Text(2048))
+
 class AppTokenMixin(object):
     __tablename__ = 'apptokens'
 
@@ -43,6 +45,7 @@ def upgrade(migrate_engine):
         pass
 
     AppToken.__table__.create(migrate_engine)
+    applications.create_column(c_description)
 
 
 def downgrade(migrate_engine):
@@ -65,3 +68,4 @@ def downgrade(migrate_engine):
         __table_args__ = {'extend_existing': True}
 
     AppToken.__table__.drop(migrate_engine)
+    applications.drop_column(c_description)

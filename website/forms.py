@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from  flaskext.wtf import (Form, TextField, PasswordField, DecimalField,
-                           ValidationError, validators)
+from  flaskext.wtf import (Form, TextField, PasswordField, TextAreaField,
+                           DecimalField, ValidationError, validators)
 from website.models import User
 from flaskext.bcrypt import check_password_hash
 
@@ -58,12 +58,14 @@ class LoginForm(Form):
 
 class CreateAppForm(Form):
 
-    app_name =  TextField("App name", [
+    name =  TextField("App name", [
         validators.Length(min=2, max=255),
         validators.Required()
     ])
 
-    app_domain = TextField("App domain", [
+    description = TextAreaField("Description")
+
+    domain = TextField("App domain", [
         validators.Length(min=2, max=255),
         validators.Required(),
         validators.Regexp(r'^[a-zA-Z0-9]{1}[a-zA-Z0-9_-]{2,253}[a-zA-Z0-9]{1}$',

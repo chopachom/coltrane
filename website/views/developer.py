@@ -20,10 +20,16 @@ def main():
 def create_app():
     form = CreateAppForm(request.form)
     if form.validate_on_submit():
-        app = Application(form.app_name.data,
-                          form.app_domain.data,
+        app = Application.create(form.name.data,
+                          form.domain.data,
+                          form.description.data,
                           warden.current_user())
-        db.session.add(app)
-        db.session.commit()
+        return redirect(url_for('developer.app_details', domain=app.domain))
     return render_template('developer/create_app.html', form=form)
+
+
+@developer.route('/apps/<domain>')
+def app_details(domain):
+    app = Application.get(domain=domain)
+    return render_template('developer/app_details.html', app=app)
 

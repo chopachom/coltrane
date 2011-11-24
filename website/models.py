@@ -93,20 +93,34 @@ class Application(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     name   = db.Column(db.String(255))
+    description = db.Column(db.Text(2048))
     domain = db.Column(db.String(255))
 
     author = db.relationship(User, uselist=False)
 
 
-    def __init__(self, app_name, app_domain, user):
-        self.name = app_name
-        self.domain = app_domain
+    def __init__(self, name, domain, description, user):
+        self.name = name
+        self.domain = domain
+        self.description = description
         self.author = user
 
 
     def __repr__(self):
         return "<Application {0} name: {1} domain: {2} author_id: {3} at {4:x}>".format(
                 self.id, self.name, self.domain, self.author_id, id(self))
+
+
+    @classmethod
+    def create(cls, name, domain, description, user):
+        app = cls(name, domain, description, user)
+        db.session.add(app)
+        db.session.commit()
+
+    @classmethod
+    def get(cls, domain):
+        return cls.query.filter(cls.domain == domain).first()
+
 
 
 class AppToken(db.Model):
