@@ -12,8 +12,10 @@ warden.protect(developer)
 
 
 @developer.route('/')
-def main():
-    pass
+def index():
+    developers_app = Application.find(author=warden.current_user())
+    return render_template('developer/index.html', apps=developers_app)
+
 
 #TODO: unique constraints for app_domain
 @developer.route('/create-app', methods=['GET', 'POST'])
@@ -30,6 +32,6 @@ def create_app():
 
 @developer.route('/apps/<domain>')
 def app_details(domain):
-    app = Application.get(domain=domain)
+    app = Application.get(domain=domain, author=warden.current_user())
     return render_template('developer/app_details.html', app=app)
 

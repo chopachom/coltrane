@@ -37,3 +37,9 @@ def signup():
 @user.route('/users')
 def users():
     return render_template('users.html', users=User.query.all())
+
+
+@user.route('/logout', methods=['GET', 'POST'])
+def logout():
+    warden.logout()
+    return redirect(url_for('index.main'))

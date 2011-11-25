@@ -14,7 +14,8 @@ DEFAULT_APP_NAME = "bitstant"
 DEFAULT_MODULES = (
     (views.index, ""),
     (views.user, ""),
-    (views.developer, "/developer")
+    (views.developer, "/developer"),
+    (views.appstore, '/apps')
 )
 
 

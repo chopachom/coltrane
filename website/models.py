@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from sqlalchemy.orm import joinedload
+
 __author__ = 'qweqwe'
 
 from website.extensions import db
@@ -63,6 +65,7 @@ class User(db.Model):
 
     @classmethod
     def get(cls, nickname):
+        #TODO: get_or_404
         return cls.query.filter(User.nickname == nickname).first()
 
 
@@ -85,6 +88,16 @@ class Developer(db.Model):
                 self.id, self.user_id, id(self))
 
 
+class DeveloperKeys(db.Model):
+
+    __tablename__ = 'dev_keys'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    key  = db.Column(db.Text(8128), nullable=True)
+    hash = db.Column(db.String(512), nullable=True)
+
+
 
 class Application(db.Model):
 
@@ -96,7 +109,7 @@ class Application(db.Model):
     description = db.Column(db.Text(2048))
     domain = db.Column(db.String(255))
 
-    author = db.relationship(User, uselist=False)
+    author = db.relationship(User, uselist=False,)
 
 
     def __init__(self, name, domain, description, user):
@@ -110,16 +123,32 @@ class Application(db.Model):
         return "<Application {0} name: {1} domain: {2} author_id: {3} at {4:x}>".format(
                 self.id, self.name, self.domain, self.author_id, id(self))
 
-
     @classmethod
     def create(cls, name, domain, description, user):
         app = cls(name, domain, description, user)
         db.session.add(app)
         db.session.commit()
+        return app
+
+    #TODO: get or 404
+    @classmethod
+    def get(cls, domain, author):
+        if isinstance(author, basestring):
+            author = User.get(author)
+        return cls.query.filter(
+            (cls.domain == domain) & (cls.author == author)
+        ).first()
 
     @classmethod
-    def get(cls, domain):
-        return cls.query.filter(cls.domain == domain).first()
+    def find(cls, author):
+        if isinstance(author, basestring):
+            author = User.get(author)
+        return cls.query.filter(cls.author == author)
+
+    @classmethod
+    def all(cls):
+        #TODO: joined load
+        return cls.query.options(joinedload('author')).all()
 
 
 

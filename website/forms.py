@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from  flaskext.wtf import (Form, TextField, PasswordField, TextAreaField,
                            DecimalField, ValidationError, validators)
-from website.models import User
+from website.extensions.warden import warden
+from website.models import User, Application
 from flaskext.bcrypt import check_password_hash
 
 
@@ -71,3 +72,8 @@ class CreateAppForm(Form):
         validators.Regexp(r'^[a-zA-Z0-9]{1}[a-zA-Z0-9_-]{2,253}[a-zA-Z0-9]{1}$',
             message="App domain may consist only of latin letters, numbers and dashes")
     ])
+
+    def validate_domain(self, field):
+        app = Application.get(domain=field.data, author=warden.current_user())
+        if app:
+            raise ValidationError("Domain already taken")

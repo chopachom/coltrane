@@ -77,6 +77,8 @@
           <input class="input-small" type="password" placeholder="Password" name='password'>
           <button class="btn" type="submit">Sign in</button>
         </form>
+      {% else %}
+          <div class="pull-right"><a href="{{ url_for('user.logout') }}">Logout</a></div>
       {% endif %}
     </div>
   </div>
