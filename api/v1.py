@@ -17,52 +17,44 @@ class forbidden_fields(Enum):
     WHERE      = '$where'
 
 
-@api.route('/<bucket>', defaults={'key': None}, methods=['POST'])
-@api.route('/<bucket>/<key>', methods=['POST'])
+@api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
+@api.route('/<bucket:bucket>/<key>', methods=['POST'])
 def post_handler(bucket, key):
     """ Create new document and get _key back
     """
     document = extract_form_data()
-
     validate_document(document)
-
     if key is not None:
         document[storage.ext_fields.KEY] = key
-
-
-    document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket)
+    document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
+                                  document, bucket=bucket)
     return jsonify({'response': {'key': document_key}})
 
 
-@api.route('/<bucket>/<keys:keys>', methods=['GET'])
+@api.route('/<bucket:bucket>/<keys:keys>', methods=['GET'])
 def get_by_keys_handler(bucket, keys):
     documents = []
-
     if not len(keys):
             raise errors.InvalidRequestError('At least one key must be passed.')
-    
     for key in keys:
-        doc = storage.get_by_key(get_app_id(), get_user_id(),
-                                   bucket, key)
+        doc = storage.get_by_key(get_app_id(), get_user_id(), bucket, key)
         if doc:
             documents.append(doc)
-
     res = json.dumps({'response': documents}, default=DT_HANDLER)
     return res
 
 
-@api.route('/<bucket>', methods=['GET'])
+@api.route('/<bucket:bucket>', methods=['GET'])
 def get_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     validate_filter(filter_opts)
-    
-    documents = storage.get_by_filter(get_app_id(), get_user_id(), bucket, filter_opts)
-
+    documents = storage.get_by_filter(get_app_id(), get_user_id(),
+                                      bucket, filter_opts)
     res = json.dumps({'response': documents}, default=DT_HANDLER)
     return res
 
 
-@api.route('/<bucket>/<keys:keys>', methods=['DELETE'])
+@api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
 def delete_by_keys_handler(bucket, keys):
     """ Deletes existing document (C.O.)
     """
@@ -71,31 +63,32 @@ def delete_by_keys_handler(bucket, keys):
     res = []
     for key in keys:
         filter_opts = {ext_fields.KEY: key}
-        if not storage.is_document_exists(get_app_id(), get_user_id(), bucket, filter_opts):
+        if not storage.is_document_exists(get_app_id(), get_user_id(),
+                                          bucket, filter_opts):
             res.append({key: app.NOT_FOUND})
         else:
-            storage.delete_by_filter(get_app_id(), get_user_id(), get_remote_ip(),
-                           bucket=bucket, filter_opts=filter_opts)
+            storage.delete_by_filter(get_app_id(), get_user_id(),
+                                     get_remote_ip(), bucket=bucket,
+                                     filter_opts=filter_opts)
             res.append({key: app.OK})
     return jsonify({'response': res})
 
 
-@api.route('/<bucket>', methods=['DELETE'])
+@api.route('/<bucket:bucket>', methods=['DELETE'])
 def delete_by_filter_handler(bucket):
     """ Delete all matched with filter documents.
     """
     filter_opts = extract_filter_opts()
     validate_filter(filter_opts)
-
-    if not storage.is_document_exists(get_app_id(), get_user_id(), bucket, filter_opts):
+    if not storage.is_document_exists(get_app_id(), get_user_id(),
+                                      bucket, filter_opts):
         return jsonify({'response': app.NOT_FOUND})
-
     storage.delete_by_filter(get_app_id(), get_user_id(), get_remote_ip(),
-                           bucket=bucket, filter_opts=filter_opts)
+                             bucket=bucket, filter_opts=filter_opts)
     return jsonify({'response': app.OK})
 
 
-@api.route('/<bucket>/<keys:keys>', methods=['PUT'])
+@api.route('/<bucket:bucket>/<keys:keys>', methods=['PUT'])
 def put_by_keys_handler(bucket, keys):
     """ Update existing documents by keys.
     If document with any key doesn't exist then create it
@@ -111,19 +104,21 @@ def put_by_keys_handler(bucket, keys):
     for key in keys:
         filter_opts = {ext_fields.KEY: key}
 
-        if not storage.is_document_exists(get_app_id(), get_user_id(), bucket, filter_opts):
+        if not storage.is_document_exists(get_app_id(), get_user_id(),
+                                          bucket, filter_opts):
             if force:
                 document[ext_fields.KEY] = key
-                storage.create(get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket)
+                storage.create(get_app_id(), get_user_id(), get_remote_ip(),
+                               document, bucket=bucket)
             res.append({key: app.NOT_FOUND})
         else:
             storage.update_by_key(get_app_id(), get_user_id(), get_remote_ip(),
-                            bucket, document, key)
+                                  bucket, document, key)
             res.append({key: app.OK})
     return jsonify({'response': res})
 
 
-@api.route('/<bucket>', methods=['PUT'])
+@api.route('/<bucket:bucket>', methods=['PUT'])
 def put_by_filter_handler(bucket):
     """ Update existing filtered documents.
     If document doesn't match filter then create it
@@ -135,16 +130,25 @@ def put_by_filter_handler(bucket):
     validate_document(document)
     validate_filter(filter_opts)
 
-    if not storage.is_document_exists(get_app_id(), get_user_id(), bucket, filter_opts):
+    if not storage.is_document_exists(get_app_id(), get_user_id(),
+                                      bucket, filter_opts):
         if force:
-            key = storage.create(get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket)
-            return jsonify({'response': {ext_fields.KEY: key, STATUS_CODE: app.NOT_FOUND}})
+            key = storage.create(
+                get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
+            )
+            return jsonify({'response': {
+                ext_fields.KEY: key, STATUS_CODE: app.NOT_FOUND
+            }})
         else:
-            return jsonify({'response': {STATUS_CODE: app.NOT_FOUND}})
+            return jsonify({'response': {
+                STATUS_CODE: app.NOT_FOUND
+            }})
 
     storage.update_by_filter(get_app_id(), get_user_id(), get_remote_ip(),
-                        bucket, document, filter_opts)
-    return jsonify({'response': {STATUS_CODE: app.OK}})
+                             bucket, document, filter_opts)
+    return jsonify({'response': {
+        STATUS_CODE: app.OK
+    }})
 
 
 @api.errorhandler(errors.DocumentNotFoundError)
@@ -206,11 +210,11 @@ def validate_document(document):
     valid2.validate()
 
 def validate_filter(filter):
-    "TODO: re-implement this function in right way"
+    #TODO: re-implement this function in right way
     if not filter:
         return
     validate_document(filter)
-    
+
 def get_user_id():
     return guard.current_user.id
 
@@ -222,7 +226,7 @@ def get_app_id():
 def get_remote_ip():
     request.get('remote_addr', None)
 
-    
+
 def from_json(obj):
     try:
         res = json.loads(obj)
@@ -251,7 +255,8 @@ def extract_filter_opts():
         filter_opts = filter_opts.strip()
         filter_opts = from_json(filter_opts)
         if not len(filter_opts):
-            raise errors.InvalidRequestError('Invalid request syntax. There is no filters opts.')
+            raise errors.InvalidRequestError('Invalid request syntax. '  \
+                                             'Filter options were not specified')
 
     return filter_opts
 

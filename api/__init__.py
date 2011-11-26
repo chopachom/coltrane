@@ -1,9 +1,13 @@
 __author__ = 'apetrovich'
 
-from api.converters import KeysConverter
-from api.v1 import api as api_v1
+from .converters import KeysConverter, BucketConverter, SpecialBucketConverter
+from .v1 import api as api_v1
 
-converters = {}
-converters['keys'] = KeysConverter
+converters = {
+    'keys': KeysConverter,
+    'bucket': BucketConverter,
+    'special': SpecialBucketConverter
+}
+
 
 __all__ = ['api_v1', 'converters']
