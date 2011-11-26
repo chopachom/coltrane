@@ -5,7 +5,6 @@ from flask.globals import request
 from api.validators import SimpleValidator, RecursiveValidator
 from ds import storage
 from ds.storage import ext_fields, int_fields
-import errors
 from extensions import guard
 from api.statuses import *
 
@@ -151,55 +150,19 @@ def put_by_filter_handler(bucket):
     }})
 
 
-@api.errorhandler(errors.DocumentNotFoundError)
-def not_found(error):
-    """ Return response as a error json structure when document is not found by its key """
+@api.errorhandler(Exception)
+def app_exception(error):
+    """ Return response as a error """
 
+    error_class = error.__class__
+    
     message = error.message
-    response_msg = json.dumps({'error': {STATUS_CODE: app.NOT_FOUND,
+    app_code, http_code = ERROR_INFO_MATCHING.get(error_class,
+        (app.SERVER_ERROR, http.SERVER_ERROR))
+    
+    response_msg = json.dumps({'error': {STATUS_CODE: app_code,
                                          'message': message}})
-    return response_msg, http.NOT_FOUND
-
-
-@api.errorhandler(errors.InvalidDocumentError)
-@api.errorhandler(errors.InvalidDocumentKeyError)
-def invalid_document(error):
-    """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {STATUS_CODE: app.BAD_REQUEST,
-                                         'message': error.message}})
-    return response_msg, http.BAD_REQUEST
-
-
-@api.errorhandler(errors.InvalidAppIdError)
-def invalid_app_id(error):
-    """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {STATUS_CODE: app.APP_UNAUTHORIZED,
-                                         'message': error.message}})
-    return response_msg, http.UNAUTHORIZED
-
-
-@api.errorhandler(errors.InvalidUserIdError)
-def invalid_user_id(error):
-    """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {STATUS_CODE: app.USER_UNAUTHORIZED,
-                                         'message': error.message}})
-    return response_msg, http.UNAUTHORIZED
-
-
-@api.errorhandler(errors.InvalidJSONFormatError)
-def invalid_json_format(error):
-    """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {STATUS_CODE: app.BAD_REQUEST,
-                                         'message': error.message}})
-    return response_msg, http.BAD_REQUEST
-
-
-@api.errorhandler(errors.InvalidRequestError)
-def invalid_json_format(error):
-    """ Return response with http's bad request code """
-    response_msg = json.dumps({'error': {STATUS_CODE: app.BAD_REQUEST,
-                                         'message': error.message}})
-    return response_msg, http.BAD_REQUEST
+    return response_msg, http_code
 
 
 def validate_document(document):

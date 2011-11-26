@@ -598,5 +598,16 @@ class ApiSpecialEndpointsCase(unittest.TestCase):
         pass
 
 
+    def test_sever_error(self):
+        old_get = storage.get_by_key
+        def get_by_ket(app_id, user_id, bucket, key):
+            raise RuntimeError("My error")
+        storage.get_by_key = get_by_ket
+
+        res = self.app.get(API_V1 + '/books/key1')
+        storage.get_by_key = old_get
+        assert res.data == '{"error": {"message": "My error", "code": 6}}'
+
+
 if __name__ == '__main__':
     unittest.main()
