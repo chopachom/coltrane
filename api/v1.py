@@ -2,6 +2,7 @@ import json
 import datetime
 from flask import Blueprint, jsonify
 from flask.globals import request
+from api.validators import SimpleValidator, RecursiveValidator
 from ds import storage
 from ds.storage import ext_fields, int_fields
 import errors
@@ -11,6 +12,9 @@ from api.statuses import *
 DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
 
 api = Blueprint("api_v1", __name__)
+
+class forbidden_fields(Enum):
+    WHERE      = '$where'
 
 
 @api.route('/<bucket>', defaults={'key': None}, methods=['POST'])
@@ -50,6 +54,8 @@ def get_by_keys_handler(bucket, keys):
 @api.route('/<bucket>', methods=['GET'])
 def get_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
+    validate_filter(filter_opts)
+    
     documents = storage.get_by_filter(get_app_id(), get_user_id(), bucket, filter_opts)
 
     res = json.dumps({'response': documents}, default=DT_HANDLER)
@@ -79,6 +85,8 @@ def delete_by_filter_handler(bucket):
     """ Delete all matched with filter documents.
     """
     filter_opts = extract_filter_opts()
+    validate_filter(filter_opts)
+
     if not storage.is_document_exists(get_app_id(), get_user_id(), bucket, filter_opts):
         return jsonify({'response': app.NOT_FOUND})
 
@@ -125,6 +133,7 @@ def put_by_filter_handler(bucket):
     force = is_force_mode()
 
     validate_document(document)
+    validate_filter(filter_opts)
 
     if not storage.is_document_exists(get_app_id(), get_user_id(), bucket, filter_opts):
         if force:
@@ -190,14 +199,16 @@ def invalid_json_format(error):
 
 
 def validate_document(document):
-    # assert that document not contains forbidden fields
-    fields = [key for key in document if key in int_fields.values()]
-    if len(fields):
-        raise errors.InvalidDocumentError(
-            errors.InvalidDocumentError.FORBIDDEN_FIELDS_MSG % ','.join(fields))
+    if not document:
+        return
+    valid1 = RecursiveValidator(document, forbidden_fields.values())
+    valid2 = SimpleValidator(document, int_fields.values(), valid1)
+    valid2.validate()
 
 def validate_filter(filter):
     "TODO: re-implement this function in right way"
+    if not filter:
+        return
     validate_document(filter)
     
 def get_user_id():
@@ -239,7 +250,6 @@ def extract_filter_opts():
     if filter_opts is not None:
         filter_opts = filter_opts.strip()
         filter_opts = from_json(filter_opts)
-        validate_filter(filter_opts)
         if not len(filter_opts):
             raise errors.InvalidRequestError('Invalid request syntax. There is no filters opts.')
 
