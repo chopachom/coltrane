@@ -555,9 +555,47 @@ class ApiDeleteManyCase(unittest.TestCase):
         filter_opts = '{}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         resp = from_json(resp.data)
+        print resp
         expected = {
-            'error': {STATUS_CODE: app.BAD_REQUEST, 'message': 'Invalid request syntax. There is no filters opts.'}}
+            'error': {STATUS_CODE: app.BAD_REQUEST, 'message': 'Invalid request syntax. Filter options were not specified'}}
         assert resp == expected
+
+
+class ApiSpecialEndpointsCase(unittest.TestCase):
+    def setUp(self):
+        v1.get_app_id = lambda : 'app_id1'
+        v1.get_remote_ip = lambda : '127.0.0.1'
+        v1.get_user_id = lambda : 'user_id1'
+
+        app = create_app(
+            modules=((api_v1, API_V1),),
+            exts=(mongodb,),
+            dict_config=dict(
+                DEBUG=False,
+                TESTING=True
+            )
+        )
+
+        self.app = app.test_client()
+
+    def test_get_404(self):
+        resp = self.app.get(API_V1 + '/.books')
+        assert resp.status_code == 404
+
+    def test_post_404(self):
+        resp = self.app.post(API_V1 + '/.books', data='ololo')
+        assert resp.status_code == 404
+
+    def test_put_404(self):
+        resp = self.app.put(API_V1 + '/.books', data='ololo')
+        assert resp.status_code == 404
+
+    def test_delete_404(self):
+        resp = self.app.delete(API_V1 + '/.books')
+        assert resp.status_code == 404
+
+    def tearDown(self):
+        pass
 
 
 if __name__ == '__main__':
