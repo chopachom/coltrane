@@ -37,7 +37,7 @@ class User(db.Model):
 
     def __repr__(self):
         return "<User {0} name: {1} email: {2} pwd hash: {3} token hash: {4} at {5:x}>".format(
-            self.id, self.nickname, self.email, self.pwdhash, self.token, id(self))
+            self.id, self.nickname, self.email, self.pwd_hash, self.token, id(self))
 
 
     def generate_auth_tokens(self):
@@ -77,6 +77,7 @@ class Developer(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    created   = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship(User, uselist=False)
 
@@ -96,6 +97,7 @@ class DeveloperKeys(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     key  = db.Column(db.Text(8128), nullable=True)
     hash = db.Column(db.String(512), nullable=True)
+    created   = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 
@@ -108,6 +110,7 @@ class Application(db.Model):
     name   = db.Column(db.String(255))
     description = db.Column(db.Text(2048))
     domain = db.Column(db.String(255))
+    created   = db.Column(db.DateTime, default=datetime.utcnow)
 
     author = db.relationship(User, uselist=False,)
 
@@ -151,8 +154,41 @@ class Application(db.Model):
         return cls.query.options(joinedload('author')).all()
 
 
+class ApplicationAsset(db.Model):
+    """
+        Applications assets holds addition info for application description,
+        like images, screenshots and videos
+    """
+
+    __tablename__ = 'app_assets'
+
+    id = db.Column(db.Integer, primary_key=True)
+    app_id  = db.Column(db.Integer, db.ForeignKey("applications.id"))
+    url     = db.Column(db.String(4096))
+    type    = db.Column(db.Enum('image', 'video'))
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Comment(db.Model):
+
+    __tablename__ = 'comments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    app_id    = db.Column(db.Integer, db.ForeignKey("applications.id"))
+    author_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    description = db.Column(db.Text(8128))
+    rate      = db.Column(db.Integer(128))
+    created   = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+
 
 class AppToken(db.Model):
+    """
+        Tokens used to authenticate app and user. When an user uses app for the
+        first time a new token generated for the user. This token then always
+        passed by the browser with each request.
+    """
 
     __tablename__ = 'apptokens'
 
@@ -160,18 +196,17 @@ class AppToken(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     app_id  = db.Column(db.Integer, db.ForeignKey("applications.id"))
     token   = db.Column(db.String(255))
+    created   = db.Column(db.DateTime, default=datetime.utcnow)
 
 
     user = db.relationship(User, uselist=False)
     application = db.relationship(Application, uselist=False)
 
 
-
     def __init__(self, user, application):
         self.user = user
         self.application = application
         self.token = self.generate()
-
 
 
     def generate(self):
