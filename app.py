@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-from api.converters import KeysConverter
-
 __author__ = 'apetrovich'
 
 import logging
+import sys
 from flask import Flask
 from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
@@ -34,8 +33,8 @@ def create_app(exts = None, modules=None, config=None, dict_config=None):
         modules = DEFAULT_MODULES
 
     configure_extensions(app, exts)
-    configure_modules(app, modules)
     configure_app(app, config, dict_config)
+    configure_modules(app, modules)
     configure_logging(app)
 
     return app
@@ -62,24 +61,26 @@ def configure_extensions(app, exts):
 
 
 def configure_logging(app):
+    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s '
+                                  '[in %(pathname)s:%(lineno)d]')
+
     if app.debug or app.testing:
+        stdout_handler = logging.StreamHandler(sys.__stdout__)
+        stdout_handler.setLevel(logging.DEBUG)
+        stdout_handler.setFormatter(formatter)
+        app.logger.addHandler(stdout_handler)
         return
 
-    formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s '
-        '[in %(pathname)s:%(lineno)d]')
-
     debug_log = app.config['DEBUG_LOG_FILE']
-    debug_file_handler = RotatingFileHandler(
-        debug_log, maxBytes=100000, backupCount=10)
+    debug_file_handler = RotatingFileHandler(debug_log, maxBytes=100000,
+                                             backupCount=10)
     debug_file_handler.setLevel(logging.DEBUG)
     debug_file_handler.setFormatter(formatter)
     app.logger.addHandler(debug_file_handler)
 
-
     error_log = app.config['ERROR_LOG_FILE']
-    error_file_handler =  RotatingFileHandler(
-        error_log, maxBytes=100000, backupCount=10)
-    error_file_handler.setLevel(logging.ERROR)
+    error_file_handler =  RotatingFileHandler(error_log, maxBytes=100000,
+                                              backupCount=10)
+    error_file_handler.setLevel(logging.WARNING)
     error_file_handler.setFormatter(formatter)
     app.logger.addHandler(error_file_handler)

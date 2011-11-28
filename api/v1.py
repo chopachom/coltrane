@@ -1,5 +1,6 @@
 import json
 import datetime
+import logging
 from flask import Blueprint, jsonify
 from flask.globals import request
 from api.validators import SimpleValidator, RecursiveValidator
@@ -15,6 +16,9 @@ api = Blueprint("api_v1", __name__)
 class forbidden_fields(Enum):
     WHERE      = '$where'
 
+
+LOG = logging.getLogger('coltrane.api')
+LOG.debug('starting coltrane api')
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
 @api.route('/<bucket:bucket>/<key>', methods=['POST'])
@@ -58,7 +62,7 @@ def delete_by_keys_handler(bucket, keys):
     """ Deletes existing document (C.O.)
     """
     if not len(keys):
-            raise errors.InvalidRequestError('At least one key must be passed.')
+        raise errors.InvalidRequestError('At least one key must be passed.')
     res = []
     for key in keys:
         filter_opts = {ext_fields.KEY: key}
@@ -75,7 +79,7 @@ def delete_by_keys_handler(bucket, keys):
 
 @api.route('/<bucket:bucket>', methods=['DELETE'])
 def delete_by_filter_handler(bucket):
-    """ Delete all matched with filter documents.
+    """ Delete all documents matched with filter
     """
     filter_opts = extract_filter_opts()
     validate_filter(filter_opts)
@@ -90,10 +94,10 @@ def delete_by_filter_handler(bucket):
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['PUT'])
 def put_by_keys_handler(bucket, keys):
     """ Update existing documents by keys.
-    If document with any key doesn't exist then create it
+        If document with any key doesn't exist then create it
     """
     if not len(keys):
-            raise errors.InvalidRequestError('At least one key must be passed.')
+        raise errors.InvalidRequestError('At least one key must be passed.')
     document = extract_form_data()
     force = is_force_mode()
 
@@ -120,7 +124,7 @@ def put_by_keys_handler(bucket, keys):
 @api.route('/<bucket:bucket>', methods=['PUT'])
 def put_by_filter_handler(bucket):
     """ Update existing filtered documents.
-    If document doesn't match filter then create it
+        If document doesn't match the filter then create it
     """
     document = extract_form_data()
     filter_opts = extract_filter_opts()
@@ -157,8 +161,8 @@ def app_exception(error):
     error_class = error.__class__
     
     message = error.message
-    app_code, http_code = ERROR_INFO_MATCHING.get(error_class,
-        (app.SERVER_ERROR, http.SERVER_ERROR))
+    app_code, http_code = ERROR_INFO_MATCHING.get(
+        error_class, (app.SERVER_ERROR, http.SERVER_ERROR))
     
     response_msg = json.dumps({'error': {STATUS_CODE: app_code,
                                          'message': message}})
