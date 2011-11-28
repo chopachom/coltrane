@@ -214,7 +214,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         ), follow_redirects=True)
 
     def tearDown(self):
-        storage._entities.drop()
+        storage._entities().drop()
 
     def test_put_not_existing_document(self):
         src_key = "my_key"
@@ -411,7 +411,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         ), follow_redirects=True)
 
     def tearDown(self):
-        storage._entities.drop()
+        storage._entities().drop()
 
     def test_delete_all_with_filter_opts(self):
         resp = self.app.get(API_V1 + '/books')

@@ -17,7 +17,7 @@ class SecurityTestCase(unittest.TestCase):
 
 
     def tearDown(self):
-        storage._entities.drop()
+        storage._entities().drop()
 
     def test_security_when_where_used(self):
         filter_opts = {'a': {'$gt': 5}, '$where': 'db.entities.drop()'}

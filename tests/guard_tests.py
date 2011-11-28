@@ -10,7 +10,8 @@ APP_TOKEN  = fake_guard.APP_TOKEN
 
 class GuardTestCase(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         api_v1.get_app_id = lambda : 'app_id1'
         api_v1.get_remote_ip = lambda : '127.0.0.1'
         api_v1.get_user_id = lambda : 'user_id1'
@@ -22,7 +23,7 @@ class GuardTestCase(unittest.TestCase):
                 TESTING=True
             )
         )
-        self.app = app.test_client()
+        cls.app = app.test_client()
 
 
     def test_allow_access(self):

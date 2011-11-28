@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 
 from extensions import mongodb, guard
 from misc.guard_manager import GuardManager
-from api import api_v1
+from api import api_v1, converters
 
 
 guard.manager = GuardManager
