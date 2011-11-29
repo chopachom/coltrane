@@ -22,14 +22,16 @@ def before_request():
     app_domain = get_subdomain()
     full_domain = get_topdomain()
 
-    print 'domain:', full_domain
-    print base_path, app_domain
-    print 'cookies: '
-    pp.pprint(request.cookies)
+    if app.debug:
+        print 'domain:', full_domain
+        print base_path, app_domain
+        print 'cookies: '
+        pp.pprint(request.cookies)
 
     #TODO: add anonymous users
     auth_token = request.cookies.get('auth_token')
     app_token = request.cookies.get('app_token')
+    anonymous = request.cookies.get('anonymous')
 
     # if user opens this app for the first time
     if auth_token and not app_token:
@@ -37,17 +39,22 @@ def before_request():
         user = User.query.filter(User.auth_token == auth_token).first()
         app  = Application.query.filter(Application.domain == app_domain).first()
         if not app:
-            print 'not an app'
+            print 'app with domin %s was not found' % app_domain
             return abort(404)
         token = AppToken(user, app)
         db.session.add(token)
         db.session.commit()
         print 'setting cookies'
-        response.set_cookie('app_token', value=token.token, domain=full_domain)
+        response.set_cookie('app_token', value=token.token, domain=full_domain,
+                             httponly=True)
+
+    # if user was anonymous but have authenticated
+    if auth_token and anonymous:
+        response.set_cookie('anonymous', '', expires=datetime(1971,01,01))
 
     #TODO: anonymous users
-    if not auth_token:
-        response.set_cookie('auth_token', value='TheUserToken', domain=full_domain)
+    if not auth_token and not anonymous:
+        response.set_cookie('anonymous', value='true', domain=full_domain)
 
     response.headers['X-Accel-Redirect'] = "/files/"+base_path
     return response

@@ -1,6 +1,6 @@
 __author__ = 'qweqwe'
 
-from extensions import mongodb
+from api.extensions import mongodb
 
 class GuardManager(object):
     
