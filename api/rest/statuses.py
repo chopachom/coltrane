@@ -1,4 +1,4 @@
-import errors
+from api import errors
 
 __author__ = 'qweqwe'
 from utils import Enum

@@ -1,8 +1,8 @@
 __author__ = 'qweqwe'
 import unittest
-from app import create_app
+from api.app import create_app
 from api import api_v1
-from api.v1 import from_json
+from api.rest.v1 import from_json
 from tests.stubs import fake_guard
 
 AUTH_TOKEN = fake_guard.AUTH_TOKEN

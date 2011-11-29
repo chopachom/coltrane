@@ -6,8 +6,8 @@ from flask.globals import request
 from api.validators import SimpleValidator, RecursiveValidator
 from appstorage import storage
 from appstorage.storage import ext_fields, int_fields
-from .. import errors
-from ..extensions import guard
+from api import errors
+from api.extensions import guard
 from .statuses import *
 
 DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None

@@ -1,13 +1,13 @@
 import json
 import unittest
 from api import api_v1
-from api import v1
-from api.v1 import from_json, forbidden_fields
-from api.statuses import app, STATUS_CODE
-from app import create_app
+from api.rest import v1
+from api.rest.v1 import from_json, forbidden_fields
+from api.rest.statuses import app, STATUS_CODE
+from api.app import create_app
+from api import errors
+from api.extensions import mongodb
 from appstorage import storage
-import errors
-from extensions import mongodb
 from appstorage.storage import ext_fields, int_fields
 
 __author__ = 'pshkitin'
@@ -109,7 +109,7 @@ class ApiTestCase(unittest.TestCase):
         key = 'key_2'
         data = json.dumps(src)
 
-        resp = self.app.post(API_V1 + '/books/' + key, data={'appstorage': data}, follow_redirects=True)
+        resp = self.app.post(API_V1 + '/books/' + key, data={'data': data}, follow_redirects=True)
         assert from_json(resp.data)['response']['key'] == key
 
         resp = self.app.delete(API_V1 + '/books/' + key)
