@@ -1,27 +1,43 @@
 import json
 import datetime
 import logging
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, current_app
 from flask.globals import request
 from api.validators import SimpleValidator, RecursiveValidator
-from appstorage import storage
-from appstorage.storage import ext_fields, int_fields
+from appstorage.storage import AppdataStorage
+from appstorage.storage import extf, intf
 import errors
 from api.extensions import guard
+from api.extensions import mongodb
 from .statuses import *
 
 
+LOG = logging.getLogger('coltrane.api')
+LOG.debug('starting coltrane api')
 
 DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
 
 class forbidden_fields(Enum):
     WHERE      = '$where'
 
-LOG = logging.getLogger('coltrane.api')
-LOG.debug('starting coltrane api')
+class lazy_conn(object):
+    conn = None
+    @property
+    def entities(self):
+        if self.conn:
+            return self.conn
+        else:
+            conf = current_app.config
+            db   = conf['MONGODB_DATABASE']
+            coll = conf['APPDATA_COLLECTION']
+            self.conn = mongodb.connection[db][coll]
+            return self.conn
+    def __getattr__(self, name):
+        return getattr(self.entities, name)
 
 
 api = Blueprint("api_v1", __name__)
+storage = AppdataStorage(lazy_conn())
 
 
 
@@ -33,7 +49,7 @@ def post_handler(bucket, key):
     document = extract_form_data()
     validate_document(document)
     if key is not None:
-        document[storage.ext_fields.KEY] = key
+        document[extf.KEY] = key
     document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                   document, bucket=bucket)
     return jsonify({'response': {'key': document_key}})
@@ -45,7 +61,7 @@ def get_by_keys_handler(bucket, keys):
     if not len(keys):
             raise errors.InvalidRequestError('At least one key must be passed.')
     for key in keys:
-        doc = storage.get_by_key(get_app_id(), get_user_id(), bucket, key)
+        doc = storage.get(get_app_id(), get_user_id(), bucket, key)
         if doc:
             documents.append(doc)
     res = json.dumps({'response': documents}, default=DT_HANDLER)
@@ -56,8 +72,7 @@ def get_by_keys_handler(bucket, keys):
 def get_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     validate_filter(filter_opts)
-    documents = storage.get_by_filter(get_app_id(), get_user_id(),
-                                      bucket, filter_opts)
+    documents = storage.find(get_app_id(), get_user_id(), bucket, filter_opts)
     res = json.dumps({'response': documents}, default=DT_HANDLER)
     return res
 
@@ -70,14 +85,13 @@ def delete_by_keys_handler(bucket, keys):
         raise errors.InvalidRequestError('At least one key must be passed.')
     res = []
     for key in keys:
-        filter_opts = {ext_fields.KEY: key}
+        filter_opts = {extf.KEY: key}
         if not storage.is_document_exists(get_app_id(), get_user_id(),
                                           bucket, filter_opts):
             res.append({key: app.NOT_FOUND})
         else:
-            storage.delete_by_filter(get_app_id(), get_user_id(),
-                                     get_remote_ip(), bucket=bucket,
-                                     filter_opts=filter_opts)
+            storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
+                           bucket=bucket, filter_opts=filter_opts)
             res.append({key: app.OK})
     return jsonify({'response': res})
 
@@ -91,8 +105,8 @@ def delete_by_filter_handler(bucket):
     if not storage.is_document_exists(get_app_id(), get_user_id(),
                                       bucket, filter_opts):
         return jsonify({'response': app.NOT_FOUND})
-    storage.delete_by_filter(get_app_id(), get_user_id(), get_remote_ip(),
-                             bucket=bucket, filter_opts=filter_opts)
+    storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
+                   bucket=bucket, filter_opts=filter_opts)
     return jsonify({'response': app.OK})
 
 
@@ -110,18 +124,18 @@ def put_by_keys_handler(bucket, keys):
 
     res = []
     for key in keys:
-        filter_opts = {ext_fields.KEY: key}
+        filter_opts = {extf.KEY: key}
 
         if not storage.is_document_exists(get_app_id(), get_user_id(),
                                           bucket, filter_opts):
             if force:
-                document[ext_fields.KEY] = key
+                document[extf.KEY] = key
                 storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                document, bucket=bucket)
             res.append({key: app.NOT_FOUND})
         else:
-            storage.update_by_key(get_app_id(), get_user_id(), get_remote_ip(),
-                                  bucket, document, key)
+            storage.update(get_app_id(), get_user_id(), get_remote_ip(),
+                           bucket, document, key=key)
             res.append({key: app.OK})
     return jsonify({'response': res})
 
@@ -145,15 +159,15 @@ def put_by_filter_handler(bucket):
                 get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
             )
             return jsonify({'response': {
-                ext_fields.KEY: key, STATUS_CODE: app.NOT_FOUND
+                extf.KEY: key, STATUS_CODE: app.NOT_FOUND
             }})
         else:
             return jsonify({'response': {
                 STATUS_CODE: app.NOT_FOUND
             }})
 
-    storage.update_by_filter(get_app_id(), get_user_id(), get_remote_ip(),
-                             bucket, document, filter_opts)
+    storage.update(get_app_id(), get_user_id(), get_remote_ip(),
+                             bucket, document, filter_opts=filter_opts)
     return jsonify({'response': {
         STATUS_CODE: app.OK
     }})
@@ -179,7 +193,7 @@ def validate_document(document):
         return
 
     valid1 = RecursiveValidator(document, forbidden_fields.values())
-    valid2 = SimpleValidator(document, int_fields.values(), valid1)
+    valid2 = SimpleValidator(document, intf.values(), valid1)
     valid2.validate()
 
 def validate_filter(filter):

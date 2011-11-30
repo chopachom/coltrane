@@ -10,9 +10,12 @@ class DefaultConfig(object):
     pass
 
 class TestConfig(object):
+    TESTING            = True
+    LOGGER_NAME        = 'coltrane.api'
+    SQLALCHEMY_DATABASE_URI = MYSQL_DEBUG_URI
     MONGODB_HOST       = '127.0.0.1'
     MONGODB_PORT       = 27017
-    MONGODB_DATABASE   ='test_db'
+    MONGODB_DATABASE   ='coltrane_test'
     MONGODB_SLAVE_OKAY = False
     MONGODB_USERNAME   = None
     MONGODB_PASSWORD   = None
@@ -27,11 +30,11 @@ class DebugConfig(object):
     SQLALCHEMY_DATABASE_URI = MYSQL_DEBUG_URI
     MONGODB_HOST       = '127.0.0.1'
     MONGODB_PORT       = 27017
-    MONGODB_DATABASE   ='test_db'
+    MONGODB_DATABASE   ='coltrane_debug'
     MONGODB_SLAVE_OKAY = False
     MONGODB_USERNAME   = None
     MONGODB_PASSWORD   = None
-    APP_DATABASE       = 'coltrane_test'
+    APPDATA_COLLECTION = 'appdata'
     USERS_COLLECTION   = 'users'
     APPS_COLLECTION    = 'apps'
 

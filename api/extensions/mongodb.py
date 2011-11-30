@@ -5,14 +5,13 @@ from pymongo.database import Database
 
 class FlaskMongodb(object):
 
-
     _default_config = {
-        'MONGODB_HOST': '127.0.0.1',
-        'MONGODB_PORT': 27017,
-        'MONGODB_DATABASE': 'test_db',
+        'MONGODB_HOST':      '127.0.0.1',
+        'MONGODB_PORT':       27017,
+        'MONGODB_DATABASE':  'test_db',
         'MONGODB_SLAVE_OKAY': False,
-        'MONGODB_USERNAME': None,
-        'MONGODB_PASSWORD': None
+        'MONGODB_USERNAME':   None,
+        'MONGODB_PASSWORD':   None
     }
 
     def __init__(self, app=None):

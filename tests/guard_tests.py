@@ -19,7 +19,7 @@ class GuardTestCase(unittest.TestCase):
         api_v1.get_remote_ip = lambda : '127.0.0.1'
         api_v1.get_user_id = lambda : 'user_id1'
         app = create_app(
-            modules=((api_v1, '/v1') ),
+            modules=((api_v1, '/v1'),),
             exts=(guard, db),
             dict_config=dict(
                 DEBUG=False,

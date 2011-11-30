@@ -1,7 +1,7 @@
 __author__ = 'qweqwe'
 
 
-from extensions.guard import Guard
+from api.extensions.guard import Guard
 from utils import Enum
 
 
@@ -23,7 +23,7 @@ class app(Enum):
 
 class FakeGuardManager(object):
 
-    def __init__(self, app):
+    def __init__(self):
         pass
 
     def authenticate_user(self, token):

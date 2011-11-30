@@ -1,11 +1,11 @@
 __author__ = 'qweqwe'
 
-from website.models import User, Application, AppToken
+from website.models import User, AppToken
 
 #TODO: (Someday) use HandlerSocket
 class GuardManager(object):
     
-    def __init__(self, app=None):
+    def __init__(self):
         pass
 
     def authenticate_user(self, token):

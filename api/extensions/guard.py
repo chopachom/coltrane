@@ -22,7 +22,7 @@ class Guard(object):
 
     def init_manager(self):
         # Dirty, dirty, dirty,  dirty,  dirty,  dirty, sucka
-        self.manager = self.manager(self.app)
+        self.manager = self.manager()
         self._authenticate_user = self.manager.authenticate_user
         self._authenticate_app = self.manager.authenticate_app
         if hasattr(self.manager, 'get_auth_token'):
@@ -54,12 +54,14 @@ class Guard(object):
 
     def _before_request(self):
         if not self.get_auth_token() or not self.get_app_token():
+            #TODO FORMAT
             return abort(401)
 
         user = self._authenticate_user(self.get_auth_token())
         app = self._authenticate_app(self.get_app_token())
 
         if not user or not app:
+            #TODO FORMAT
             return abort(401)
 
         g.current_user = user

@@ -2,13 +2,13 @@ import json
 import unittest
 from api import api_v1
 from api.rest import v1
-from api.rest.v1 import from_json, forbidden_fields
+from api.rest.v1 import from_json, forbidden_fields, storage
 from api.rest.statuses import app, STATUS_CODE
 from api.app import create_app
-from api import errors
 from api.extensions import mongodb
-from appstorage import storage
-from appstorage.storage import ext_fields, int_fields
+from api.config import TestConfig
+import errors
+from appstorage.storage import AppdataStorage, extf, intf
 
 __author__ = 'pshkitin'
 
@@ -20,18 +20,20 @@ class ApiTestCase(unittest.TestCase):
         v1.get_remote_ip = lambda : '127.0.0.1'
         v1.get_user_id = lambda : 'user_id1'
 
-        app = create_app(
+        self._app = create_app(
             modules=((api_v1, API_V1),),
             exts=(mongodb,),
             dict_config=dict(
                 DEBUG=False,
                 TESTING=True
-            )
+            ),
+            config=TestConfig
         )
-        self.app = app.test_client()
+        self.app = self._app.test_client()
 
     def tearDown(self):
-        storage._entities().drop()
+        with self._app.test_request_context():
+            storage.entities.drop()
 
 
     def test_response_after_post(self):
@@ -45,11 +47,11 @@ class ApiTestCase(unittest.TestCase):
 
         o = res[0]
         for key in o.keys():
-            assert key not in int_fields.values()
+            assert key not in intf.values()
 
-        del o[ext_fields.KEY]
-        del o[ext_fields.CREATED_AT]
-        del o[ext_fields.BUCKET]
+        del o[extf.KEY]
+        del o[extf.CREATED_AT]
+        del o[extf.BUCKET]
         del o['author']
         del o['title']
         assert len(o) == 0
@@ -122,44 +124,44 @@ class ApiTestCase(unittest.TestCase):
 
     def test_forbidden_where_field(self):
         rv = self.app.post(API_V1 + '/books', data=dict(
-            data=json.dumps({int_fields.ID:'id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
+            data=json.dumps({intf.ID:'id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
         ), follow_redirects=True)
         res = from_json(rv.data)['error']
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (int_fields.ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.ID, forbidden_fields.WHERE), "code": 1}
 
-        filter = {'a':21, int_fields.APP_ID:'app_id', 'b':[1,2,3],
+        filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
         res = from_json(rv.data)['error']
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.APP_ID, forbidden_fields.WHERE), "code": 1}
 
-        filter = {'a':21, int_fields.APP_ID:'app_id', 'b':[1,2,3],
+        filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.delete(API_V1 + '/books?filter=' + json.dumps(filter))
         res = from_json(rv.data)['error']
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.APP_ID, forbidden_fields.WHERE), "code": 1}
 
-        filter = {'a':21, int_fields.APP_ID:'app_id', 'b':[1,2,3],
+        filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter), data=dict(
             data=json.dumps({'a':'b'})
         ), follow_redirects=True)
         res = from_json(rv.data)['error']
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.APP_ID, forbidden_fields.WHERE), "code": 1}
 
 
         filter = {'a':21, 'b':[1,2,3],
                   'c': {'d': {'e': [1,2,3]}}}
         rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter), data=dict(
-            data=json.dumps({int_fields.APP_ID:'app_id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
+            data=json.dumps({intf.APP_ID:'app_id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
         ), follow_redirects=True)
         res = from_json(rv.data)['error']
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (int_fields.APP_ID, forbidden_fields.WHERE), "code":1}
+                                  (intf.APP_ID, forbidden_fields.WHERE), "code":1}
 
 
     def test_where_field_as_string(self):
@@ -188,15 +190,16 @@ class ApiUpdateManyCase(unittest.TestCase):
         v1.get_remote_ip = lambda : '127.0.0.1'
         v1.get_user_id = lambda : 'user_id1'
 
-        app = create_app(
+        self._app = create_app(
             modules=((api_v1, API_V1),),
             exts=(mongodb,),
             dict_config=dict(
                 DEBUG=False,
                 TESTING=True
-            )
+            ),
+            config=TestConfig
         )
-        self.app = app.test_client()
+        self.app =  self._app.test_client()
         self.app.post(API_V1 + '/books', data=dict(
             data='{"_key":"1" ,"title": "Title1", "author": "author1", "age":10, "name":"Pasha", "cources":{"one":1, "two":2}}'
         ), follow_redirects=True)
@@ -214,7 +217,8 @@ class ApiUpdateManyCase(unittest.TestCase):
         ), follow_redirects=True)
 
     def tearDown(self):
-        storage._entities().drop()
+        with self._app.test_request_context():
+            storage.entities.drop()
 
     def test_put_not_existing_document(self):
         src_key = "my_key"
@@ -231,8 +235,8 @@ class ApiUpdateManyCase(unittest.TestCase):
 
     def test_put_with_forbidden_fields(self):
         src_key = "my_key"
-        src = {ext_fields.KEY: src_key, int_fields.APP_ID: "123", ext_fields.BUCKET: "books",
-               int_fields.CREATED_AT: "12.12.1222", "title": "Title3", "author": "Vasya Shkitin"}
+        src = {extf.KEY: src_key, intf.APP_ID: "123", extf.BUCKET: "books",
+               intf.CREATED_AT: "12.12.1222", "title": "Title3", "author": "Vasya Shkitin"}
         rv = self.app.put(API_V1 + '/books/' + src_key, data=dict(
             data=json.dumps(src)
         ), follow_redirects=True)
@@ -241,12 +245,12 @@ class ApiUpdateManyCase(unittest.TestCase):
         data = from_json(rv.data)
         res = data['error']['message']
         assert res == errors.InvalidDocumentError.FORBIDDEN_FIELDS_MSG % ','.join([
-            int_fields.CREATED_AT, int_fields.APP_ID])
+            intf.CREATED_AT, intf.APP_ID])
 
 
     def test_put_by_filter_with_force(self):
         src_key = "my_key"
-        src = {ext_fields.KEY: src_key, "a": "Math", "b": "Programming", "title": "Souls", "author": "Gogol"}
+        src = {extf.KEY: src_key, "a": "Math", "b": "Programming", "title": "Souls", "author": "Gogol"}
         rv = self.app.put(API_V1 + '/books?force=true&filter=' + json.dumps({"a": "Programming"}), data=dict(
             data=json.dumps(src)
         ), follow_redirects=True)
@@ -294,7 +298,6 @@ class ApiUpdateManyCase(unittest.TestCase):
         assert len(books) == 5
 
         src_update = {"age": 50}
-        filter_opts = '   all   '
         resp = self.app.put(API_V1 + '/books',
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)['response']
@@ -385,15 +388,16 @@ class ApiDeleteManyCase(unittest.TestCase):
         v1.get_remote_ip = lambda : '127.0.0.1'
         v1.get_user_id = lambda : 'user_id1'
 
-        app = create_app(
+        self._app = create_app(
             modules=((api_v1, API_V1),),
             exts=(mongodb,),
             dict_config=dict(
                 DEBUG=False,
                 TESTING=True
-            )
+            ),
+            config=TestConfig
         )
-        self.app = app.test_client()
+        self.app =  self._app.test_client()
         self.app.post(API_V1 + '/books', data=dict(
             data='{"title": "Title1", "author": "author1", "age":10, "name":"Pasha"}'
         ), follow_redirects=True)
@@ -411,7 +415,8 @@ class ApiDeleteManyCase(unittest.TestCase):
         ), follow_redirects=True)
 
     def tearDown(self):
-        storage._entities().drop()
+        with self._app.test_request_context():
+            storage.entities.drop()
 
     def test_delete_all_with_filter_opts(self):
         resp = self.app.get(API_V1 + '/books')
@@ -567,16 +572,17 @@ class ApiSpecialEndpointsCase(unittest.TestCase):
         v1.get_remote_ip = lambda : '127.0.0.1'
         v1.get_user_id = lambda : 'user_id1'
 
-        app = create_app(
+        self._app = create_app(
             modules=((api_v1, API_V1),),
             exts=(mongodb,),
             dict_config=dict(
                 DEBUG=False,
                 TESTING=True
-            )
+            ),
+            config=TestConfig
         )
 
-        self.app = app.test_client()
+        self.app =  self._app.test_client()
 
     def test_get_404(self):
         resp = self.app.get(API_V1 + '/.books')
@@ -599,13 +605,13 @@ class ApiSpecialEndpointsCase(unittest.TestCase):
 
 
     def test_sever_error(self):
-        old_get = storage.get_by_key
+        old_get = storage.get
         def get_by_ket(app_id, user_id, bucket, key):
             raise RuntimeError("My error")
-        storage.get_by_key = get_by_ket
+        storage.get= get_by_ket
 
         res = self.app.get(API_V1 + '/books/key1')
-        storage.get_by_key = old_get
+        storage.get = old_get
         assert res.data == '{"error": {"message": "My error", "code": 6}}'
 
 

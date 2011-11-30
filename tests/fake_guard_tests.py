@@ -3,6 +3,7 @@ import unittest
 from api.app import create_app
 from api import api_v1
 from api.rest.v1 import from_json
+from api.config import TestConfig
 from tests.stubs import fake_guard
 
 AUTH_TOKEN = fake_guard.AUTH_TOKEN
@@ -21,7 +22,8 @@ class GuardTestCase(unittest.TestCase):
             dict_config=dict(
                 DEBUG=False,
                 TESTING=True
-            )
+            ),
+            config=TestConfig
         )
         cls.app = app.test_client()
 
