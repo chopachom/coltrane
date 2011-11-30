@@ -7,7 +7,9 @@ MYSQL_DEBUG_URI = os.environ.get('COLTRANE_MYSQL_DEBUG_URI') or \
                   'mysql://root@127.0.0.1:3306/coltrane'
 
 class DefaultConfig(object):
-    pass
+    COOKIE_USER_AUTH_TOKEN = 'auth_token'
+    COOKIE_APP_TOKEN       = 'app_token'
+
 
 class TestConfig(object):
     TESTING            = True

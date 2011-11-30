@@ -1,7 +1,7 @@
 __author__ = 'apetrovich'
 
 from flask import request, g, abort
-from config import DefaultConfig as dc
+from api.config import DefaultConfig as dc
 
 
 class Guard(object):
