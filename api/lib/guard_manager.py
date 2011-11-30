@@ -1,16 +1,15 @@
 __author__ = 'qweqwe'
 
-from api.extensions import mongodb
+from website.models import User, Application, AppToken
 
+#TODO: (Someday) use HandlerSocket
 class GuardManager(object):
     
-    def __init__(self, app):
-        c = app.config
-        self.users = mongodb.connection[c.get('MONGODB_DATABASE')][c.get('USERS_COLLECTION')]
-        self.apps = mongodb.connection[c.get('MONGODB_DATABASE')][c.get('APPS_COLLECTION')]
+    def __init__(self, app=None):
+        pass
 
     def authenticate_user(self, token):
-        self.users.find_one({'token': token})
+        return User.query.filter(User.token==token).first()
 
     def authenticate_app(self, token):
-        self.apps.find_one({'token': token})
+        return AppToken.query.filter(AppToken.token == token).first().application

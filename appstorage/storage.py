@@ -3,7 +3,8 @@ import copy
 __author__ = 'nik'
 
 import json
-from extensions import mongodb
+#TODO: unbind from api extensions
+from api.extensions import mongodb
 from uuid import uuid4
 from datetime import datetime
 from errors import *

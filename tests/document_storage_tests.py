@@ -5,7 +5,7 @@ __author__ = 'nik'
 
 import unittest
 from appstorage import storage
-from api.errors import *
+from errors import *
 
 class DocumentStorageIntegrationTestCase(unittest.TestCase):
 # TODO: switch to test db in tests

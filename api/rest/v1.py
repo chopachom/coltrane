@@ -6,20 +6,24 @@ from flask.globals import request
 from api.validators import SimpleValidator, RecursiveValidator
 from appstorage import storage
 from appstorage.storage import ext_fields, int_fields
-from api import errors
+import errors
 from api.extensions import guard
 from .statuses import *
 
+
+
 DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
-
-api = Blueprint("api_v1", __name__)
-
 
 class forbidden_fields(Enum):
     WHERE      = '$where'
 
 LOG = logging.getLogger('coltrane.api')
 LOG.debug('starting coltrane api')
+
+
+api = Blueprint("api_v1", __name__)
+
+
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
 @api.route('/<bucket:bucket>/<key>', methods=['POST'])

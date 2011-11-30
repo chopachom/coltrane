@@ -9,6 +9,7 @@ from logging.handlers import RotatingFileHandler
 from lib.guard_manager import GuardManager
 from extensions import mongodb
 from extensions import guard
+from website.extensions import db
 from rest import api_v1, converters
 
 
@@ -20,7 +21,7 @@ DEFAULT_MODULES = (
     (api_v1, '/v1'),
 )
 
-DEFAULT_EXTENSIONS = (guard, mongodb)
+DEFAULT_EXTENSIONS = (guard, mongodb, db)
 
 
 def create_app(exts = None, modules=None, config=None, dict_config=None):

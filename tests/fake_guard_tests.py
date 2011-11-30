@@ -1,15 +1,12 @@
 __author__ = 'qweqwe'
 import unittest
-import os
 from api.app import create_app
 from api import api_v1
 from api.rest.v1 import from_json
-from api.lib.guard_manager import GuardManager
-from api.extensions import guard
-from website.models import User, AppToken
-from website.extensions import db
+from tests.stubs import fake_guard
 
-guard.manager = GuardManager
+AUTH_TOKEN = fake_guard.AUTH_TOKEN
+APP_TOKEN  = fake_guard.APP_TOKEN
 
 class GuardTestCase(unittest.TestCase):
 
@@ -19,17 +16,14 @@ class GuardTestCase(unittest.TestCase):
         api_v1.get_remote_ip = lambda : '127.0.0.1'
         api_v1.get_user_id = lambda : 'user_id1'
         app = create_app(
-            modules=((api_v1, '/v1') ),
-            exts=(guard, db),
+            modules=((api_v1, '/v1') ,),
+            exts=(fake_guard.guard,),
             dict_config=dict(
                 DEBUG=False,
-                TESTING=True,
-                MYSQL_DEBUG_URI = os.environ.get('COLTRANE_MYSQL_DEBUG_URI') or \
-                                  'mysql://root@127.0.0.1:3306/coltrane'
+                TESTING=True
             )
         )
         cls.app = app.test_client()
-        db.session.begin_transaction()
 
 
     def test_allow_access(self):
@@ -38,18 +32,19 @@ class GuardTestCase(unittest.TestCase):
         assert res == {'response': []}
 
     def test_deny_access_for_auth_token(self):
+        fake_guard.AUTH_TOKEN = 'Hui'
         res = self.app.get('/v1/books')
         assert res._status_code == 401
+        #put back the original token
+        fake_guard.AUTH_TOKEN = AUTH_TOKEN
 
 
     def test_deny_access_for_app_token(self):
+        fake_guard.APP_TOKEN = 'Hui'
         res = self.app.get('/v1/books')
         assert res._status_code == 401
-
-    @classmethod
-    def tearDownClass(cls):
-        db.session.rollback()
-
+        #put back the original token
+        fake_guard.APP_TOKEN = APP_TOKEN
 
 
 if __name__ == '__main__':
