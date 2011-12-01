@@ -21,23 +21,24 @@ class forbidden_fields(Enum):
     WHERE      = '$where'
 
 class lazy_conn(object):
-    conn = None
-    @property
-    def entities(self):
-        if self.conn:
-            return self.conn
-        else:
-            conf = current_app.config
-            db   = conf['MONGODB_DATABASE']
-            coll = conf['APPDATA_COLLECTION']
-            self.conn = mongodb.connection[db][coll]
-            return self.conn
-    def __getattr__(self, name):
-        return getattr(self.entities, name)
+    class __metaclass__(type):
+        conn = None
+        @property
+        def entities(self):
+            if self.conn:
+                return self.conn
+            else:
+                conf = current_app.config
+                db   = conf['MONGODB_DATABASE']
+                coll = conf['APPDATA_COLLECTION']
+                self.conn = mongodb.connection[db][coll]
+                return self.conn
+        def __getattr__(self, name):
+            return getattr(self.entities, name)
 
 
 api = Blueprint("api_v1", __name__)
-storage = AppdataStorage(lazy_conn())
+storage = AppdataStorage(lazy_conn)
 
 
 
