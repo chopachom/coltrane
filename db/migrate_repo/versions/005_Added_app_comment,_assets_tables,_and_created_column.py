@@ -6,7 +6,6 @@ from datetime import datetime
 meta = MetaData()
 
 users = Table('users', meta, Column('id', Integer(), primary_key=True))
-applications = Table('applications', meta, Column('id', Integer(), primary_key=True))
 
 comments = Table('comments', meta,
                   Column('id', Integer(), primary_key=True),
@@ -30,6 +29,8 @@ def upgrade(migrate_engine):
     # Upgrade operations go here. Don't create your own engine; bind
     # migrate_engine to your metadata
     meta.bind = migrate_engine
+    applications = Table('applications', meta, autoload=True,
+                        autoload_with=migrate_engine)
     developers = Table('developers', meta, autoload=True,
                         autoload_with=migrate_engine)
     dev_keys = Table('dev_keys', meta, autoload=True,
@@ -51,15 +52,17 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta.bind = migrate_engine
+    applications = Table('applications', meta, autoload=True,
+                        autoload_with=migrate_engine)
     developers = Table('developers', meta, autoload=True,
                         autoload_with=migrate_engine)
     dev_keys = Table('dev_keys', meta, autoload=True,
                         autoload_with=migrate_engine)
     apptokens = Table('apptokens', meta, autoload=True,
                         autoload_with=migrate_engine)
+    applications.columns.created.drop()
     developers.columns.created.drop()
     dev_keys.columns.created.drop()
-    applications.columns.created.drop()
     apptokens.columns.created.drop()
     assets.drop()
     comments.drop()

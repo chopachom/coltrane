@@ -34,8 +34,7 @@ def upgrade(migrate_engine):
     applications = Table('applications', meta, autoload=True,
         autoload_with=migrate_engine)
     # rename index?
-    ForeignKeyConstraint(columns=[applications.c.developer_id],
-        refcolumns=[developers.c.id], name='applications_ibfk_1').drop()
+    migrate_engine.execute('ALTER TABLE applications DROP FOREIGN KEY applications_ibfk_1')
     applications.columns.developer_id.drop()
     author_column = Column('author_id', Integer, ForeignKey("users.id"))
     author_column.create(applications)
