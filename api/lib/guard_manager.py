@@ -1,6 +1,6 @@
 __author__ = 'qweqwe'
 
-from website.models import User, AppToken
+from db.models import User, AppToken
 
 #TODO: (Someday) use HandlerSocket
 class GuardManager(object):

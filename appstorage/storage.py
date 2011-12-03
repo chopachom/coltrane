@@ -5,8 +5,8 @@ import json
 from datetime import datetime
 from uuid import uuid4
 
-from errors import *
-from utils import Enum
+from coltrane.errors import *
+from coltrane.utils import Enum
 
 
 class intf(Enum):

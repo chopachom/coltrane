@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-from sqlalchemy.orm import joinedload
-
 __author__ = 'qweqwe'
 
-from website.extensions import db
+from db.extension import db
 from datetime import datetime
 from flaskext.bcrypt import generate_password_hash, check_password_hash
 from hashlib import sha256, sha224
 from os import urandom
 from uuid import  uuid4
+
+from sqlalchemy.orm import joinedload
 
 
 class User(db.Model):

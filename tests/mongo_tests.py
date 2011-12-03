@@ -1,6 +1,16 @@
 import unittest
-from ds import storage
-from ds.storage import ext_fields
+from pymongo.connection import Connection
+
+from coltrane.api import config
+from coltrane.appstorage.storage import AppdataStorage
+from coltrane.appstorage.storage import extf
+
+
+test_database   = config.TestConfig.MONGODB_DATABASE
+test_collection = config.TestConfig.APPDATA_COLLECTION
+c = Connection()
+storage = AppdataStorage(c[test_database][test_collection])
+
 
 __author__ = 'Pasha'
 
@@ -17,26 +27,26 @@ class SecurityTestCase(unittest.TestCase):
 
 
     def tearDown(self):
-        storage._entities().drop()
+        storage.entities.drop()
 
     def test_security_when_where_used(self):
         filter_opts = {'a': {'$gt': 5}, '$where': 'db.entities.drop()'}
 
         with self.assertRaises(Exception):
-            storage.get_by_filter(app_id, user_id, bucket, filter_opts)
+            storage.find(app_id, user_id, bucket, filter_opts)
 
-        res = storage.get_by_filter(app_id, user_id, bucket)
+        res = storage.find(app_id, user_id, bucket)
         assert 10 == len(res)
 
         filter_opts = {'$where': 'db.dropDatabase()'}
-        storage.get_by_filter(app_id, user_id, bucket, filter_opts)
+        storage.find(app_id, user_id, bucket, filter_opts)
 
-        res = storage.get_by_filter(app_id, user_id, bucket)
+        res = storage.find(app_id, user_id, bucket)
         assert 10 == len(res)
 
         with self.assertRaises(Exception):
-            storage.get_by_filter(app_id, user_id, bucket, {"$where": "db.entities.drop()"})
-        res = storage.get_by_filter(app_id, user_id, bucket)
+            storage.find(app_id, user_id, bucket, {"$where": "db.entities.drop()"})
+        res = storage.find(app_id, user_id, bucket)
         assert 10 == len(res)
 
     def test_fetch_not_own_data(self):
@@ -45,22 +55,22 @@ class SecurityTestCase(unittest.TestCase):
             data = {'_key': 'k%d' % i, 'a': 10 + i, 'b': [1, 2, 3, 10 + i]}
             storage.create(app_id, another_user_id, ip, data, bucket=bucket)
 
-        res = storage.get_by_filter(app_id, another_user_id, bucket)
+        res = storage.find(app_id, another_user_id, bucket)
         assert 5 == len(res)
 
-        id = storage._document_id(app_id, another_user_id, bucket, 'k1')
+        id = storage.find(app_id, another_user_id, bucket, {'_key':'k1'})
         filter_opts = {'$where': 'this._id == "%s"' % id}
-        res = storage.get_by_filter(app_id, user_id, bucket, filter_opts)
+        res = storage.find(app_id, user_id, bucket, filter_opts)
         assert 0 == len(res)
 
-        filter_opts = {ext_fields.KEY: 'k1', '$where': 'this._id == "%s"' % id}
-        res = storage.get_by_filter(app_id, user_id, bucket, filter_opts)
+        filter_opts = {extf.KEY: 'k1', '$where': 'this._id == "%s"' % id}
+        res = storage.find(app_id, user_id, bucket, filter_opts)
         assert 0 == len(res)
 
-        filter_opts = {ext_fields.KEY: 'k1', '$where': 'db.entities.update({"a":-1}, {"_id":"%s"})' % id}
-        storage.get_by_filter(app_id, user_id, bucket, filter_opts)
+        filter_opts = {extf.KEY: 'k1', '$where': 'db.entities.update({"a":-1}, {"_id":"%s"})' % id}
+        storage.find(app_id, user_id, bucket, filter_opts)
 
-        res = storage.get_by_filter(app_id, another_user_id, bucket)
+        res = storage.find(app_id, another_user_id, bucket)
         assert 5 == len(res)
         
 if __name__ == '__main__':

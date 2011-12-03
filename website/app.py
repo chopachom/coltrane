@@ -3,7 +3,7 @@ import views
 import logging
 from flask import Flask
 from config import DefaultConfig
-from extensions import db
+from db.extension import db
 from extensions.warden import warden
 from logging.handlers import RotatingFileHandler
 from hooks import per_request_callbacks

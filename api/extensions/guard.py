@@ -1,7 +1,7 @@
 __author__ = 'apetrovich'
 
 from flask import request, g, abort
-from api.config import DefaultConfig as dc
+from coltrane import config
 
 
 class Guard(object):
@@ -32,14 +32,14 @@ class Guard(object):
 
 
     def get_auth_token(self):
-        auth_tkn = request.cookies.get(dc.COOKIE_USER_AUTH_TOKEN, None)
-        self.app.logger.debug("Got cookie %s: %s", dc.COOKIE_USER_AUTH_TOKEN, auth_tkn)
+        auth_tkn = request.cookies.get(config.COOKIE_USER_AUTH_TOKEN, None)
+        self.app.logger.debug("Got cookie %s: %s", config.COOKIE_USER_AUTH_TOKEN, auth_tkn)
         return auth_tkn
 
 
     def get_app_token(self):
-        app_tkn = request.cookies.get(dc.COOKIE_APP_TOKEN, None)
-        self.app.logger.debug("Got cookie %s: %s", dc.COOKIE_APP_TOKEN, app_tkn)
+        app_tkn = request.cookies.get(config.COOKIE_APP_TOKEN, None)
+        self.app.logger.debug("Got cookie %s: %s", config.COOKIE_APP_TOKEN, app_tkn)
         return app_tkn
 
 

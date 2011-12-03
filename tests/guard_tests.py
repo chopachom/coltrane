@@ -6,8 +6,10 @@ from api import api_v1
 from api.rest.v1 import from_json
 from api.lib.guard_manager import GuardManager
 from api.extensions import guard
-from website.models import User, AppToken
-from website.extensions import db
+from api.config import TestConfig
+from db.models import User, AppToken
+from db.extension import db
+
 
 guard.manager = GuardManager
 
@@ -21,12 +23,7 @@ class GuardTestCase(unittest.TestCase):
         app = create_app(
             modules=((api_v1, '/v1'),),
             exts=(guard, db),
-            dict_config=dict(
-                DEBUG=False,
-                TESTING=True,
-                MYSQL_DEBUG_URI = os.environ.get('COLTRANE_MYSQL_DEBUG_URI') or \
-                                  'mysql://root@127.0.0.1:3306/coltrane'
-            )
+            config=TestConfig
         )
         cls.app = app.test_client()
         db.session.begin_transaction()

@@ -3,15 +3,19 @@ __author__ = 'nik'
 import unittest
 from pymongo.connection import Connection
 
-from appstorage.storage import AppdataStorage
-from appstorage.storage import extf
-from errors import *
+from coltrane.api import config
+from coltrane.appstorage.storage import AppdataStorage
+from coltrane.appstorage.storage import extf
+from coltrane.errors import *
 
+
+test_database   = config.TestConfig.MONGODB_DATABASE
+test_collection = config.TestConfig.APPDATA_COLLECTION
 c = Connection()
-storage = AppdataStorage(c.test_database.test_collection)
+storage = AppdataStorage(c[test_database][test_collection])
+
 
 class DocumentStorageIntegrationTestCase(unittest.TestCase):
-# TODO: switch to test db in tests
 
     def setUp(self):
         self.ip = '127.0.0.1'
