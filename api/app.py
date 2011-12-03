@@ -74,6 +74,7 @@ def configure_logging(app):
         stdout_handler.setLevel(logging.DEBUG)
         stdout_handler.setFormatter(formatter)
         app.logger.addHandler(stdout_handler)
+        logging.getLogger('coltrane').addHandler(stdout_handler)
         return
 
     debug_log = app.config['DEBUG_LOG_FILE']

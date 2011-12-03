@@ -1,6 +1,8 @@
 import json
 import datetime
 import logging
+import traceback
+
 from flask import Blueprint, jsonify, current_app
 from flask.globals import request
 from coltrane.api.validators import SimpleValidator, RecursiveValidator

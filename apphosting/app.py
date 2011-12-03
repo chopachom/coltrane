@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+#TODO: USE HANDLER SOCKET OR SOME FORM OF CACHING
+
 __author__ = 'qweqwe'
 
 from flask import Flask, request, make_response, abort
@@ -7,8 +9,9 @@ from urlparse import urlparse
 from hashlib import sha256
 from os import urandom
 from datetime import datetime
-from website.models import User, Application, AppToken
-from website.extensions import db
+from coltrane.db.models import User, Application, AppToken
+from coltrane.db.extension import db
+from coltrane import config
 
 pp = PrettyPrinter(indent=4)
 
@@ -17,7 +20,7 @@ db.init_app(app)
 
 @app.before_request
 def before_request():
-    response = make_response("ololo")
+    response = make_response()
     base_path = get_base_path()
     app_domain = get_subdomain()
     full_domain = get_topdomain()
@@ -29,9 +32,9 @@ def before_request():
         pp.pprint(request.cookies)
 
     #TODO: add anonymous users
-    auth_token = request.cookies.get('auth_token')
-    app_token = request.cookies.get('app_token')
-    anonymous = request.cookies.get('anonymous')
+    auth_token = request.cookies.get(config.COOKIE_USER_AUTH_TOKEN)
+    app_token = request.cookies.get(config.COOKIE_APP_TOKEN)
+    anonymous = request.cookies.get(config.COOKIE_ANONYMOUS_TOKEN)
 
     # if user opens this app for the first time
     if auth_token and not app_token:
@@ -45,28 +48,30 @@ def before_request():
         db.session.add(token)
         db.session.commit()
         print 'setting cookies'
-        response.set_cookie('app_token', value=token.token, domain=full_domain,
-                             httponly=True)
+        response.set_cookie(config.COOKIE_APP_TOKEN, value=token.token,
+                            domain=full_domain, httponly=True)
 
     # if user was anonymous but have authenticated
     if auth_token and anonymous:
-        response.set_cookie('anonymous', '', expires=datetime(1971,01,01))
+        response.set_cookie(config.COOKIE_ANONYMOUS_TOKEN, '',
+                            expires=datetime(1971,01,01))
 
     #TODO: anonymous users
     if not auth_token and not anonymous:
-        response.set_cookie('anonymous', value='true', domain=full_domain)
+        response.set_cookie(config.COOKIE_ANONYMOUS_TOKEN, value='true',
+                            domain=full_domain)
 
     response.headers['X-Accel-Redirect'] = "/files/"+base_path
     return response
 
 
-def generate_token(user_id, app_id):
-    return sha256(
-        str(datetime.utcnow()) +
-        str(user_id) +
-        str(app_id)  +
-        str(urandom(12))
-    ).hexdigest()
+#def generate_token(user_id, app_id):
+#    return sha256(
+#        str(datetime.utcnow()) +
+#        str(user_id) +
+#        str(app_id)  +
+#        str(urandom(12))
+#    ).hexdigest()
 
 
 def get_subdomain():
@@ -86,10 +91,3 @@ def get_base_path():
     url_root = request.url_root[:-1][::-1]
     index = url.find(url_root)
     return request.url[-index:]
-
-
-
-if __name__ == '__main__':
-    app.config.from_object(TestConfig)
-    app.run(debug=True, port=5001)
-

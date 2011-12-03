@@ -80,7 +80,7 @@ class AppdataStorage(object):
                 raise InvalidDocumentKeyError(
                     'Document with key [%s] already exists' % document[extf.KEY])
         else:
-         document_id = self._internal_id(app_id, user_id, bucket, uuid4())
+            document_id = self._internal_id(app_id, user_id, bucket, uuid4())
 
         document = self._filter_ext_fields(document)
         # add required fields to document

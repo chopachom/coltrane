@@ -1,5 +1,5 @@
 import abc
-import errors
+from coltrane import errors
 
 __author__ = 'Pasha'
 
