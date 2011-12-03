@@ -1,4 +1,4 @@
-from api import errors
+from coltrane import errors
 
 __author__ = 'qweqwe'
 from utils import Enum

@@ -1,7 +1,8 @@
 __author__ = 'apetrovich'
 
-from flask import request, g, abort
+from flask import request, g, abort, jsonify
 from coltrane import config
+from coltrane.api.rest import statuses
 
 
 class Guard(object):
@@ -56,31 +57,18 @@ class Guard(object):
     def _before_request(self):
         if not self.get_auth_token() or not self.get_app_token():
             #TODO FORMAT
-            return abort(401)
+            return jsonify({'response': {
+                statuses.STATUS_CODE: statuses.app.APP_UNAUTHORIZED
+            }}), statuses.http.UNAUTHORIZED
 
         user = self._authenticate_user(self.get_auth_token())
         app = self._authenticate_app(self.get_app_token())
 
         if not user or not app:
-            #TODO FORMAT
-            return abort(401)
+            #TODO FORMAT abort(401)
+            return jsonify({'response': {
+                statuses.STATUS_CODE: statuses.app.APP_UNAUTHORIZED
+            }}), statuses.http.UNAUTHORIZED
 
         g.current_user = user
         g.current_app = app
-
-
-
-#    def authenticate_user(self, func):
-#        """ Decorator that registers passed func as an user authenticator
-#            function, this functions accepts user token as an argument and
-#            returns a user object if authentication was successful
-#        """
-#        self._authenticate_user = func
-#
-#
-#    def authenticate_app(self, func):
-#        """ Decorator that registers passed func as an app authenticator
-#            function, this function accepts app token as an argument and
-#            return an app object if authentication was successful
-#        """
-#        self._authenticate_app = func

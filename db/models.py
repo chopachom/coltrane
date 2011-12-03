@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'qweqwe'
 
-from db.extension import db
+from coltrane.db.extension import db
 from datetime import datetime
 from flaskext.bcrypt import generate_password_hash, check_password_hash
 from hashlib import sha256, sha224

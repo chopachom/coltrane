@@ -1,10 +1,10 @@
 __author__ = 'qweqwe'
 import unittest
-from api.app import create_app
-from api import api_v1
-from api.rest.v1 import from_json
-from api.config import TestConfig
-from tests.stubs import fake_guard
+from coltrane.api.app import create_app
+from coltrane.api import api_v1
+from coltrane.api.rest.v1 import from_json
+from coltrane.api.config import TestConfig
+from coltrane.tests.stubs import fake_guard
 
 AUTH_TOKEN = fake_guard.AUTH_TOKEN
 APP_TOKEN  = fake_guard.APP_TOKEN

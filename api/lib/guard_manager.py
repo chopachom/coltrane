@@ -1,6 +1,6 @@
 __author__ = 'qweqwe'
 
-from db.models import User, AppToken
+from coltrane.db.models import User, AppToken
 
 #TODO: (Someday) use HandlerSocket
 class GuardManager(object):

@@ -66,6 +66,7 @@ class CreateAppForm(Form):
 
     description = TextAreaField("Description")
 
+    #TODO: TO LOWEr
     domain = TextField("App domain", [
         validators.Length(min=2, max=255),
         validators.Required(),

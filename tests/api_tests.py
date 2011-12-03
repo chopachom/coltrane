@@ -1,14 +1,14 @@
 import json
 import unittest
-from api import api_v1
-from api.rest import v1
-from api.rest.v1 import from_json, forbidden_fields, storage
-from api.rest.statuses import app, STATUS_CODE
-from api.app import create_app
-from api.extensions import mongodb
-from api.config import TestConfig
-import errors
-from appstorage.storage import AppdataStorage, extf, intf
+from coltrane.api import api_v1
+from coltrane.api.rest import v1
+from coltrane.api.rest.v1 import from_json, forbidden_fields, storage
+from coltrane.api.rest.statuses import app, STATUS_CODE
+from coltrane.api.app import create_app
+from coltrane.api.extensions import mongodb
+from coltrane.api.config import TestConfig
+from coltrane import errors
+from coltrane.appstorage.storage import AppdataStorage, extf, intf
 
 __author__ = 'pshkitin'
 

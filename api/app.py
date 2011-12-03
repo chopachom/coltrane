@@ -3,14 +3,14 @@ __author__ = 'apetrovich'
 
 import logging
 import sys
-from flask import Flask
-from config import DefaultConfig
 from logging.handlers import RotatingFileHandler
-from lib.guard_manager import GuardManager
-from extensions import mongodb
-from extensions import guard
-from db.extension import db
-from rest import api_v1, converters
+from flask import Flask
+from coltrane.api.config import DefaultConfig
+from coltrane.api.lib.guard_manager import GuardManager
+from coltrane.api.extensions import mongodb
+from coltrane.api.extensions import guard
+from coltrane.db.extension import db
+from coltrane.api.rest import api_v1, converters
 
 
 guard.manager = GuardManager

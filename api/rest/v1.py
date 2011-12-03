@@ -3,13 +3,12 @@ import datetime
 import logging
 from flask import Blueprint, jsonify, current_app
 from flask.globals import request
-from api.validators import SimpleValidator, RecursiveValidator
-from appstorage.storage import AppdataStorage
-from appstorage.storage import extf, intf
-import errors
-from api.extensions import guard
-from api.extensions import mongodb
-from .statuses import *
+from coltrane.api.validators import SimpleValidator, RecursiveValidator
+from coltrane.appstorage.storage import AppdataStorage
+from coltrane.appstorage.storage import extf, intf
+from coltrane.api.extensions import guard
+from coltrane.api.extensions import mongodb
+from coltrane.api.rest.statuses import *
 
 
 LOG = logging.getLogger('coltrane.api')
