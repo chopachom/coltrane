@@ -1,8 +1,8 @@
 __author__ = 'qweqwe'
 
 
-from api.extensions.guard import Guard
-from utils import Enum
+from coltrane.api.extensions.guard import Guard
+from coltrane.utils import Enum
 
 
 AUTH_TOKEN = 'ThIsIsUsErAuThToKeN'
