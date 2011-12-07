@@ -1,7 +1,7 @@
 from coltrane import errors
+from coltrane.utils import Enum
 
 __author__ = 'qweqwe'
-from utils import Enum
 
 STATUS_CODE = 'code'
 
