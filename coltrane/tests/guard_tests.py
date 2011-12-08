@@ -45,7 +45,7 @@ class GuardTestCase(unittest.TestCase):
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN)
         res = from_json(rv.data)
-        assert res == {'response': []}
+        assert res == []
 
 
     def test_deny_access_for_auth_token(self):

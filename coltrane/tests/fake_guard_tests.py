@@ -31,7 +31,7 @@ class GuardTestCase(unittest.TestCase):
     def test_allow_access(self):
         rv = self.app.get('/v1/books')
         res = from_json(rv.data)
-        assert res == {'response': []}
+        assert res == []
 
     def test_deny_access_for_auth_token(self):
         fake_guard.AUTH_TOKEN = 'Hui'

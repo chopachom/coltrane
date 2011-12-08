@@ -6,7 +6,10 @@ __author__ = 'qweqwe'
 STATUS_CODE = 'code'
 
 class http(Enum):
+
     OK                    = 200
+    CREATED               = 201
+    
     BAD_REQUEST           = 400
     UNAUTHORIZED          = 401
     NOT_FOUND             = 404
@@ -22,6 +25,7 @@ class app(Enum):
     NOT_FOUND         = 4
     NOT_IMPLEMENTED   = 5
     SERVER_ERROR      = 6
+    CREATED           = 7
 
 
 ERROR_INFO_MATCHING = {
