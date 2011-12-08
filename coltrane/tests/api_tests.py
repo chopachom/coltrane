@@ -62,7 +62,7 @@ class ApiTestCase(unittest.TestCase):
     def test_get_fail_request(self):
         rv = self.app.get(API_V1 + '/books?filter="all"')
         res = from_json(rv.data)
-        assert res['error'][STATUS_CODE] == app.BAD_REQUEST
+        assert res['message'] == u'Invalid json object ""all""'
 
 
     def test_get_all_request(self):
@@ -103,7 +103,7 @@ class ApiTestCase(unittest.TestCase):
 
     def test_get_with_no_keys(self):
         rv = self.app.get(API_V1 + '/books/  ,  ')
-        assert  from_json(rv.data)['error'] == {'message': "At least one key must be passed.", "code": app.BAD_REQUEST}
+        assert  from_json(rv.data) == {'message': "At least one key must be passed."}
 
 
     def test_post_request_without_specified_key(self):
@@ -134,32 +134,32 @@ class ApiTestCase(unittest.TestCase):
         rv = self.app.post(API_V1 + '/books', data=dict(
             data=json.dumps({intf.ID:'id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
         ), follow_redirects=True)
-        res = from_json(rv.data)['error']
+        res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.ID, forbidden_fields.WHERE)}
 
         filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
-        res = from_json(rv.data)['error']
+        res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.APP_ID, forbidden_fields.WHERE)}
 
         filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.delete(API_V1 + '/books?filter=' + json.dumps(filter))
-        res = from_json(rv.data)['error']
+        res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.APP_ID, forbidden_fields.WHERE)}
 
         filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter), data=dict(
             data=json.dumps({'a':'b'})
         ), follow_redirects=True)
-        res = from_json(rv.data)['error']
+        res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE), "code": 1}
+                                  (intf.APP_ID, forbidden_fields.WHERE)}
 
 
         filter = {'a':21, 'b':[1,2,3],
@@ -167,9 +167,9 @@ class ApiTestCase(unittest.TestCase):
         rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter), data=dict(
             data=json.dumps({intf.APP_ID:'app_id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}})
         ), follow_redirects=True)
-        res = from_json(rv.data)['error']
+        res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE), "code":1}
+                                  (intf.APP_ID, forbidden_fields.WHERE)}
 
 
     def test_where_field_as_string(self):
@@ -187,8 +187,8 @@ class ApiTestCase(unittest.TestCase):
         ), follow_redirects=True)
 
         rv = self.app.get(API_V1 + '/books?filter=\'this.a > 3\'')
-        res = from_json(rv.data)['error']
-        assert res == {"message": "Invalid json object \"\'this.a > 3\'\"", "code": 1}
+        res = from_json(rv.data)
+        assert res == {"message": "Invalid json object \"\'this.a > 3\'\""}
 
 
 
@@ -252,7 +252,7 @@ class ApiUpdateManyCase(unittest.TestCase):
 
         print rv.data
         data = from_json(rv.data)
-        res = data['error']['message']
+        res = data['message']
         assert res == errors.InvalidDocumentError.FORBIDDEN_FIELDS_MSG % ','.join([
             intf.CREATED_AT, intf.APP_ID])
 
@@ -446,7 +446,7 @@ class ApiDeleteManyCase(unittest.TestCase):
 
     def test_delete_all_with_wrong_filter(self):
         resp = self.app.get(API_V1 + '/books?filter=all')
-        assert from_json(resp.data)['error'] == {'message': 'Invalid json object "all"', 'code': app.BAD_REQUEST}
+        assert from_json(resp.data) == {'message': 'Invalid json object "all"'}
 
     def test_delete_two_by_age(self):
         filter_opts = '{"age":10}'
@@ -564,8 +564,7 @@ class ApiDeleteManyCase(unittest.TestCase):
 
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         resp = from_json(resp.data)
-        expected = {
-            'error': {STATUS_CODE: app.BAD_REQUEST, 'message': 'Invalid json object \"{"age":10, name:"Sergey"all}\"'}}
+        expected = {'message': 'Invalid json object \"{"age":10, name:"Sergey"all}\"'}
         assert resp == expected
 
 
@@ -574,8 +573,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         resp = from_json(resp.data)
         print resp
-        expected = {
-            'error': {STATUS_CODE: app.BAD_REQUEST, 'message': 'Invalid request syntax. Filter options were not specified'}}
+        expected = {'message': 'Invalid request syntax. Filter options were not specified'}
         assert resp == expected
 
 
@@ -625,7 +623,7 @@ class ApiSpecialEndpointsCase(unittest.TestCase):
 
         res = self.app.get(API_V1 + '/books/key1')
         storage.get = old_get
-        assert res.data == '{"error": {"message": "My error", "code": 6}}'
+        assert res.data == '{"message": "' + resp_msgs.INTERNAL_ERROR + '"}'
 
 
 if __name__ == '__main__':

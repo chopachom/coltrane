@@ -23,6 +23,7 @@ class resp_msgs(Enum):
 
     DOC_NOT_EXISTS = "Document doesn't exist"
     DOC_WAS_CREATED = "Document was created"
+    INTERNAL_ERROR = "Server internal error"
 
 class forbidden_fields(Enum):
     WHERE      = '$where'
@@ -206,13 +207,16 @@ def app_exception(error):
     """ Return response as a error """
 
     error_class = error.__class__
-    
-    message = error.message
+
+    if error_class in ERROR_INFO_MATCHING:
+        message = error.message
+    else:
+        message = resp_msgs.INTERNAL_ERROR
+        
     app_code, http_code = ERROR_INFO_MATCHING.get(
         error_class, (app.SERVER_ERROR, http.SERVER_ERROR))
     
-    response_msg = json.dumps({'error': {STATUS_CODE: app_code,
-                                         'message': message}})
+    response_msg = json.dumps({'message': message})
     return response_msg, http_code
 
 
