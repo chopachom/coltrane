@@ -9,6 +9,7 @@ from coltrane.api.extensions import mongodb
 from coltrane.api.config import TestConfig
 from coltrane import errors
 from coltrane.appstorage.storage import AppdataStorage, extf, intf
+from coltrane.config import RESTConfig
 
 __author__ = 'pshkitin'
 
@@ -625,6 +626,113 @@ class ApiSpecialEndpointsCase(unittest.TestCase):
         storage.get = old_get
         assert res.data == '{"message": "' + resp_msgs.INTERNAL_ERROR + '"}'
 
+
+
+class PaginatingQueryCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        v1.get_app_id = lambda : 'app_id1'
+        v1.get_remote_ip = lambda : '127.0.0.1'
+        v1.get_user_id = lambda : 'user_id1'
+
+        cls._app = create_app(
+            modules=((api_v1, API_V1),),
+            exts=(mongodb,),
+            dict_config=dict(
+                DEBUG=False,
+                TESTING=True
+            ),
+            config=TestConfig
+        )
+
+        cls.app =  cls._app.test_client()
+        
+        for i in xrange(100):
+            cls.app.post(API_V1 + '/books/%d_key' % i, data=dict(
+                data='{"title": "Title%d", "author": "author%d", "age":%d, "name":"Pasha"}' %
+                     (i, i, i)
+            ), follow_redirects=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        with cls._app.test_request_context():
+            storage.entities.drop()
+
+
+    def test_get_all(self):
+        rv = self.app.get(API_V1 + '/books')
+        res = from_json(rv.data)
+        assert len(res) == 100
+
+
+    def test_get_all_limited(self):
+        old_size = RESTConfig.PAGE_QUERY_SIZE
+        RESTConfig.PAGE_QUERY_SIZE = 50
+        
+        rv = self.app.get(API_V1 + '/books')
+        res = from_json(rv.data)
+        assert len(res) == 50
+
+
+    def test_get_paginating1(self):
+        rv = self.app.get(API_V1 + '/books?pageSize=10&pageStartIndex=50')
+        res = from_json(rv.data)
+        assert len(res) == 10
+        assert res[0][extf.KEY] == '50_key'
+
+
+    def test_get_paginating2(self):
+        filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 80}}]}
+        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=30&pageStartIndex=20' % json.dumps(filter))
+        res = from_json(rv.data)
+        assert len(res) == 30
+        assert res[0][extf.KEY] == '41_key'
+
+
+    def test_get_paginating3(self):
+        filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
+        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=30&pageStartIndex=20' % json.dumps(filter))
+        res = from_json(rv.data)
+        assert len(res) == 19
+        assert res[0][extf.KEY] == '41_key'
+
+
+    def test_get_paginating4(self):
+        filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
+        rv = self.app.get(API_V1 + '/books?filter=%s&pageStartIndex=10' % json.dumps(filter))
+        res = from_json(rv.data)
+        assert len(res) == 29
+        assert res[0][extf.KEY] == '31_key'
+
+
+    def test_get_paginating5(self):
+        filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
+        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=30' % json.dumps(filter))
+        res = from_json(rv.data)
+        assert len(res) == 30
+        assert res[0][extf.KEY] == '21_key'
+
+
+    def test_get_paginating_invalid_params(self):
+        filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
+        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=-1&pageStartIndex=20' % json.dumps(filter))
+        res = from_json(rv.data)
+        assert res['message'] == 'Invalid request syntax. '  \
+                'Parameters pageSize or pageStartIndex have invalid value.'
+        assert rv.status_code == http.BAD_REQUEST
+
+        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=10&pageStartIndex=-1' % json.dumps(filter))
+        res = from_json(rv.data)
+        assert res['message'] == 'Invalid request syntax. '  \
+                'Parameters pageSize or pageStartIndex have invalid value.'
+        assert rv.status_code == http.BAD_REQUEST
+
+        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=0&pageStartIndex=0' % json.dumps(filter))
+        res = from_json(rv.data)
+        assert res['message'] == 'Invalid request syntax. '  \
+                'Parameters pageSize or pageStartIndex have invalid value.'
+        assert rv.status_code == http.BAD_REQUEST
 
 if __name__ == '__main__':
     unittest.main()

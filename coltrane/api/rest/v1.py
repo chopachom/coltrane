@@ -12,6 +12,7 @@ from coltrane.appstorage.storage import extf, intf
 from coltrane.api.extensions import guard
 from coltrane.api.extensions import mongodb
 from coltrane.api.rest.statuses import *
+from coltrane.config import RESTConfig
 
 
 LOG = logging.getLogger('coltrane.api')
@@ -89,7 +90,11 @@ def get_by_keys_handler(bucket, keys):
 def get_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     validate_filter(filter_opts)
-    documents = storage.find(get_app_id(), get_user_id(), bucket, filter_opts)
+
+    paginating = extract_paginating_data()
+
+    documents = storage.find(get_app_id(), get_user_id(), bucket,
+                             filter_opts, *paginating)
 
     if len(documents):
         res = json.dumps(documents, default=DT_HANDLER)
@@ -291,4 +296,23 @@ def is_force_mode():
         else:
             force = False
     return force
+
+def extract_paginating_data():
+
+    """
+        Extracts pagination data
+    """
+    start_index = request.args.get('pageStartIndex', 0)
+    size = request.args.get('pageSize', RESTConfig.PAGE_QUERY_SIZE)
+    try:
+        start_index = int(start_index)
+        size        = int(size)
+        if size <= 0 or start_index < 0:
+            raise Exception()
+    except Exception:
+        raise errors.InvalidRequestError('Invalid request syntax. '  \
+                'Parameters pageSize or pageStartIndex have invalid value.')
+
+    return start_index, size
+
 

@@ -1,3 +1,5 @@
+from coltrane.config import RESTConfig
+
 __author__ = 'qweqwe'
 
 import json
@@ -132,11 +134,21 @@ class AppdataStorage(object):
 
 
     @auth_validate_decorator
-    def find(self, app_id, user_id, bucket, filter_opts=None):
+    def find(self, app_id, user_id, bucket, filter_opts=None,
+             start_index=0, page_size=RESTConfig.PAGE_QUERY_SIZE):
 
         criteria = self._generate_criteria(app_id, user_id, bucket,
                                         filter_opts=filter_opts)
-        documents = list(self.entities.find(criteria))
+
+        opt_criteria = {}
+        if start_index < 0:
+            raise RuntimeError("page_start_index parameter must not be less then 0")
+        if page_size <= 0:
+            raise RuntimeError("page_size parameter must be greater then 0")
+        opt_criteria['skip']  = start_index
+        opt_criteria['limit'] = page_size
+        
+        documents = list(self.entities.find(criteria, **opt_criteria))
         return map(self._to_external, documents)
 
 
