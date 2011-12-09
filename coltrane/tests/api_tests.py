@@ -69,14 +69,8 @@ class ApiTestCase(unittest.TestCase):
     def test_get_all_request(self):
         rv = self.app.get(API_V1 + '/books')
         res = from_json(rv.data)
-        assert res == []
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
 
-    def test_get_by_not_existing_key(self):
-        rv = self.app.get(API_V1 + '/books/1')
-        res = from_json(rv.data)
-        found = [d for d in res if d[STATUS_CODE] == http.OK]
-        assert rv.status_code == http.OK
-        assert len(found) == 0
 
     def test_get_by_multiple_keys(self):
         rv = self.app.post(API_V1 + '/books/key_1', data=dict(
@@ -123,12 +117,13 @@ class ApiTestCase(unittest.TestCase):
         assert from_json(resp.data)[extf.KEY] == key
 
         resp = self.app.delete(API_V1 + '/books/' + key)
-        assert from_json(resp.data) == [{extf.KEY: key, STATUS_CODE: app.OK}]
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
 
     def test_fail_delete_request(self):
         rv = self.app.delete(API_V1 + '/books/4')
         assert  from_json(rv.data) == \
-                [{extf.KEY: '4', STATUS_CODE: app.NOT_FOUND, 'message': resp_msgs.DOC_NOT_EXISTS}]
+                {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert rv.status_code == http.NOT_FOUND
 
 
     def test_forbidden_where_field(self):
@@ -239,8 +234,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         print rv.data
         data = from_json(rv.data)
         res = data
-        assert res == [{extf.KEY: src_key, STATUS_CODE: app.NOT_FOUND,
-                        'message': resp_msgs.DOC_NOT_EXISTS}]
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
 
 
     def test_put_with_forbidden_fields(self):
@@ -280,8 +274,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         print rv.data
         data = from_json(rv.data)
         res = data
-        assert res == [{extf.KEY: 'new_key', STATUS_CODE: app.NOT_FOUND,
-                        'message': resp_msgs.DOC_NOT_EXISTS}]
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
 
 
     def test_put_existing_document(self):
@@ -301,7 +294,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         ), follow_redirects=True)
 
         data = from_json(rv.data)
-        assert data == [{extf.KEY: 'my_key', STATUS_CODE: app.OK}]
+        assert data == {'message': resp_msgs.DOC_WAS_UPDATED}
 
     def test_update_all(self):
         resp = self.app.get(API_V1 + '/books')
@@ -311,7 +304,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         src_update = {"age": 50}
         resp = self.app.put(API_V1 + '/books',
                             data=dict(data=json.dumps(src_update)))
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -325,7 +318,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         filter_opts = {"age": {"$lt": 20}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=dict(data=json.dumps(src_update)))
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -338,7 +331,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         filter_opts = {"age": {"$lt": 20}, "name": "Pasha"}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=dict(data=json.dumps(src_update)))
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -351,7 +344,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         filter_opts = {"age": {"$lt": 20}, "cources.one": {"$lt": 3}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=dict(data=json.dumps(src_update)))
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -364,7 +357,7 @@ class ApiUpdateManyCase(unittest.TestCase):
         src_update = {"new_field": 100}
         resp = self.app.put(API_V1 + '/books',
                             data=dict(data=json.dumps(src_update)))
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -382,9 +375,9 @@ class ApiUpdateManyCase(unittest.TestCase):
         resp = self.app.put(API_V1 + '/books/1,2,5,not_existing',
                             data=dict(data=json.dumps(src_update)))
         status = from_json(resp.data)
-        assert status == [{extf.KEY: '1', STATUS_CODE: app.OK},
-                        {extf.KEY: '2', STATUS_CODE: app.OK},
-                        {extf.KEY: '5', STATUS_CODE: app.OK},
+        assert status == [{extf.KEY: '1', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_WAS_UPDATED},
+                        {extf.KEY: '2', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_WAS_UPDATED},
+                        {extf.KEY: '5', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_WAS_UPDATED},
                         {extf.KEY: 'not_existing', STATUS_CODE: app.NOT_FOUND, 'message': resp_msgs.DOC_NOT_EXISTS}]
 
         resp = self.app.get(API_V1 + '/books')
@@ -438,12 +431,12 @@ class ApiDeleteManyCase(unittest.TestCase):
         assert len(books) == 5
 
         resp = self.app.delete(API_V1 + '/books')
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
-        assert resp.status_code == http.OK
-        assert resp.data == '[]'
+        assert resp.status_code == http.NOT_FOUND
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_NOT_EXISTS}
 
     def test_delete_all_with_wrong_filter(self):
         resp = self.app.get(API_V1 + '/books?filter=all')
@@ -452,7 +445,7 @@ class ApiDeleteManyCase(unittest.TestCase):
     def test_delete_two_by_age(self):
         filter_opts = '{"age":10}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -470,7 +463,7 @@ class ApiDeleteManyCase(unittest.TestCase):
     def test_delete_one_by_filter(self):
         filter_opts = '{"age":10, "name":"Sasha"}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -481,7 +474,7 @@ class ApiDeleteManyCase(unittest.TestCase):
     def test_delete_by_LT_filter(self):
         filter_opts = '{"age": { "$lt" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -498,7 +491,7 @@ class ApiDeleteManyCase(unittest.TestCase):
     def test_delete_by_GT_filter(self):
         filter_opts = '{"age": { "$gt" : 10 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -516,7 +509,7 @@ class ApiDeleteManyCase(unittest.TestCase):
     def test_delete_by_NE_filter(self):
         filter_opts = '{"age": { "$ne" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -534,7 +527,7 @@ class ApiDeleteManyCase(unittest.TestCase):
     def test_delete_by_NE_and_other_filter(self):
         filter_opts = '{"age": { "$ne" : 15 }, "name": {"$ne" : "Sasha"}}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert resp.data == ''
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -676,7 +669,7 @@ class PaginatingQueryCase(unittest.TestCase):
 
 
     def test_get_paginating1(self):
-        rv = self.app.get(API_V1 + '/books?pageSize=10&pageStartIndex=50')
+        rv = self.app.get(API_V1 + '/books?limit=10&skip=50')
         res = from_json(rv.data)
         assert len(res) == 10
         assert res[0][extf.KEY] == '50_key'
@@ -684,7 +677,7 @@ class PaginatingQueryCase(unittest.TestCase):
 
     def test_get_paginating2(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 80}}]}
-        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=30&pageStartIndex=20' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&limit=30&skip=20' % json.dumps(filter))
         res = from_json(rv.data)
         assert len(res) == 30
         assert res[0][extf.KEY] == '41_key'
@@ -692,7 +685,7 @@ class PaginatingQueryCase(unittest.TestCase):
 
     def test_get_paginating3(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
-        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=30&pageStartIndex=20' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&limit=30&skip=20' % json.dumps(filter))
         res = from_json(rv.data)
         assert len(res) == 19
         assert res[0][extf.KEY] == '41_key'
@@ -700,7 +693,7 @@ class PaginatingQueryCase(unittest.TestCase):
 
     def test_get_paginating4(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
-        rv = self.app.get(API_V1 + '/books?filter=%s&pageStartIndex=10' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&skip=10' % json.dumps(filter))
         res = from_json(rv.data)
         assert len(res) == 29
         assert res[0][extf.KEY] == '31_key'
@@ -708,7 +701,7 @@ class PaginatingQueryCase(unittest.TestCase):
 
     def test_get_paginating5(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
-        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=30' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&limit=30' % json.dumps(filter))
         res = from_json(rv.data)
         assert len(res) == 30
         assert res[0][extf.KEY] == '21_key'
@@ -716,22 +709,22 @@ class PaginatingQueryCase(unittest.TestCase):
 
     def test_get_paginating_invalid_params(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
-        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=-1&pageStartIndex=20' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&limit=-1&skip=20' % json.dumps(filter))
         res = from_json(rv.data)
-        assert res['message'] == 'Invalid request syntax. '  \
-                'Parameters pageSize or pageStartIndex have invalid value.'
+        assert res['message'] == 'Invalid request syntax. ' \
+                'Parameters skip or limit have invalid value.'
         assert rv.status_code == http.BAD_REQUEST
 
-        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=10&pageStartIndex=-1' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&limit=10&skip=-1' % json.dumps(filter))
         res = from_json(rv.data)
         assert res['message'] == 'Invalid request syntax. '  \
-                'Parameters pageSize or pageStartIndex have invalid value.'
+                'Parameters skip or limit have invalid value.'
         assert rv.status_code == http.BAD_REQUEST
 
-        rv = self.app.get(API_V1 + '/books?filter=%s&pageSize=0&pageStartIndex=0' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&limit=0&skip=0' % json.dumps(filter))
         res = from_json(rv.data)
         assert res['message'] == 'Invalid request syntax. '  \
-                'Parameters pageSize or pageStartIndex have invalid value.'
+                'Parameters skip or limit have invalid value.'
         assert rv.status_code == http.BAD_REQUEST
 
 if __name__ == '__main__':

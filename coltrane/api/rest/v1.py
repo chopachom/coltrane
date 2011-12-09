@@ -22,9 +22,12 @@ DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) e
 
 class resp_msgs(Enum):
 
-    DOC_NOT_EXISTS = "Document doesn't exist"
+    DOC_NOT_EXISTS  = "Document doesn't exist"
     DOC_WAS_CREATED = "Document was created"
-    INTERNAL_ERROR = "Server internal error"
+    DOC_WAS_DELETED = "Document was deleted"
+    DOC_WAS_UPDATED = "Document was updated"
+    
+    INTERNAL_ERROR  = "Server internal error"
 
 class forbidden_fields(Enum):
     WHERE      = '$where'
@@ -68,22 +71,33 @@ def post_handler(bucket, key):
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['GET'])
 def get_by_keys_handler(bucket, keys):
-    response = []
+    
     if not len(keys):
             raise errors.InvalidRequestError('At least one key must be passed.')
+    res = []
+    http_status = http.OK
+
     for key in keys:
         doc = storage.get(get_app_id(), get_user_id(), bucket, key)
         if doc:
             doc_resp = {extf.KEY: key, STATUS_CODE: app.OK,
                         'document': doc}
-            response.append(doc_resp)
+            res.append(doc_resp)
         else:
             doc_resp = {extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
                         'message': resp_msgs.DOC_NOT_EXISTS}
-            response.append(doc_resp)
+            res.append(doc_resp)
 
-    res = json.dumps(response, default=DT_HANDLER)
-    return make_response(res, http.OK)
+    if len(res) == 1:
+        res = res[0]
+        if res[STATUS_CODE] == app.OK:
+            res = res['document']
+        elif res[STATUS_CODE] == app.NOT_FOUND:
+            res = {'message': res['message']}
+            http_status = http.NOT_FOUND
+
+    res = json.dumps(res, default=DT_HANDLER)
+    return make_response(res, http_status)
 
 
 @api.route('/<bucket:bucket>', methods=['GET'])
@@ -91,16 +105,17 @@ def get_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     validate_filter(filter_opts)
 
-    paginating = extract_paginating_data()
+    skip, limit = extract_pagination_data()
 
     documents = storage.find(get_app_id(), get_user_id(), bucket,
-                             filter_opts, *paginating)
+                             filter_opts, skip, limit)
 
     if len(documents):
         res = json.dumps(documents, default=DT_HANDLER)
         return make_response(res, http.OK)
     
-    return make_response('[]', http.OK)
+    res = json.dumps({'message': resp_msgs.DOC_NOT_EXISTS})
+    return make_response(res, http.NOT_FOUND)
 
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
@@ -110,6 +125,8 @@ def delete_by_keys_handler(bucket, keys):
     if not len(keys):
         raise errors.InvalidRequestError('At least one key must be passed.')
     res = []
+    http_status = http.OK
+    
     for key in keys:
         filter_opts = {extf.KEY: key}
         if not storage.is_document_exists(get_app_id(), get_user_id(),
@@ -119,9 +136,16 @@ def delete_by_keys_handler(bucket, keys):
         else:
             storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
                            bucket=bucket, filter_opts=filter_opts)
-            res.append({extf.KEY: key, STATUS_CODE: app.OK})
+            res.append({extf.KEY: key, STATUS_CODE: app.OK,
+                        'message': resp_msgs.DOC_WAS_DELETED})
 
-    return make_response(json.dumps(res), http.OK)
+    if len(res) == 1:
+        res = res[0]
+        if res[STATUS_CODE] == app.NOT_FOUND:
+            http_status = http.NOT_FOUND
+        res = {'message': res['message']}
+
+    return make_response(json.dumps(res), http_status)
 
 
 @api.route('/<bucket:bucket>', methods=['DELETE'])
@@ -137,7 +161,9 @@ def delete_by_filter_handler(bucket):
     
     storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
                    bucket=bucket, filter_opts=filter_opts)
-    return make_response('', http.OK)
+
+    res = json.dumps({'message': resp_msgs.DOC_WAS_DELETED})
+    return make_response(res, http.OK)
 
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['PUT'])
@@ -153,6 +179,7 @@ def put_by_keys_handler(bucket, keys):
     validate_document(document)
 
     res = []
+    http_status = http.OK
     for key in keys:
         filter_opts = {extf.KEY: key}
 
@@ -170,8 +197,18 @@ def put_by_keys_handler(bucket, keys):
         else:
             storage.update(get_app_id(), get_user_id(), get_remote_ip(),
                            bucket, document, key=key)
-            res.append({extf.KEY: key, STATUS_CODE: app.OK})
-    return json.dumps(res, http.OK)
+            res.append({extf.KEY: key, STATUS_CODE: app.OK,
+                        'message': resp_msgs.DOC_WAS_UPDATED})
+    if len(res) == 1:
+        res = res[0]
+        if res[STATUS_CODE] == app.CREATED:
+            http_status = http.CREATED
+        elif res[STATUS_CODE] == app.NOT_FOUND:
+            http_status = http.NOT_FOUND
+        res = {'message': res['message']}
+
+    response_msg = json.dumps(res)
+    return make_response(response_msg, http_status)
 
 
 @api.route('/<bucket:bucket>', methods=['PUT'])
@@ -204,7 +241,9 @@ def put_by_filter_handler(bucket):
 
     storage.update(get_app_id(), get_user_id(), get_remote_ip(),
                              bucket, document, filter_opts=filter_opts)
-    return make_response('', http.OK)
+
+    res = json.dumps({'message': resp_msgs.DOC_WAS_UPDATED})
+    return make_response(res, http.OK)
 
 
 @api.errorhandler(Exception)
@@ -217,12 +256,13 @@ def app_exception(error):
         message = error.message
     else:
         message = resp_msgs.INTERNAL_ERROR
+        LOG.debug(error.message)
         
     app_code, http_code = ERROR_INFO_MATCHING.get(
         error_class, (app.SERVER_ERROR, http.SERVER_ERROR))
     
     response_msg = json.dumps({'message': message})
-    return response_msg, http_code
+    return make_response(response_msg, http_code)
 
 
 def validate_document(document):
@@ -297,22 +337,22 @@ def is_force_mode():
             force = False
     return force
 
-def extract_paginating_data():
+def extract_pagination_data():
 
     """
         Extracts pagination data
     """
-    start_index = request.args.get('pageStartIndex', 0)
-    size = request.args.get('pageSize', RESTConfig.PAGE_QUERY_SIZE)
+    skip = request.args.get('skip', 0)
+    limit = request.args.get('limit', RESTConfig.PAGE_QUERY_SIZE)
     try:
-        start_index = int(start_index)
-        size        = int(size)
-        if size <= 0 or start_index < 0:
+        skip = int(skip)
+        limit  = int(limit)
+        if limit <= 0 or skip < 0:
             raise Exception()
     except Exception:
         raise errors.InvalidRequestError('Invalid request syntax. '  \
-                'Parameters pageSize or pageStartIndex have invalid value.')
+                'Parameters skip or limit have invalid value.')
 
-    return start_index, size
+    return skip, limit
 
 

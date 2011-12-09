@@ -32,7 +32,7 @@ DICT_TYPE = type(dict())
 DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{document_key}'
 
 
-def auth_validate_decorator(f):
+def verify_tokens(f):
     def wrapper(*args, **kwargs):
 
         app_id = args[1]
@@ -53,7 +53,7 @@ class AppdataStorage(object):
         """
         self.entities = entities
 
-    @auth_validate_decorator
+    @verify_tokens
     def create(self, app_id, user_id, ip_address, document, bucket):
         """ Create operation for CRUD.
          Saves entity to db in this format:
@@ -108,7 +108,7 @@ class AppdataStorage(object):
         return self._external_key(document_id)
 
 
-    @auth_validate_decorator
+    @verify_tokens
     def get(self, app_id, user_id, bucket, key):
         """ Read operation for CRUD service.
          Parameters:
@@ -133,26 +133,26 @@ class AppdataStorage(object):
         return self._to_external(res)
 
 
-    @auth_validate_decorator
+    @verify_tokens
     def find(self, app_id, user_id, bucket, filter_opts=None,
-             start_index=0, page_size=RESTConfig.PAGE_QUERY_SIZE):
+             skip=0, limit=RESTConfig.PAGE_QUERY_SIZE):
 
         criteria = self._generate_criteria(app_id, user_id, bucket,
                                         filter_opts=filter_opts)
 
         opt_criteria = {}
-        if start_index < 0:
-            raise RuntimeError("page_start_index parameter must not be less then 0")
-        if page_size <= 0:
-            raise RuntimeError("page_size parameter must be greater then 0")
-        opt_criteria['skip']  = start_index
-        opt_criteria['limit'] = page_size
+        if skip < 0:
+            raise RuntimeError("offset parameter must not be less then 0")
+        if limit <= 0:
+            raise RuntimeError("limit parameter must be greater then 0")
+        opt_criteria['skip']  = skip
+        opt_criteria['limit'] = limit
         
         documents = list(self.entities.find(criteria, **opt_criteria))
         return map(self._to_external, documents)
 
 
-    @auth_validate_decorator
+    @verify_tokens
     def update(self, app_id, user_id, ip_address, bucket, document,
                 key=None, filter_opts=None):
         """ Update operation for CRUD.
@@ -184,7 +184,7 @@ class AppdataStorage(object):
         self.entities.update(criteria, {'$set': document_to_update}, multi=True)
 
 
-    @auth_validate_decorator
+    @verify_tokens
     def delete(self, app_id, user_id, ip_address, bucket,
                key=None, filter_opts=None):
 
