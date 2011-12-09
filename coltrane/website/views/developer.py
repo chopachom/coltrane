@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from flask import Blueprint, render_template, request, url_for, redirect
-from website.forms import CreateAppForm
-from website.models import  Developer, Application
-from website.extensions import db
-from website.extensions.warden import warden
+from coltrane.website.forms import CreateAppForm
+from coltrane.db.models import  Developer, Application
+from coltrane.db.extension import db
+from coltrane.website.extensions.warden import warden
 
 
 developer = Blueprint('developer', __name__)
@@ -12,6 +12,7 @@ warden.protect(developer)
 
 
 @developer.route('/')
+@developer.route('/apps/')
 def index():
     developers_app = Application.find(author=warden.current_user())
     return render_template('developer/index.html', apps=developers_app)

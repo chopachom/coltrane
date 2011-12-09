@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from  flaskext.wtf import (Form, TextField, PasswordField, TextAreaField,
                            DecimalField, ValidationError, validators)
-from website.extensions.warden import warden
-from website.models import User, Application
+from coltrane.website.extensions.warden import warden
+from coltrane.db.models import User, Application
 from flaskext.bcrypt import check_password_hash
 
 

@@ -2,11 +2,12 @@
 import views
 import logging
 from flask import Flask
-from config import DefaultConfig
-from db.extension import db
-from extensions.warden import warden
+from coltrane.website.config import DefaultConfig
+from coltrane.db.extension import db
+from coltrane.website.extensions.warden import warden
+from coltrane.website.hooks import per_request_callbacks
+
 from logging.handlers import RotatingFileHandler
-from hooks import per_request_callbacks
 
 
 DEFAULT_APP_NAME = "bitstant"
