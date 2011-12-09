@@ -1,0 +1,53 @@
+__author__ = 'qweqwe'
+
+from coltrane.exceptions import AppException
+
+
+class StorageError(AppException):
+    pass
+
+
+class DocumentNotFoundError(StorageError):
+    DOCUMENT_BY_CRITERIA = 'Document with bucket [{bucket}] and criteria [{criteria}] was not found'
+    DOCUMENT_BY_KEY = 'Document with bucket [{bucket}] and key [{key}] was not found'
+
+    message = DOCUMENT_BY_CRITERIA
+
+    def __init__(self, message=None, **kwargs):
+        super(DocumentNotFoundError, self).__init__(message, **kwargs)
+
+
+class InvalidAppIdError(StorageError):
+    """Error raised when application is unauthorized or app id is invalid"""
+
+    message = "App is unauthorized."
+
+    def __init__(self, message=None, **kwargs):
+        super(InvalidAppIdError, self).__init__(message, **kwargs)
+
+
+class InvalidUserIdError(StorageError):
+    """Error raised when user is unauthorized or user id is invalid"""
+
+    message = "User is unauthorized."
+
+    def __init__(self, message=None, **kwargs):
+        super(InvalidUserIdError, self).__init__(message, **kwargs)
+
+
+class InvalidDocumentError(StorageError):
+    """Error raised when document is invalid"""
+    FORBIDDEN_FIELDS_MSG = 'Document contains forbidden fields [%s]'
+
+    def __init__(self, message, **kwargs):
+        super(InvalidDocumentError, self).__init__(message, **kwargs)
+
+
+class DocumentAlreadyExistsError(StorageError):
+    """Error is raised when document id is invalid"""
+    message = "No document with such key or invalid document key [{key}]"
+
+    def __init__(self, message=None, *args, **kwargs):
+        super(DocumentAlreadyExistsError, self).__init__(message, *args, **kwargs)
+        self.id = kwargs.get('key')
+        self.bucket = kwargs.get('bucket')

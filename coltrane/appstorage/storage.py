@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 from uuid import uuid4
 
-from coltrane.errors import *
+from coltrane.appstorage.exceptions import *
 from coltrane.utils import Enum
 
 
@@ -88,7 +88,7 @@ class AppdataStorage(object):
                                          document[extf.KEY])
             criteria = {intf.ID: document_id}
             if self._is_document_exists(criteria):
-                raise InvalidDocumentKeyError(
+                raise DocumentAlreadyExistsError(
                     'Document with key [%s] already exists' % document[extf.KEY])
         else:
             document_id = self._internal_id(app_id, user_id, bucket, uuid4())
@@ -121,7 +121,7 @@ class AppdataStorage(object):
 
         # validations
         if key is None:
-            raise InvalidDocumentKeyError('document_key must be not null')
+            raise DocumentAlreadyExistsError('document_key must be not null')
 
         # logic
 
@@ -327,14 +327,15 @@ class AppdataStorage(object):
                     internal[intf.ID] = document_id
         return internal
 
-
-    def _assert_exists(self, bucket, criteria, document_key=None):
-        if not self._is_document_exists(criteria):
-            if document_key:
-                raise DocumentNotFoundError(
-                    message=DocumentNotFoundError.DOCUMENT_BY_KEY,
-                    key=document_key, bucket=bucket
-                )
-            else:
-                raise DocumentNotFoundError(criteria=json.dumps(criteria),
-                                            bucket=bucket)
+#
+#    #todo we don't need this function it didn't used anywhere
+#    def _assert_exists(self, bucket, criteria, document_key=None):
+#        if not self._is_document_exists(criteria):
+#            if document_key:
+#                raise DocumentNotFoundError(
+#                    message=DocumentNotFoundError.DOCUMENT_BY_KEY,
+#                    key=document_key, bucket=bucket
+#                )
+#            else:
+#                raise DocumentNotFoundError(criteria=json.dumps(criteria),
+#                                            bucket=bucket)

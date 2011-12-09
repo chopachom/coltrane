@@ -3,22 +3,24 @@ import datetime
 import logging
 import traceback
 
-from flask import Blueprint, jsonify, current_app
+from flask import Blueprint, current_app
 from flask.globals import request
-from flask.helpers import make_response
-from coltrane.api.validators import SimpleValidator, RecursiveValidator
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf, intf
+from coltrane.api.validators import SimpleValidator, RecursiveValidator
 from coltrane.api.extensions import guard
 from coltrane.api.extensions import mongodb
 from coltrane.api.rest.statuses import *
+
 from coltrane.config import RESTConfig
+
+from coltrane.api import exceptions
+from coltrane.utils import Enum
+
 
 
 LOG = logging.getLogger('coltrane.api')
 LOG.debug('starting coltrane api')
-
-DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
 
 class resp_msgs(Enum):
 
@@ -28,6 +30,7 @@ class resp_msgs(Enum):
     DOC_WAS_UPDATED = "Document was updated"
     
     INTERNAL_ERROR  = "Server internal error"
+
 
 class forbidden_fields(Enum):
     WHERE      = '$where'
@@ -47,6 +50,18 @@ class lazy_conn(object):
                 return self.conn
         def __getattr__(self, name):
             return getattr(self.entities, name)
+
+
+def jsonify(*args, **kwargs):
+    DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
+    return current_app.response_class(
+        json.dumps(
+            dict(*args, **kwargs),
+            indent=None if request.is_xhr else 2,
+            default=DT_HANDLER
+        ),
+        mimetype='application/json'
+    )
 
 
 api = Blueprint("api_v1", __name__)
@@ -71,7 +86,6 @@ def post_handler(bucket, key):
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['GET'])
 def get_by_keys_handler(bucket, keys):
-    
     if not len(keys):
             raise errors.InvalidRequestError('At least one key must be passed.')
     res = []
@@ -100,6 +114,7 @@ def get_by_keys_handler(bucket, keys):
     return make_response(res, http_status)
 
 
+
 @api.route('/<bucket:bucket>', methods=['GET'])
 def get_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
@@ -118,12 +133,13 @@ def get_by_filter_handler(bucket):
     return make_response(res, http.NOT_FOUND)
 
 
+
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
 def delete_by_keys_handler(bucket, keys):
     """ Deletes existing document (C.O.)
     """
     if not len(keys):
-        raise errors.InvalidRequestError('At least one key must be passed.')
+        raise exceptions.InvalidRequestError('At least one key must be passed.')
     res = []
     http_status = http.OK
     
@@ -172,12 +188,13 @@ def put_by_keys_handler(bucket, keys):
         If document with any key doesn't exist then create it
     """
     if not len(keys):
-        raise errors.InvalidRequestError('At least one key must be passed.')
+        raise exceptions.InvalidRequestError('At least one key must be passed.')
     document = extract_form_data()
     force = is_force_mode()
 
     validate_document(document)
 
+    #TODO: if there was only one document we should return proper http response and
     res = []
     http_status = http.OK
     for key in keys:
@@ -298,7 +315,7 @@ def from_json(obj):
             raise Exception()
         return res
     except Exception:
-        raise errors.InvalidJSONFormatError("Invalid json object \"%s\"" % obj)
+        raise exceptions.InvalidJSONFormatError("Invalid json object \"%s\"" % obj)
 
 
 def extract_form_data():
@@ -319,7 +336,7 @@ def extract_filter_opts():
         filter_opts = filter_opts.strip()
         filter_opts = from_json(filter_opts)
         if not len(filter_opts):
-            raise errors.InvalidRequestError('Invalid request syntax. '  \
+            raise exceptions.InvalidRequestError('Invalid request syntax. '  \
                                              'Filter options were not specified')
 
     return filter_opts

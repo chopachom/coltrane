@@ -7,7 +7,7 @@ from coltrane.api.rest.statuses import app, STATUS_CODE, http
 from coltrane.api.app import create_app
 from coltrane.api.extensions import mongodb
 from coltrane.api.config import TestConfig
-from coltrane import errors
+from coltrane.api import exceptions
 from coltrane.appstorage.storage import AppdataStorage, extf, intf
 from coltrane.config import RESTConfig
 
@@ -17,9 +17,9 @@ API_V1 = '/v1'
 
 class ApiTestCase(unittest.TestCase):
     def setUp(self):
-        v1.get_app_id = lambda : 'app_id1'
+        v1.get_app_id    = lambda : 'app_id1'
         v1.get_remote_ip = lambda : '127.0.0.1'
-        v1.get_user_id = lambda : 'user_id1'
+        v1.get_user_id   = lambda : 'user_id1'
 
         self._app = create_app(
             modules=((api_v1, API_V1),),
@@ -247,8 +247,8 @@ class ApiUpdateManyCase(unittest.TestCase):
 
         print rv.data
         data = from_json(rv.data)
-        res = data['message']
-        assert res == errors.InvalidDocumentError.FORBIDDEN_FIELDS_MSG % ','.join([
+        res = data['error']['message']
+        assert res == exceptions.InvalidDocumentFieldsError.FORBIDDEN_FIELDS_MSG % ','.join([
             intf.CREATED_AT, intf.APP_ID])
 
 
