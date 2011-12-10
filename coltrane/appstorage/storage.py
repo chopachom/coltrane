@@ -1,3 +1,5 @@
+from coltrane.config import RESTConfig
+
 __author__ = 'qweqwe'
 
 import json
@@ -30,6 +32,18 @@ DICT_TYPE = type(dict())
 DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{document_key}'
 
 
+def verify_tokens(f):
+    def wrapper(*args, **kwargs):
+
+        app_id = args[1]
+        user_id = args[2]
+        if app_id is None:
+            raise RuntimeError('app_id must be not null')
+        if user_id is None:
+            raise RuntimeError('user_id must be not null')
+        return f(*args, **kwargs)
+    return wrapper
+
 
 class AppdataStorage(object):
 
@@ -39,6 +53,7 @@ class AppdataStorage(object):
         """
         self.entities = entities
 
+    @verify_tokens
     def create(self, app_id, user_id, ip_address, document, bucket):
         """ Create operation for CRUD.
          Saves entity to db in this format:
@@ -61,10 +76,6 @@ class AppdataStorage(object):
          Returns key of inserted entity """
 
         # validations
-        if app_id is None:
-            raise InvalidAppIdError('app_id must be not null')
-        if user_id is None:
-            raise InvalidUserIdError('user_id must be not null')
         if document is None:
             raise InvalidDocumentError('Document must be not null')
         if type(document) is not DICT_TYPE:
@@ -97,6 +108,7 @@ class AppdataStorage(object):
         return self._external_key(document_id)
 
 
+    @verify_tokens
     def get(self, app_id, user_id, bucket, key):
         """ Read operation for CRUD service.
          Parameters:
@@ -108,10 +120,6 @@ class AppdataStorage(object):
          Returns founded document or None if object not found """
 
         # validations
-        if app_id is None:
-            raise InvalidAppIdError('app_id must be not null')
-        if user_id is None:
-            raise InvalidUserIdError('user_id must be not null')
         if key is None:
             raise InvalidDocumentKeyError('document_key must be not null')
 
@@ -125,18 +133,26 @@ class AppdataStorage(object):
         return self._to_external(res)
 
 
-    def find(self, app_id, user_id, bucket, filter_opts=None):
-        if app_id is None:
-            raise InvalidAppIdError('app_id must be not null')
-        if user_id is None:
-            raise InvalidUserIdError('user_id must be not null')
+    @verify_tokens
+    def find(self, app_id, user_id, bucket, filter_opts=None,
+             skip=0, limit=RESTConfig.PAGE_QUERY_SIZE):
 
         criteria = self._generate_criteria(app_id, user_id, bucket,
                                         filter_opts=filter_opts)
-        documents = list(self.entities.find(criteria))
+
+        opt_criteria = {}
+        if skip < 0:
+            raise RuntimeError("offset parameter must not be less then 0")
+        if limit <= 0:
+            raise RuntimeError("limit parameter must be greater then 0")
+        opt_criteria['skip']  = skip
+        opt_criteria['limit'] = limit
+        
+        documents = list(self.entities.find(criteria, **opt_criteria))
         return map(self._to_external, documents)
 
 
+    @verify_tokens
     def update(self, app_id, user_id, ip_address, bucket, document,
                 key=None, filter_opts=None):
         """ Update operation for CRUD.
@@ -147,10 +163,6 @@ class AppdataStorage(object):
             bucket: String, document type """
 
         # validations
-        if app_id is None:
-            raise InvalidAppIdError('app_id must be not null')
-        if user_id is None:
-            raise InvalidUserIdError('user_id must be not null')
         if document is None:
             raise InvalidDocumentError('Document for update cannot be null')
         if type(document) is not DICT_TYPE:
@@ -172,15 +184,11 @@ class AppdataStorage(object):
         self.entities.update(criteria, {'$set': document_to_update}, multi=True)
 
 
+    @verify_tokens
     def delete(self, app_id, user_id, ip_address, bucket,
                key=None, filter_opts=None):
 
         # validations
-        if app_id is None:
-            raise InvalidAppIdError('app_id must be not null')
-        if user_id is None:
-            raise InvalidUserIdError('user_id must be not null')
-
         if key:
             criteria = self._generate_criteria(app_id, user_id, bucket,
                                                 filter_opts={extf.KEY: key})

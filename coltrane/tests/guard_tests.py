@@ -2,7 +2,7 @@ __author__ = 'qweqwe'
 import unittest
 from coltrane.api.app import create_app
 from coltrane.api import api_v1
-from coltrane.api.rest.v1 import from_json
+from coltrane.api.rest.v1 import from_json, resp_msgs
 from coltrane.api.lib.guard_manager import GuardManager
 from coltrane.api.extensions import guard
 from coltrane.api.config import TestConfig
@@ -45,7 +45,8 @@ class GuardTestCase(unittest.TestCase):
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN)
         res = from_json(rv.data)
-        assert res == {'response': []}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert rv.status_code == http.NOT_FOUND
 
 
     def test_deny_access_for_auth_token(self):
