@@ -1,5 +1,3 @@
-from coltrane.config import RESTConfig
-
 __author__ = 'qweqwe'
 
 import json
@@ -135,7 +133,7 @@ class AppdataStorage(object):
 
     @verify_tokens
     def find(self, app_id, user_id, bucket, filter_opts=None,
-             skip=0, limit=RESTConfig.PAGE_QUERY_SIZE):
+             skip=0, limit=1000):
 
         criteria = self._generate_criteria(app_id, user_id, bucket,
                                         filter_opts=filter_opts)
