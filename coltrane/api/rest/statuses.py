@@ -1,4 +1,3 @@
-from coltrane.appstorage import exceptions as storage_exs
 from coltrane.api import exceptions
 from coltrane.utils import Enum
 

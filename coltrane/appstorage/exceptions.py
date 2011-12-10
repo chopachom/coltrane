@@ -7,6 +7,7 @@ class StorageError(AppException):
     pass
 
 
+
 class DocumentNotFoundError(StorageError):
     DOCUMENT_BY_CRITERIA = 'Document with bucket [{bucket}] and criteria [{criteria}] was not found'
     DOCUMENT_BY_KEY = 'Document with bucket [{bucket}] and key [{key}] was not found'
@@ -17,30 +18,44 @@ class DocumentNotFoundError(StorageError):
         super(DocumentNotFoundError, self).__init__(message, **kwargs)
 
 
-class InvalidAppIdError(StorageError):
-    """Error raised when application is unauthorized or app id is invalid"""
 
-    message = "App is unauthorized."
+class InvalidAppIdError(StorageError):
+    """Error raised when application id is invalid"""
+
+    message = "Invalid app_id [{app_id}]"
 
     def __init__(self, message=None, **kwargs):
         super(InvalidAppIdError, self).__init__(message, **kwargs)
 
 
-class InvalidUserIdError(StorageError):
-    """Error raised when user is unauthorized or user id is invalid"""
 
-    message = "User is unauthorized."
+class InvalidUserIdError(StorageError):
+    """Error raised when user id is invalid"""
+
+    message = "Invalid user id [{user_id}]"
 
     def __init__(self, message=None, **kwargs):
         super(InvalidUserIdError, self).__init__(message, **kwargs)
 
 
+
+class InvalidDocumentKeyError(StorageError):
+    """Error raised when user id is invalid"""
+
+    message = "Invalid document key [{key}]"
+
+    def __init__(self, message=None, **kwargs):
+        super(InvalidDocumentKeyError, self).__init__(message, **kwargs)
+
+
+
 class InvalidDocumentError(StorageError):
     """Error raised when document is invalid"""
-    FORBIDDEN_FIELDS_MSG = 'Document contains forbidden fields [%s]'
+    message = 'Invalid document'
 
     def __init__(self, message, **kwargs):
         super(InvalidDocumentError, self).__init__(message, **kwargs)
+
 
 
 class DocumentAlreadyExistsError(StorageError):

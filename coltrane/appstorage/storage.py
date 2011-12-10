@@ -121,7 +121,7 @@ class AppdataStorage(object):
 
         # validations
         if key is None:
-            raise DocumentAlreadyExistsError('document_key must be not null')
+            raise InvalidDocumentKeyError('Document key must be not null')
 
         # logic
 
