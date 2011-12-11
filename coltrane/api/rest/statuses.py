@@ -3,7 +3,6 @@ from coltrane.utils import Enum
 
 __author__ = 'qweqwe'
 
-
 STATUS_CODE = 'code'
 
 class http(Enum):
