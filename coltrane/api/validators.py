@@ -1,9 +1,18 @@
 import abc
+import re
 from coltrane.api import exceptions
 
 __author__ = 'Pasha'
 
-class Validator():
+class Validator(object):
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def validate(self):
+        raise NotImplementedError("This function must be performed in subclasses")
+    
+
+class ForbiddenFieldsValidator(Validator):
     """
     Base class for validators.
     Validators are used to verify document structure, they should rise errors
@@ -51,7 +60,7 @@ class Validator():
         raise NotImplementedError("This function must be performed in subclasses")
 
 
-class SimpleValidator(Validator):
+class SimpleValidator(ForbiddenFieldsValidator):
     """
     Finds forbidden fields only in top level of document.
     """
@@ -60,7 +69,7 @@ class SimpleValidator(Validator):
         return fields
 
         
-class RecursiveValidator(Validator):
+class RecursiveValidator(ForbiddenFieldsValidator):
     """
     Finds all forbidden fields from top to deepest embedded.
     """
@@ -75,3 +84,23 @@ class RecursiveValidator(Validator):
                     new_fields = self._forbidden_fields_from_doc(embed_doc)
                     found_fields.extend([f for f in new_fields if f not in found_fields])
         return found_fields
+
+    
+key_re = re.compile(r'^[\w-]+$')
+class KeyValidator(Validator):
+
+    def __init__(self, keys, error_class=None):
+        self.error_class = exceptions.InvalidKeyNameError
+        if error_class:
+            self.error_class = error_class
+            
+        if type(keys) == list:
+            self.keys = keys
+        else:
+            self.keys = [keys]
+
+    def validate(self):
+        for k in self.keys:
+            if not re.match(key_re, k):
+                raise self.error_class('Document key has invalid format [%s]' % k)
+

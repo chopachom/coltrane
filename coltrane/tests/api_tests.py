@@ -101,7 +101,7 @@ class ApiTestCase(unittest.TestCase):
 
     def test_get_with_no_keys(self):
         rv = self.app.get(API_V1 + '/books/  ,  ')
-        assert  from_json(rv.data) == {'message': "At least one key must be passed."}
+        assert  from_json(rv.data) == {'message': "Document key has invalid format []"}
 
 
     def test_post_request_without_specified_key(self):

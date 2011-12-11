@@ -6,18 +6,16 @@ from coltrane.appstorage.storage import extf, intf
 from coltrane.api.validators import SimpleValidator, RecursiveValidator
 from coltrane.api.extensions import guard
 from coltrane.api.rest.statuses import *
-from coltrane.api import exceptions
+from coltrane.api import exceptions, validators
 from coltrane.api.utils import *
-from coltrane.exceptions import AppException
 
 
-LOG = logging.getLogger('coltrane.api')
-LOG.debug('starting coltrane api')
+LOG = logging.getLogger('rest.api.v1')
+LOG.debug('starting rest api')
 
 
 storage = AppdataStorage(lazy_coll)
 api = Blueprint("api_v1", __name__)
-
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
 @api.route('/<bucket:bucket>/<key>', methods=['POST'])
@@ -29,6 +27,9 @@ def post_handler(bucket, key):
     validate_document(document)
     if key is not None:
         document[extf.KEY] = key
+    if extf.KEY in document:
+        validators.KeyValidator(document[extf.KEY]).validate()
+
     document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                   document, bucket=bucket)
     return {extf.KEY: document_key}, http.CREATED
@@ -37,8 +38,8 @@ def post_handler(bucket, key):
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['GET'])
 @jsonify
 def get_by_keys_handler(bucket, keys):
-    if not len(keys):
-            raise exceptions.InvalidRequestError('At least one key must be passed.')
+#    if not len(keys):
+#            raise exceptions.InvalidRequestError('At least one key must be passed.')
     res = []
     http_status = http.OK
 
@@ -85,8 +86,8 @@ def get_by_filter_handler(bucket):
 def delete_by_keys_handler(bucket, keys):
     """ Deletes existing document (C.O.)
     """
-    if not len(keys):
-        raise exceptions.InvalidRequestError('At least one key must be passed.')
+#    if not len(keys):
+#        raise exceptions.InvalidRequestError('At least one key must be passed.')
 
     res = []
     http_status = http.OK
@@ -135,8 +136,8 @@ def put_by_keys_handler(bucket, keys):
     """ Update existing documents by keys.
         If document with any key doesn't exist then create it
     """
-    if not len(keys):
-        raise exceptions.InvalidRequestError('At least one key must be passed.')
+#    if not len(keys):
+#        raise exceptions.InvalidRequestError('At least one key must be passed.')
     document = extract_form_data()
     force = is_force_mode()
 
@@ -206,28 +207,9 @@ def put_by_filter_handler(bucket):
             }, http.NOT_FOUND
 
     storage.update(get_app_id(), get_user_id(), get_remote_ip(),
-                             bucket, document, filter_opts=filter_opts)
+                   bucket, document, filter_opts=filter_opts)
 
     return {'message': resp_msgs.DOC_WAS_UPDATED}, http.OK
-
-
-@api.errorhandler(Exception)
-@jsonify
-def app_exception(error):
-    """ Return response as a error """
-
-    error_class = error.__class__
-
-    if error_class in ERROR_INFO_MATCHING:
-        message = error.message
-    else:
-        message = resp_msgs.INTERNAL_ERROR
-        LOG.debug(error.message)
-        
-    app_code, http_code = ERROR_INFO_MATCHING.get(
-        error_class, (app.SERVER_ERROR, http.SERVER_ERROR))
-
-    return {'message': message}, http_code
 
 
 def validate_document(document):

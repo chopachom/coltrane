@@ -36,3 +36,9 @@ class InvalidDocumentFieldsError(ApiError):
 
     def __init__(self, message, **kwargs):
         super(InvalidDocumentFieldsError, self).__init__(message, **kwargs)
+
+
+class InvalidKeyNameError(ApiError):
+    message = 'Invalid key name'
+    def __init__(self, message, **kwargs):
+        super(InvalidKeyNameError, self).__init__(message, **kwargs)

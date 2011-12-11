@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from coltrane.api.rest.statuses import ERROR_INFO_MATCHING, http, app as app_status
+from coltrane.api.utils import jsonify, resp_msgs
+
 __author__ = 'apetrovich'
 
 import logging
@@ -12,6 +15,7 @@ from coltrane.api.extensions import guard
 from coltrane.db.extension import db
 from coltrane.api.rest import api_v1, converters
 
+LOG = logging.getLogger('api.app')
 
 guard.manager = GuardManager
 
@@ -26,7 +30,7 @@ DEFAULT_EXTENSIONS = (guard, mongodb, db)
 
 def create_app(exts = None, modules=None, config=None, dict_config=None):
     app = Flask(__name__)
-    
+
     # init url converters
     for key in converters.keys():
         app.url_map.converters[key] = converters[key]
@@ -40,6 +44,7 @@ def create_app(exts = None, modules=None, config=None, dict_config=None):
     configure_app(app, config, dict_config)
     configure_extensions(app, exts)
     configure_modules(app, modules)
+    configure_errorhandlers(app)
     configure_logging(app)
 
     return app
@@ -90,3 +95,23 @@ def configure_logging(app):
     error_file_handler.setLevel(logging.WARNING)
     error_file_handler.setFormatter(formatter)
     app.logger.addHandler(error_file_handler)
+
+
+def configure_errorhandlers(app):
+    @app.errorhandler(Exception)
+    @jsonify
+    def app_exception(error):
+        """ Return response as a error """
+
+        error_class = error.__class__
+
+        if error_class in ERROR_INFO_MATCHING:
+            message = error.message
+        else:
+            message = resp_msgs.INTERNAL_ERROR
+            LOG.debug(error.message)
+
+        app_code, http_code = ERROR_INFO_MATCHING.get(
+            error_class, (app_status.SERVER_ERROR, http.SERVER_ERROR))
+
+        return {'message': message}, http_code
