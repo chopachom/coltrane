@@ -4,7 +4,7 @@ __author__ = 'apetrovich'
 from coltrane import config
 
 class DefaultConfig(object):
-    pass
+    DEFAULT_QUERY_LIMIT = 1000
 
 
 class TestConfig(object):
