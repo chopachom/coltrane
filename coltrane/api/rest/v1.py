@@ -1,9 +1,10 @@
+import copy
 import logging
 
 from flask import Blueprint
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf, intf
-from coltrane.api.validators import SimpleValidator, RecursiveValidator
+import coltrane.api.validators
 from coltrane.api.extensions import guard
 from coltrane.api.rest.statuses import *
 from coltrane.api import exceptions, validators
@@ -61,8 +62,10 @@ def get_by_keys_handler(bucket, keys):
         elif res[STATUS_CODE] == app.NOT_FOUND:
             res = {'message': res['message']}
             http_status = http.NOT_FOUND
+    else:
+        res = {'response': res}
 
-    return {'response': res}, http_status
+    return res, http_status
 
 
 
@@ -72,6 +75,7 @@ def get_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     validate_filter(filter_opts)
     skip, limit = extract_pagination_data()
+    
     documents = storage.find(get_app_id(), get_user_id(), bucket,
                              filter_opts, skip, limit)
     if len(documents):
@@ -109,6 +113,8 @@ def delete_by_keys_handler(bucket, keys):
         if res[STATUS_CODE] == app.NOT_FOUND:
             http_status = http.NOT_FOUND
         res = {'message': res['message']}
+    else:
+        res = {'response': res}
 
     return res, http_status
 
@@ -141,9 +147,8 @@ def put_by_keys_handler(bucket, keys):
     document = extract_form_data()
     force = is_force_mode()
 
-    validate_document(document)
+    validate_doc_for_update(document)
 
-    #TODO: if there was only one document we should return proper http response and
     res = []
     http_status = http.OK
     for key in keys:
@@ -153,6 +158,8 @@ def put_by_keys_handler(bucket, keys):
                                           bucket, filter_opts):
             if force:
                 document[extf.KEY] = key
+                document = transform_for_update(document)
+                
                 storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                document, bucket=bucket)
                 res.append({extf.KEY: key, STATUS_CODE: app.CREATED,
@@ -188,12 +195,14 @@ def put_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     force = is_force_mode()
 
-    validate_document(document)
+    validate_doc_for_update(document)
     validate_filter(filter_opts)
 
     if not storage.is_document_exists(get_app_id(), get_user_id(),
                                       bucket, filter_opts):
         if force:
+            document = transform_for_update(document)
+
             key = storage.create(
                 get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
             )
@@ -212,20 +221,30 @@ def put_by_filter_handler(bucket):
     return {'message': resp_msgs.DOC_WAS_UPDATED}, http.OK
 
 
-def validate_document(document):
+def _base_validate_document(document):
     if not document:
         return
 
-    valid1 = RecursiveValidator(document, forbidden_fields.values())
-    valid2 = SimpleValidator(document, intf.values(), valid1)
+    valid1 = validators.RecursiveValidator(document, forbidden_fields.values())
+    valid2 = validators.SimpleValidator(document, intf.values(), valid1)
     valid2.validate()
 
-def validate_filter(filter):
-    #TODO: re-implement this function in right way
-    if not filter:
-        return
-    validate_document(filter)
+    
+def validate_document(document):
+    _base_validate_document(document)
+    validators.KeyDocumentValidator(document).validate()
 
+
+def validate_filter(filter):
+    _base_validate_document(filter)
+    validators.KeyFilterValidator(filter).validate()
+
+
+def validate_doc_for_update(update_doc):
+    _base_validate_document(update_doc)
+    validators.KeyUpdateValidator(update_doc).validate()
+
+    
 def get_user_id():
     return guard.current_user.id
 
@@ -236,6 +255,21 @@ def get_app_id():
 
 def get_remote_ip():
     request.get('remote_addr', None)
+
+
+def transform_for_update(document):
+    """
+        {'a.b.c.d':1} => {'a':{'b':{'c':{'d':1}}}}
+    """
+    doc = {}
+    for k in document:
+        keys = k.split('.')
+
+        v = document[k]
+        for k2 in keys[:0:-1]: # [1,2,3,4] => [4,3,2]
+            v = {k2: v}
+        doc[keys[0]] = v
+    return doc
 
 
 def from_json(obj):

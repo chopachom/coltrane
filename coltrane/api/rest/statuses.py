@@ -30,6 +30,7 @@ class app(Enum):
 
 
 ERROR_INFO_MATCHING = {
+    exceptions.InvalidKeyNameError:        (app.BAD_REQUEST, http.BAD_REQUEST),
     exceptions.InvalidDocumentFieldsError:    (app.BAD_REQUEST, http.BAD_REQUEST),
     exceptions.InvalidJSONFormatError:  (app.BAD_REQUEST, http.BAD_REQUEST),
     exceptions.InvalidRequestError:     (app.BAD_REQUEST, http.BAD_REQUEST)

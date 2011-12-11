@@ -85,22 +85,57 @@ class RecursiveValidator(ForbiddenFieldsValidator):
                     found_fields.extend([f for f in new_fields if f not in found_fields])
         return found_fields
 
-    
-key_re = re.compile(r'^[\w-]+$')
-class KeyValidator(Validator):
 
-    def __init__(self, keys, error_class=None):
+class KeyValidator(Validator):
+    key_re = re.compile(r'^[\w-]+$')
+    
+    def __init__(self, data, error_class=None):
         self.error_class = exceptions.InvalidKeyNameError
         if error_class:
             self.error_class = error_class
             
-        if type(keys) == list:
-            self.keys = keys
-        else:
-            self.keys = [keys]
+        if data is not None and type(data) not in (list, dict):
+            self.data = [data]
+        self.data = data
 
     def validate(self):
-        for k in self.keys:
-            if not re.match(key_re, k):
-                raise self.error_class('Document key has invalid format [%s]' % k)
+        if self.data is None:
+            return
+        found_keys = self._wrong_keys(self.data)
+        if len(found_keys):
+            raise self.error_class('Document key has invalid format [%s]' % ','.join(found_keys))
 
+    def _wrong_keys(self, keys):
+        found_keys = set()
+        for k in self.data:
+            if not re.match(self.key_re, k):
+                found_keys.add(k)
+        return found_keys
+
+
+class KeyDocumentValidator(KeyValidator):
+
+    def _wrong_keys(self, doc):
+        found_keys = set()
+        for k in doc:
+            if not re.match(self.key_re, k):
+                found_keys.add(k)
+            if type(doc[k]) == dict:
+                res = self._wrong_keys(doc[k])
+                found_keys = found_keys.union(res)
+        return found_keys
+
+    
+class KeyFilterValidator(KeyValidator):
+    key_re = re.compile(r'^[\w\.$-]+$')
+    
+    def __init__(self, filter, error_class=None):
+        super(KeyFilterValidator, self).__init__(filter, error_class)
+
+
+class KeyUpdateValidator(KeyValidator):
+    key_re = re.compile(r'^[\w\.-]+$')
+    
+    def __init__(self, update_doc, error_class=None):
+        super(KeyUpdateValidator, self).__init__(update_doc, error_class)
+        
