@@ -1,91 +1,22 @@
-import json
-import datetime
 import logging
 
-from flask import Blueprint, current_app
-from flask.globals import request
+from flask import Blueprint
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf, intf
 from coltrane.api.validators import SimpleValidator, RecursiveValidator
 from coltrane.api.extensions import guard
-from coltrane.api.extensions import mongodb
 from coltrane.api.rest.statuses import *
 from coltrane.api import exceptions
-from coltrane.utils import Enum
+from coltrane.api.utils import *
 from coltrane.exceptions import AppException
-
-from functools import wraps
-
 
 
 LOG = logging.getLogger('coltrane.api')
 LOG.debug('starting coltrane api')
 
-class resp_msgs(Enum):
 
-    DOC_NOT_EXISTS  = "Document doesn't exist"
-    DOC_WAS_CREATED = "Document was created"
-    DOC_WAS_DELETED = "Document was deleted"
-    DOC_WAS_UPDATED = "Document was updated"
-    
-    INTERNAL_ERROR  = "Internal server error"
-
-
-class forbidden_fields(Enum):
-    WHERE      = '$where'
-
-
-class lazy_coll(object):
-    """
-        This class is used to initialize mongodb collection lazily.
-        I.e. it will use mongodb collection object only when Flask
-        application was initialized.
-    """
-    class __metaclass__(type):
-        coll = None
-        @property
-        def entities(self):
-            if self.coll:
-                return self.coll
-            else:
-                conf = current_app.config
-                db   = conf['MONGODB_DATABASE']
-                coll = conf['APPDATA_COLLECTION']
-                self.coll = mongodb.connection[db][coll]
-                return self.coll
-        def __getattr__(self, name):
-            return getattr(self.entities, name)
-
-def jsonify(f):
-    """ Used to decorate Flask route handlers,
-        it will return json with proper mime-type
-    """
-
-    DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
-
-    def to_json(dict):
-        return json.dumps(dict, indent=None if request.is_xhr else 2,
-            default=DT_HANDLER)
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        resp = f(*args, **kwargs)
-        try:
-            body, code = resp
-        except (TypeError, ValueError) as e:
-            body = resp
-            code = 200
-        if not isinstance(body, current_app.response_class):
-            return current_app.response_class(to_json(body),
-                mimetype='application/json', status=code)
-        else:
-            return body
-
-    return wrapper
-
-api = Blueprint("api_v1", __name__)
 storage = AppdataStorage(lazy_coll)
-
+api = Blueprint("api_v1", __name__)
 
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
@@ -342,7 +273,7 @@ def extract_form_data():
     if request.json:
         obj = request.json
     else:
-        obj = json.loads(request.data)
+        obj = from_json(request.data)
     return obj
 
 
