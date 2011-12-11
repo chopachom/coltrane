@@ -12,4 +12,6 @@ class GuardManager(object):
         return User.query.filter(User.token==token).first()
 
     def authenticate_app(self, token):
-        return AppToken.query.filter(AppToken.token == token).first().application
+        token = AppToken.query.filter(AppToken.token == token).first()
+        if token:
+            return token.application

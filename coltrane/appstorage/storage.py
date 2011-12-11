@@ -2,9 +2,11 @@ __author__ = 'qweqwe'
 
 from datetime import datetime
 from uuid import uuid4
+from functools import wraps
 
 from coltrane.appstorage.exceptions import *
 from coltrane.utils import Enum
+
 
 
 class intf(Enum):
@@ -16,6 +18,7 @@ class intf(Enum):
     CREATED_AT  = '__created_at__'
     UPDATED_AT  = '__updated_at__'
     IP_ADDRESS  = '__ip_address__'
+
 
 class extf(Enum):
     KEY         = '_key'
@@ -29,14 +32,14 @@ DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{document_key}'
 
 
 def verify_tokens(f):
+    @wraps(f)
     def wrapper(*args, **kwargs):
-
         app_id = args[1]
         user_id = args[2]
         if app_id is None:
-            raise RuntimeError('app_id must be not null')
+            raise InvalidAppIdError('app_id must be not null')
         if user_id is None:
-            raise RuntimeError('user_id must be not null')
+            raise InvalidUserIdError('user_id must be not null')
         return f(*args, **kwargs)
     return wrapper
 
@@ -180,21 +183,17 @@ class AppdataStorage(object):
     @verify_tokens
     def delete(self, app_id, user_id, ip_address, bucket,
                key=None, filter_opts=None):
-
-        # validations
         if key:
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts={extf.KEY: key})
         else:
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts=filter_opts)
-
         self.entities.update(
              criteria,
              {'$set': _fields_to_update_on_delete(ip_address)},
              multi=True
         )
-
 
 
      #TODO: REFUCK this FUNC
