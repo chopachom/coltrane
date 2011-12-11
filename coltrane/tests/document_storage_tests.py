@@ -1,3 +1,5 @@
+
+
 __author__ = 'nik'
 
 import unittest
@@ -6,7 +8,7 @@ from pymongo.connection import Connection
 from coltrane.api import config
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf
-from coltrane.errors import *
+from coltrane.appstorage.exceptions import DocumentAlreadyExistsError
 
 
 test_database   = config.TestConfig.MONGODB_DATABASE
@@ -58,11 +60,11 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         storage.create(app_id, user_id, self.ip, data, bucket=boobs_type)
         data2 = {'_key': '1', 'a2': {'b2': [1,2,3, {'c':'d'}]}}
 
-        with self.assertRaises(InvalidDocumentKeyError):
+        with self.assertRaises(DocumentAlreadyExistsError):
             storage.create(app_id, user_id, self.ip, data2, bucket=boobs_type)
         try:
             storage.create(app_id, user_id, self.ip, data2, bucket=boobs_type)
-        except InvalidDocumentKeyError as e:
+        except DocumentAlreadyExistsError as e:
             assert e.message == 'Document with key [1] already exists'
             
 

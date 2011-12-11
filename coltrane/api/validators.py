@@ -1,5 +1,5 @@
 import abc
-from coltrane import errors
+from coltrane.api import exceptions
 
 __author__ = 'Pasha'
 
@@ -40,8 +40,8 @@ class Validator():
             found_fields.extend([f for f in new_fields if f not in found_fields])
 
         if len(found_fields):
-            raise errors.InvalidDocumentError(
-                errors.InvalidDocumentError.FORBIDDEN_FIELDS_MSG % ','.join(found_fields))
+            raise exceptions.InvalidDocumentFieldsError(
+                exceptions.InvalidDocumentFieldsError.FORBIDDEN_FIELDS_MSG % ','.join(found_fields))
 
     @abc.abstractmethod
     def _forbidden_fields_from_doc(self, doc=None):
