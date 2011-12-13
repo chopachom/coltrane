@@ -27,7 +27,7 @@ def post_handler(bucket, key):
     if key is not None:
         document[extf.KEY] = key
     if extf.KEY in document:
-        validators.KeyValidator(document[extf.KEY]).validate()
+        validators.KeyValidator((document[extf.KEY],)).validate()
 
     document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                   document, bucket=bucket)
@@ -220,25 +220,28 @@ def put_by_filter_handler(bucket):
 
 
 def _base_validate_document(document):
-    if not document:
-        return
-
     valid1 = validators.RecursiveValidator(document, forbidden_fields.values())
     valid2 = validators.SimpleValidator(document, intf.values(), valid1)
     valid2.validate()
 
     
 def validate_document(document):
+    if not filter:
+        return  
     _base_validate_document(document)
     validators.KeyDocumentValidator(document).validate()
 
 
 def validate_filter(filter):
+    if not filter:
+        return
     _base_validate_document(filter)
     validators.KeyFilterValidator(filter).validate()
 
 
 def validate_doc_for_update(update_doc):
+    if not filter:
+        return
     _base_validate_document(update_doc)
     validators.KeyUpdateValidator(update_doc).validate()
 

@@ -1,16 +1,21 @@
+__author__ = 'Pasha'
+
 from werkzeug.routing import BaseConverter
 from werkzeug.exceptions import BadRequest
+from coltrane.rest import exceptions
 from coltrane.rest import validators
 
 import json
-
-__author__ = 'Pasha'
 
 class KeysConverter(BaseConverter):
     def to_python(self, value):
         keys = [k.strip() for k in value.split(',')]
 
-        validators.KeyValidator(keys, InvalidKey).validate()
+        try:
+            validators.KeyValidator(keys).validate()
+        except exceptions.InvalidKeyNameError, e:
+            raise InvalidKey(e.message)
+        
         if not len(keys):
             raise InvalidKey('At least one key must be passed.')
         return keys
