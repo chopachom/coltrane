@@ -14,13 +14,15 @@ __author__ = 'pshkitin'
 
 API_V1 = '/v1'
 
-class ApiTestCase(unittest.TestCase):
-    def setUp(self):
-        v1.get_app_id    = lambda : 'app_id1'
-        v1.get_remote_ip = lambda : '127.0.0.1'
-        v1.get_user_id   = lambda : 'user_id1'
+class ApiBaseTestClass(unittest.TestCase):
 
-        self._app = create_app(
+    @classmethod
+    def setUpClass(cls):
+        v1.get_app_id = lambda : 'app_id1'
+        v1.get_remote_ip = lambda : '127.0.0.1'
+        v1.get_user_id = lambda : 'user_id1'
+
+        cls._app = create_app(
             modules=((api_v1, API_V1),),
             exts=(mongodb,),
             dict_config=dict(
@@ -29,11 +31,21 @@ class ApiTestCase(unittest.TestCase):
             ),
             config=TestConfig
         )
-        self.app = self._app.test_client()
+
+        cls.app =  cls._app.test_client()
+
+    @classmethod
+    def tearDownClass(cls):
+        with cls._app.test_request_context():
+            storage.entities.drop()
+
+            
+class ApiTestCase(ApiBaseTestClass):
+    def setUp(self):
+        super(ApiTestCase, self).setUpClass()
 
     def tearDown(self):
-        with self._app.test_request_context():
-            storage.entities.drop()
+        super(ApiTestCase, self).tearDownClass()
 
 
     def test_response_after_post(self):
@@ -199,22 +211,11 @@ class ApiTestCase(unittest.TestCase):
 
 
 
-class ApiUpdateManyCase(unittest.TestCase):
-    def setUp(self):
-        v1.get_app_id = lambda : 'app_id1'
-        v1.get_remote_ip = lambda : '127.0.0.1'
-        v1.get_user_id = lambda : 'user_id1'
+class ApiUpdateManyCase(ApiBaseTestClass):
 
-        self._app = create_app(
-            modules=((api_v1, API_V1),),
-            exts=(mongodb,),
-            dict_config=dict(
-                DEBUG=False,
-                TESTING=True
-            ),
-            config=TestConfig
-        )
-        self.app =  self._app.test_client()
+    def setUp(self):
+        super(ApiUpdateManyCase, self).setUpClass()
+
         self.app.post(API_V1 + '/books',
             data='{"_key":"1" ,"title": "Title1", "author": "author1", "age":10, "name":"Pasha", "cources":{"one":1, "two":2}}',
             follow_redirects=True)
@@ -231,9 +232,10 @@ class ApiUpdateManyCase(unittest.TestCase):
             data='{"_key":"5" ,"title": "Title4", "author": "author4", "age":15, "name":"Sasha", "cources":{"one":1, "two":2}}',
             follow_redirects=True)
 
+
     def tearDown(self):
-        with self._app.test_request_context():
-            storage.entities.drop()
+        super(ApiUpdateManyCase, self).tearDownClass()
+        
 
     def test_put_not_existing_document(self):
         src_key = "my_key"
@@ -405,23 +407,28 @@ class ApiUpdateManyCase(unittest.TestCase):
             else:
                 assert b['age'] != 50
 
+                
+    def test_update_non_existing_with_force(self):
+        filter = {'a': 1}
+        src_update = {"a.b.c.d": 50}
+        resp = self.app.put(API_V1 + '/books?filter=%s&force=true' % json.dumps(filter),
+                            data=json.dumps(src_update))
+        data = from_json(resp.data)
+        assert resp.status_code == http.CREATED
+        assert data['message'] == resp_msgs.DOC_WAS_CREATED
+        key = data[extf.KEY]
 
-class ApiDeleteManyCase(unittest.TestCase):
+        resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(src_update))
+        resp = from_json(resp.data)['response'][0]
+        resp2 = self.app.get(API_V1 + '/books/%s' % key)
+        resp2 = from_json(resp2.data)
+
+        assert resp == resp2
+
+
+class ApiDeleteManyCase(ApiBaseTestClass):
     def setUp(self):
-        v1.get_app_id = lambda : 'app_id1'
-        v1.get_remote_ip = lambda : '127.0.0.1'
-        v1.get_user_id = lambda : 'user_id1'
-
-        self._app = create_app(
-            modules=((api_v1, API_V1),),
-            exts=(mongodb,),
-            dict_config=dict(
-                DEBUG=False,
-                TESTING=True
-            ),
-            config=TestConfig
-        )
-        self.app =  self._app.test_client()
+        super(ApiDeleteManyCase, self).setUpClass()
         self.app.post(API_V1 + '/books',
             data='{"title": "Title1", "author": "author1", "age":10, "name":"Pasha"}',
             follow_redirects=True)
@@ -439,8 +446,8 @@ class ApiDeleteManyCase(unittest.TestCase):
             follow_redirects=True)
 
     def tearDown(self):
-        with self._app.test_request_context():
-            storage.entities.drop()
+        super(ApiDeleteManyCase, self).tearDownClass()
+        
 
     def test_delete_all_with_filter_opts(self):
         resp = self.app.get(API_V1 + '/books')
@@ -588,23 +595,7 @@ class ApiDeleteManyCase(unittest.TestCase):
         assert resp == expected
 
 
-class ApiSpecialEndpointsCase(unittest.TestCase):
-    def setUp(self):
-        v1.get_app_id = lambda : 'app_id1'
-        v1.get_remote_ip = lambda : '127.0.0.1'
-        v1.get_user_id = lambda : 'user_id1'
-
-        self._app = create_app(
-            modules=((api_v1, API_V1),),
-            exts=(mongodb,),
-            dict_config=dict(
-                DEBUG=False,
-                TESTING=True
-            ),
-            config=TestConfig
-        )
-
-        self.app =  self._app.test_client()
+class ApiSpecialEndpointsCase(ApiBaseTestClass):
 
     def test_get_404(self):
         resp = self.app.get(API_V1 + '/.books')
@@ -622,9 +613,6 @@ class ApiSpecialEndpointsCase(unittest.TestCase):
         resp = self.app.delete(API_V1 + '/.books')
         assert resp.status_code == 404
 
-    def tearDown(self):
-        pass
-
 
     def test_sever_error(self):
         old_get = storage.get
@@ -638,36 +626,17 @@ class ApiSpecialEndpointsCase(unittest.TestCase):
 
 
 
-class PaginatingQueryCase(unittest.TestCase):
+class PaginatingQueryCase(ApiBaseTestClass):
 
     @classmethod
     def setUpClass(cls):
-        v1.get_app_id = lambda : 'app_id1'
-        v1.get_remote_ip = lambda : '127.0.0.1'
-        v1.get_user_id = lambda : 'user_id1'
+        super(PaginatingQueryCase, cls).setUpClass()
 
-        cls._app = create_app(
-            modules=((api_v1, API_V1),),
-            exts=(mongodb,),
-            dict_config=dict(
-                DEBUG=False,
-                TESTING=True
-            ),
-            config=TestConfig
-        )
-
-        cls.app =  cls._app.test_client()
-        
         for i in xrange(100):
             cls.app.post(API_V1 + '/books/%d_key' % i,
                 data='{"title": "Title%d", "author": "author%d", "age":%d, "name":"Pasha"}' % (i, i, i),
                 follow_redirects=True
             )
-
-    @classmethod
-    def tearDownClass(cls):
-        with cls._app.test_request_context():
-            storage.entities.drop()
 
 
     def test_get_all(self):
@@ -742,6 +711,42 @@ class PaginatingQueryCase(unittest.TestCase):
         assert res['message'] == 'Invalid request syntax. '  \
                 'Parameters skip or limit have invalid value.'
         assert rv.status_code == http.BAD_REQUEST
+
+
+class KeysValidationCase(ApiBaseTestClass):
+
+    def test_post_wrong_key_format(self):
+        data = {"a": 50, 'b': {'b*s': [1,2,3]}}
+        resp = self.app.post(API_V1 + '/books',
+            data=json.dumps(data))
+        data = from_json(resp.data)
+        assert resp.status_code == http.BAD_REQUEST
+        assert data['message'] == "Document key has invalid format [b*s]"
+
+
+        data = {"a": 50, 'b': {'b*s': [1,2,3]}, 'c': {'d#2':{'%s*w':'a'}}}
+        resp = self.app.post(API_V1 + '/books',
+            data=json.dumps(data))
+        data = from_json(resp.data)
+        assert resp.status_code == http.BAD_REQUEST
+        assert data['message'] == "Document key has invalid format [%s*w,d#2,b*s]"
+
+
+    def test_get_filter(self):
+        filter = {"a.b": 50, '$and': [{'b': [1,2,3]}, {'c':10}]}
+        resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert resp.status_code == http.NOT_FOUND
+
+
+        data = {"-a":{"-b": 50}, 'b': [1,2,3], 'c':10}
+        resp = self.app.post(API_V1 + '/books',
+             data = json.dumps(data))
+        assert resp.status_code == http.CREATED
+
+        filter = {"-a.-b": 50, '$and': [{'b': [1,2,3]}, {'c':10}]}
+        resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert resp.status_code == http.OK
+
 
 if __name__ == '__main__':
     unittest.main()
