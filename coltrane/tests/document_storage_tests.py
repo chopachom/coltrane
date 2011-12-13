@@ -8,7 +8,6 @@ from pymongo.connection import Connection
 from coltrane.rest import config
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf
-from coltrane.appstorage.exceptions import DocumentAlreadyExistsError
 
 
 test_database   = config.TestConfig.MONGODB_DATABASE
@@ -51,22 +50,6 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
                 val2 = buck[key]
                 assert val1 == val2
 
-    def test_insert_documents_with_same_key(self):
-        app_id = '1'
-        user_id = '1'
-        boobs_type = 'boobs'
-
-        data = {'_key': '1', 'a': {'b': [1,2,3, {'c':'d'}]}}
-        storage.create(app_id, user_id, self.ip, data, bucket=boobs_type)
-        data2 = {'_key': '1', 'a2': {'b2': [1,2,3, {'c':'d'}]}}
-
-        with self.assertRaises(DocumentAlreadyExistsError):
-            storage.create(app_id, user_id, self.ip, data2, bucket=boobs_type)
-        try:
-            storage.create(app_id, user_id, self.ip, data2, bucket=boobs_type)
-        except DocumentAlreadyExistsError as e:
-            assert e.message == 'Document with key [1] already exists'
-            
 
     def test_create_multiple_nesting_documents(self):
         app_id = '1'

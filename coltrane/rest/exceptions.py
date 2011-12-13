@@ -38,6 +38,16 @@ class InvalidDocumentFieldsError(ApiError):
         super(InvalidDocumentFieldsError, self).__init__(message, **kwargs)
 
 
+class DocumentAlreadyExistsError(ApiError):
+    """Error is raised when document exists"""
+    message = "Document with key [{key}] and bucket [{bucket}] already exists"
+
+    def __init__(self, message=None, *args, **kwargs):
+        super(DocumentAlreadyExistsError, self).__init__(message, *args, **kwargs)
+        self.id = kwargs.get('key')
+        self.bucket = kwargs.get('bucket')
+
+
 class InvalidKeyNameError(ApiError):
     message = 'Invalid key name'
     def __init__(self, message, **kwargs):

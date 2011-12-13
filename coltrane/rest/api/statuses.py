@@ -14,6 +14,8 @@ class http(Enum):
     BAD_REQUEST           = 400
     UNAUTHORIZED          = 401
     NOT_FOUND             = 404
+    CONFLICT              = 409
+    
     SERVER_ERROR          = 500
     NOT_IMPLEMENTED       = 501
 
@@ -27,10 +29,13 @@ class app(Enum):
     NOT_IMPLEMENTED   = 5
     SERVER_ERROR      = 6
     CREATED           = 7
+    CONFLICT          = 8
+
 
 
 ERROR_INFO_MATCHING = {
     exceptions.InvalidKeyNameError:        (app.BAD_REQUEST, http.BAD_REQUEST),
+    exceptions.DocumentAlreadyExistsError: (app.CONFLICT, http.CONFLICT),
     exceptions.InvalidDocumentFieldsError:    (app.BAD_REQUEST, http.BAD_REQUEST),
     exceptions.InvalidJSONFormatError:  (app.BAD_REQUEST, http.BAD_REQUEST),
     exceptions.InvalidRequestError:     (app.BAD_REQUEST, http.BAD_REQUEST)

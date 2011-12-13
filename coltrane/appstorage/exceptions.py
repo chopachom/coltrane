@@ -55,14 +55,3 @@ class InvalidDocumentError(StorageError):
 
     def __init__(self, message, **kwargs):
         super(InvalidDocumentError, self).__init__(message, **kwargs)
-
-
-
-class DocumentAlreadyExistsError(StorageError):
-    """Error is raised when document id is invalid"""
-    message = "No document with such key or invalid document key [{key}]"
-
-    def __init__(self, message=None, *args, **kwargs):
-        super(DocumentAlreadyExistsError, self).__init__(message, *args, **kwargs)
-        self.id = kwargs.get('key')
-        self.bucket = kwargs.get('bucket')

@@ -210,6 +210,20 @@ class ApiTestCase(ApiBaseTestClass):
         assert res == {"message": "Invalid json object \"\'this.a > 3\'\""}
 
 
+    def test_creating_docs_with_same_key(self):
+        self.app.post(API_V1 + '/books/key1',
+            data=json.dumps({'a':1}),
+            follow_redirects=True
+        )
+        res = self.app.post(API_V1 + '/books/key1',
+            data=json.dumps({'b':1}),
+            follow_redirects=True
+        )
+        assert res.status_code == http.CONFLICT
+        assert from_json(res.data)['message'] == \
+               "Document with key [key1] and bucket [books] already exists"
+
+
 
 class ApiUpdateManyCase(ApiBaseTestClass):
 
@@ -805,6 +819,7 @@ class KeysValidationCase(ApiBaseTestClass):
         resp = self.app.get(API_V1 + '/books/-key1_')
         assert resp.status_code == http.BAD_REQUEST
         assert from_json(resp.data)['message'] == "Document key has invalid format [-key1_]"
+
 
 
 

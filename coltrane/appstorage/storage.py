@@ -85,10 +85,6 @@ class AppdataStorage(object):
         if extf.KEY in document:
             document_id = _internal_id(app_id, user_id, bucket,
                                          document[extf.KEY])
-            criteria = {intf.ID: document_id}
-            if self._is_document_exists(criteria):
-                raise DocumentAlreadyExistsError(
-                    'Document with key [%s] already exists' % document[extf.KEY])
         else:
             document_id = _internal_id(app_id, user_id, bucket, uuid4())
 
@@ -202,6 +198,8 @@ class AppdataStorage(object):
         """
         if criteria and extf.KEY in criteria:
             doc_id = _internal_id(app_id, user_id, bucket,criteria[extf.KEY])
+            if len(criteria) == 1:
+                return self._is_document_exists({intf.ID: doc_id})
             kwargs = dict(document_id=doc_id)
         else:
             kwargs = dict(filter_opts=criteria)

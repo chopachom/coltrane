@@ -2,7 +2,7 @@ import logging
 
 from flask import Blueprint
 from coltrane.appstorage.storage import AppdataStorage
-from coltrane.appstorage.storage import extf, intf
+from coltrane.appstorage.storage import extf
 from coltrane.rest.extensions import guard
 from coltrane.rest.api.statuses import *
 from coltrane.rest import exceptions, validators
@@ -26,8 +26,17 @@ def post_handler(bucket, key):
 
     if key is not None:
         document[extf.KEY] = key
+    else:
+        key = document.get(extf.KEY, None)
+        
     if extf.KEY in document:
-        validators.KeyValidator((document[extf.KEY],)).validate()
+        validators.KeyValidator((key,)).validate()
+
+        if storage.is_document_exists(get_app_id(), get_user_id(),
+                        bucket, {extf.KEY: key}):
+            raise exceptions.DocumentAlreadyExistsError(
+                key=key,
+                bucket=bucket)
 
     document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                   document, bucket=bucket)
