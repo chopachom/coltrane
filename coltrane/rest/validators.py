@@ -1,6 +1,6 @@
 import abc
 import re
-from coltrane.api import exceptions
+from coltrane.rest import exceptions
 
 __author__ = 'Pasha'
 

@@ -1,11 +1,11 @@
-from coltrane.api.rest.statuses import http
+from coltrane.rest.api.statuses import http
 
 __author__ = 'qweqwe'
 import unittest
-from coltrane.api.app import create_app
-from coltrane.api import api_v1
-from coltrane.api.rest.v1 import from_json, resp_msgs
-from coltrane.api.config import TestConfig
+from coltrane.rest.app import create_app
+from coltrane.rest import api_v1
+from coltrane.rest.api.v1 import from_json, resp_msgs
+from coltrane.rest.config import TestConfig
 from coltrane.tests.stubs import fake_guard
 
 AUTH_TOKEN = fake_guard.AUTH_TOKEN

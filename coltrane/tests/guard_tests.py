@@ -1,12 +1,12 @@
 __author__ = 'qweqwe'
 import unittest
-from coltrane.api.app import create_app
-from coltrane.api import api_v1
-from coltrane.api.rest.v1 import from_json, resp_msgs
-from coltrane.api.lib.guard_manager import GuardManager
-from coltrane.api.extensions import guard
-from coltrane.api.config import TestConfig
-from coltrane.api.rest.statuses import http
+from coltrane.rest.app import create_app
+from coltrane.rest import api_v1
+from coltrane.rest.api.v1 import from_json, resp_msgs
+from coltrane.rest.lib.guard_manager import GuardManager
+from coltrane.rest.extensions import guard
+from coltrane.rest.config import TestConfig
+from coltrane.rest.api.statuses import http
 from coltrane.db.models import User, AppToken, Application
 from coltrane.db.extension import db
 from coltrane import config

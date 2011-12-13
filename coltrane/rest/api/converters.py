@@ -1,6 +1,6 @@
 from werkzeug.routing import BaseConverter
 from werkzeug.exceptions import BadRequest
-from coltrane.api import validators
+from coltrane.rest import validators
 
 import json
 
@@ -8,15 +8,12 @@ __author__ = 'Pasha'
 
 class KeysConverter(BaseConverter):
     def to_python(self, value):
-        keys = value.split(',')
-        res_keys = []
-        for k in keys:
-            res_keys.append(k.strip())
+        keys = [k.strip() for k in value.split(',')]
 
-        validators.KeyValidator(res_keys, InvalidKey).validate()
+        validators.KeyValidator(keys, InvalidKey).validate()
         if not len(keys):
             raise InvalidKey('At least one key must be passed.')
-        return res_keys
+        return keys
 
     def to_url(self, values):
         return ','.join(BaseConverter.to_url(value) for value in values)

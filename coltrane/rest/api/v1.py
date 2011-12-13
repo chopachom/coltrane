@@ -1,17 +1,15 @@
-import copy
 import logging
 
 from flask import Blueprint
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf, intf
-import coltrane.api.validators
-from coltrane.api.extensions import guard
-from coltrane.api.rest.statuses import *
-from coltrane.api import exceptions, validators
-from coltrane.api.utils import *
+from coltrane.rest.extensions import guard
+from coltrane.rest.api.statuses import *
+from coltrane.rest import exceptions, validators
+from coltrane.rest.utils import *
 
 
-LOG = logging.getLogger('rest.api.v1')
+LOG = logging.getLogger('coltrane.rest.api.v1')
 LOG.debug('starting rest api')
 
 

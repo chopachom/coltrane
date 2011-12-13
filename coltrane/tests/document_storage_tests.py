@@ -5,7 +5,7 @@ __author__ = 'nik'
 import unittest
 from pymongo.connection import Connection
 
-from coltrane.api import config
+from coltrane.rest import config
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf
 from coltrane.appstorage.exceptions import DocumentAlreadyExistsError

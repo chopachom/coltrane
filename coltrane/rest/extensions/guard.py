@@ -1,8 +1,8 @@
 __author__ = 'apetrovich'
 
-from flask import request, g, abort, jsonify
+from flask import request, g, jsonify
 from coltrane import config
-from coltrane.api.rest import statuses
+from coltrane.rest.api import statuses
 
 
 class Guard(object):

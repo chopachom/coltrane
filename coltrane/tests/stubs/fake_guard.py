@@ -1,7 +1,7 @@
 __author__ = 'qweqwe'
 
 
-from coltrane.api.extensions.guard import Guard
+from coltrane.rest.extensions.guard import Guard
 from coltrane.utils import Enum
 
 

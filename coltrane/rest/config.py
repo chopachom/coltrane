@@ -9,7 +9,7 @@ class DefaultConfig(object):
 
 class TestConfig(object):
     TESTING            = True
-    LOGGER_NAME        ='coltrane.api'
+    LOGGER_NAME        ='coltrane.rest'
     SQLALCHEMY_DATABASE_URI = config.MYSQL_TEST_URI
     MONGODB_HOST       ='127.0.0.1'
     MONGODB_PORT       = 27017
@@ -24,7 +24,7 @@ class TestConfig(object):
 
 class DebugConfig(object):
     DEBUG              = True
-    LOGGER_NAME        ='coltrane.api'
+    LOGGER_NAME        ='coltrane.rest'
     SQLALCHEMY_DATABASE_URI = config.MYSQL_DEBUG_URI
     MONGODB_HOST       ='127.0.0.1'
     MONGODB_PORT       = 27017

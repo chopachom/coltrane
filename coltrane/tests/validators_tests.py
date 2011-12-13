@@ -1,5 +1,5 @@
 import unittest
-from coltrane.api.validators import SimpleValidator, RecursiveValidator
+from coltrane.rest.validators import SimpleValidator, RecursiveValidator
 from coltrane.appstorage.storage import intf, extf
 
 __author__ = 'Pasha'

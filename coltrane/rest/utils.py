@@ -1,6 +1,6 @@
 __author__ = 'qweqwe'
 
-from coltrane.api.extensions import mongodb
+from coltrane.rest.extensions import mongodb
 from coltrane.utils import Enum
 
 from flask import current_app, request

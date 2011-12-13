@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from coltrane.api.rest.statuses import ERROR_INFO_MATCHING, http, app as app_status
-from coltrane.api.utils import jsonify, resp_msgs
+from coltrane.rest.api.statuses import ERROR_INFO_MATCHING, http, app as app_status
+from coltrane.rest.utils import jsonify, resp_msgs
 
 __author__ = 'apetrovich'
 
@@ -8,14 +8,14 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from flask import Flask
-from coltrane.api.config import DefaultConfig
-from coltrane.api.lib.guard_manager import GuardManager
-from coltrane.api.extensions import mongodb
-from coltrane.api.extensions import guard
+from coltrane.rest.config import DefaultConfig
+from coltrane.rest.lib.guard_manager import GuardManager
+from coltrane.rest.extensions import mongodb
+from coltrane.rest.extensions import guard
 from coltrane.db.extension import db
-from coltrane.api.rest import api_v1, converters
+from coltrane.rest.api import api_v1, converters
 
-LOG = logging.getLogger('api.app')
+LOG = logging.getLogger('coltrane.rest.app')
 
 guard.manager = GuardManager
 

@@ -1,4 +1,4 @@
-from coltrane.api import exceptions
+from coltrane.rest import exceptions
 from coltrane.utils import Enum
 
 __author__ = 'qweqwe'
