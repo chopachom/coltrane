@@ -749,6 +749,19 @@ class KeysValidationCase(ApiBaseTestClass):
         data = from_json(resp.data)
         assert data['message'] == "Document key has invalid format [-a.-b]"
 
+    def test_request_with_wrong_key(self):
+
+        data = {"a":{"b": 50}, 'b': [1,2,3], 'c':10}
+        resp = self.app.post(API_V1 + '/books/*key1',
+             data = json.dumps(data))
+        assert resp.status_code == http.BAD_REQUEST
+        assert from_json(resp.data)['message'] == "Document key has invalid format [*key1]"
+
+        resp = self.app.get(API_V1 + '/books/-key1_')
+        assert resp.status_code == http.BAD_REQUEST
+        assert from_json(resp.data)['message'] == "Document key has invalid format [-key1_]"
+
+
 
 if __name__ == '__main__':
     unittest.main()

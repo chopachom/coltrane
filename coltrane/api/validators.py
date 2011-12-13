@@ -94,9 +94,10 @@ class KeyValidator(Validator):
         if error_class:
             self.error_class = error_class
             
-        if data is not None and type(data) not in (list, dict):
-            self.data = [data]
-        self.data = data
+        if data is not None and type(data) not in (list, tuple, dict):
+            self.data = (data,)
+        else:
+            self.data = data
 
     def validate(self):
         if self.data is None:
