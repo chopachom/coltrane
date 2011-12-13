@@ -87,7 +87,7 @@ class RecursiveValidator(ForbiddenFieldsValidator):
 
 
 class KeyValidator(Validator):
-    key_re = re.compile(r'^[\w-]+$')
+    key_re = re.compile(r'^\w[\w-]*$')
     
     def __init__(self, data, error_class=None):
         self.error_class = exceptions.InvalidKeyNameError
@@ -127,14 +127,14 @@ class KeyDocumentValidator(KeyValidator):
 
     
 class KeyFilterValidator(KeyValidator):
-    key_re = re.compile(r'^[\w\.$-]+$')
+    key_re = re.compile(r'^[\w$][\w\.-]*$')
     
     def __init__(self, filter, error_class=None):
         super(KeyFilterValidator, self).__init__(filter, error_class)
 
 
 class KeyUpdateValidator(KeyValidator):
-    key_re = re.compile(r'^[\w\.-]+$')
+    key_re = re.compile(r'^\w[\w\.-]*$')
     
     def __init__(self, update_doc, error_class=None):
         super(KeyUpdateValidator, self).__init__(update_doc, error_class)

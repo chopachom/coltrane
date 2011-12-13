@@ -741,11 +741,13 @@ class KeysValidationCase(ApiBaseTestClass):
         data = {"-a":{"-b": 50}, 'b': [1,2,3], 'c':10}
         resp = self.app.post(API_V1 + '/books',
              data = json.dumps(data))
-        assert resp.status_code == http.CREATED
+        assert resp.status_code == http.BAD_REQUEST
 
         filter = {"-a.-b": 50, '$and': [{'b': [1,2,3]}, {'c':10}]}
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        assert resp.status_code == http.OK
+        assert resp.status_code == http.BAD_REQUEST
+        data = from_json(resp.data)
+        assert data['message'] == "Document key has invalid format [-a.-b]"
 
 
 if __name__ == '__main__':
