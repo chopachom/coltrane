@@ -86,58 +86,74 @@ class RecursiveValidator(ForbiddenFieldsValidator):
         return found_fields
 
 
-class KeyValidator(Validator):
+class KeyValidator(object):
     """
         Base validator for _key value and for all keys names.
         Values of <v> in sample {'_key': <v>, <v>:10, <v>: {<v>:5}}
         are validated for correct value.
     """
-    key_re = re.compile(r'^\w[\w-]*$')
+#    key_re = re.compile(r'^\w[\w-]*$')
+    key_re = re.compile(r'^(?!__)\w[\w-]*(?<!__)$')
 
     def __init__(self, data):
         self.data = data
 
-    def validate(self):
+    def validate(self, recursive=False):
         if self.data is None:
             return
-        found_keys = self._wrong_keys(self.data)
+        if recursive:
+            found_keys = self._wrong_keys_recursively(self.data)
+        else:
+            found_keys = self._wrong_keys(self.data)
         if len(found_keys):
             raise exceptions.InvalidKeyNameError('Document key has invalid format [%s]' % ','.join(found_keys))
 
     def _wrong_keys(self, keys):
         found_keys = set()
-        for k in self.data:
+        for k in keys:
             if not re.match(self.key_re, k):
                 found_keys.add(k)
         return found_keys
 
-
-class KeyDocumentValidator(KeyValidator):
-
-    def _wrong_keys(self, doc):
+    def _wrong_keys_recursively(self, doc):
         found_keys = set()
         for k in doc:
             if not re.match(self.key_re, k):
                 found_keys.add(k)
             if type(doc[k]) == dict:
-                res = self._wrong_keys(doc[k])
+                res = self._wrong_keys_recursively(doc[k])
                 found_keys = found_keys.union(res)
         return found_keys
-
     
-class KeyFilterValidator(KeyValidator):
+
+class SaveDocumentKeysValidator(KeyValidator):
+    """
+        Validator for document to save.
+        Allows only 0-9,a-z,A-Z,_
+    """
+    def __init__(self, doc):
+        super(SaveDocumentKeysValidator, self).__init__(doc)
+
+    def validate(self, recursive=True):
+        super(SaveDocumentKeysValidator, self).validate(recursive)
+
+
+class FilterKeysValidator(KeyValidator):
     """
         Validator for filter object.
         It allows symbols '$','.' because of filter syntax:
             filter = {'a.b.c':10, '$and':[{'b':{'$gt': 5}}, {'c':10}]}
     """
-    key_re = re.compile(r'^[\w$][\w\.-]*$')
+    key_re = re.compile(r'^(?!__)[\w$][\w\.-]*(?<!__)$')
     
     def __init__(self, filter):
-        super(KeyFilterValidator, self).__init__(filter)
+        super(FilterKeysValidator, self).__init__(filter)
+
+    def validate(self, recursive=True):
+        super(FilterKeysValidator, self).validate(recursive)
 
 
-class KeyUpdateValidator(KeyValidator):
+class UpdateDocumentKeysValidator(KeyValidator):
     """
         Document validator to update underlying document.
         It allows symbol '.' because of search mongo syntax:
@@ -145,8 +161,11 @@ class KeyUpdateValidator(KeyValidator):
             It will replace <obj> in
             {'a':{'b':{'c':<obj>}}} by 10
     """
-    key_re = re.compile(r'^\w[\w\.-]*$')
-    
+    key_re = re.compile(r'^(?!__)\w[\w\.-]*(?<!__)$')
+
     def __init__(self, update_doc):
-        super(KeyUpdateValidator, self).__init__(update_doc)
+        super(UpdateDocumentKeysValidator, self).__init__(update_doc)
+
+    def validate(self, recursive=True):
+        super(UpdateDocumentKeysValidator, self).validate(recursive)
         

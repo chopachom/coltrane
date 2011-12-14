@@ -1,3 +1,5 @@
+from coltrane.appstorage.storage import intf
+
 __author__ = 'qweqwe'
 
 from coltrane.rest.extensions import mongodb
@@ -19,6 +21,7 @@ class resp_msgs(Enum):
 
 class forbidden_fields(Enum):
     WHERE      = '$where'
+    ID         = intf.ID
 
 
 class lazy_coll(object):

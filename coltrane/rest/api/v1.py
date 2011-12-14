@@ -23,7 +23,7 @@ def post_handler(bucket, key):
     """ Create new document and get _key back
     """
     document = extract_form_data()
-    validate_document(document)
+
     if key is not None:
         document[extf.KEY] = key
     if extf.KEY in document:
@@ -37,8 +37,7 @@ def post_handler(bucket, key):
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['GET'])
 @jsonify
 def get_by_keys_handler(bucket, keys):
-#    if not len(keys):
-#            raise exceptions.InvalidRequestError('At least one key must be passed.')
+
     res = []
     http_status = http.OK
 
@@ -66,12 +65,11 @@ def get_by_keys_handler(bucket, keys):
     return res, http_status
 
 
-
 @api.route('/<bucket:bucket>', methods=['GET'])
 @jsonify
 def get_by_filter_handler(bucket):
+
     filter_opts = extract_filter_opts()
-    validate_filter(filter_opts)
     skip, limit = extract_pagination_data()
     
     documents = storage.find(get_app_id(), get_user_id(), bucket,
@@ -88,9 +86,6 @@ def get_by_filter_handler(bucket):
 def delete_by_keys_handler(bucket, keys):
     """ Deletes existing document (C.O.)
     """
-#    if not len(keys):
-#        raise exceptions.InvalidRequestError('At least one key must be passed.')
-
     res = []
     http_status = http.OK
     
@@ -123,7 +118,6 @@ def delete_by_filter_handler(bucket):
     """ Delete all documents matched with filter
     """
     filter_opts = extract_filter_opts()
-    validate_filter(filter_opts)
     if not storage.is_document_exists(get_app_id(), get_user_id(),
                                       bucket, filter_opts):
         return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
@@ -145,8 +139,6 @@ def put_by_keys_handler(bucket, keys):
     document = extract_form_data()
     force = is_force_mode()
 
-    validate_doc_for_update(document)
-
     res = []
     http_status = http.OK
     for key in keys:
@@ -156,7 +148,7 @@ def put_by_keys_handler(bucket, keys):
                                           bucket, filter_opts):
             if force:
                 document[extf.KEY] = key
-                document = transform_for_update(document)
+                document = generate_normal_view(document)
                 
                 storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                document, bucket=bucket)
@@ -193,13 +185,10 @@ def put_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     force = is_force_mode()
 
-    validate_doc_for_update(document)
-    validate_filter(filter_opts)
-
     if not storage.is_document_exists(get_app_id(), get_user_id(),
                                       bucket, filter_opts):
         if force:
-            document = transform_for_update(document)
+            document = generate_normal_view(document)
 
             key = storage.create(
                 get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
@@ -219,46 +208,27 @@ def put_by_filter_handler(bucket):
     return {'message': resp_msgs.DOC_WAS_UPDATED}, http.OK
 
 
-def _base_validate_document(document):
-    valid1 = validators.RecursiveValidator(document, forbidden_fields.values())
-    valid2 = validators.SimpleValidator(document, intf.values(), valid1)
-    valid2.validate()
+def validate_forbidden_fields(doc):
+    valid1 = validators.RecursiveValidator(doc, forbidden_fields.values())
+    valid1.validate()
 
     
 def validate_document(document):
-    if not filter:
-        return  
-    _base_validate_document(document)
-    validators.KeyDocumentValidator(document).validate()
+    validate_forbidden_fields(document)
+    validators.SaveDocumentKeysValidator(document).validate()
 
 
 def validate_filter(filter):
-    if not filter:
-        return
-    _base_validate_document(filter)
-    validators.KeyFilterValidator(filter).validate()
+    validate_forbidden_fields(filter)
+    validators.FilterKeysValidator(filter).validate()
 
 
 def validate_doc_for_update(update_doc):
-    if not filter:
-        return
-    _base_validate_document(update_doc)
-    validators.KeyUpdateValidator(update_doc).validate()
+    validate_forbidden_fields(update_doc)
+    validators.UpdateDocumentKeysValidator(update_doc).validate()
 
     
-def get_user_id():
-    return guard.current_user.id
-
-
-def get_app_id():
-    return guard.current_app.id
-
-
-def get_remote_ip():
-    request.get('remote_addr', None)
-
-
-def transform_for_update(document):
+def generate_normal_view(document):
     """
         {'a.b.c.d':1} => {'a':{'b':{'c':{'d':1}}}}
     """
@@ -291,6 +261,13 @@ def extract_form_data():
         obj = request.json
     else:
         obj = from_json(request.data)
+
+    if request.method == 'POST':
+        validate_document(obj)
+    elif request.method == 'PUT':
+        normal_view = generate_normal_view(obj)
+        validate_doc_for_update(normal_view)
+    
     return obj
 
 
@@ -298,15 +275,16 @@ def extract_filter_opts():
     """
     Extracts filter data from the url
     """
-    filter_opts = request.args.get('filter', None)
-    if filter_opts is not None:
-        filter_opts = filter_opts.strip()
-        filter_opts = from_json(filter_opts)
-        if not len(filter_opts):
+    filter = request.args.get('filter', None)
+    if filter is not None:
+        filter = filter.strip()
+        filter = from_json(filter)
+        if not len(filter):
             raise exceptions.InvalidRequestError(
                 'Invalid request syntax. Filter options were not specified')
-
-    return filter_opts
+        normal_view = generate_normal_view(filter)
+        validate_filter(normal_view)
+    return filter
 
 
 def is_force_mode():
@@ -331,5 +309,17 @@ def extract_pagination_data():
             'Invalid request syntax. Parameters skip or limit have invalid value.')
 
     return skip, limit
+
+
+def get_user_id():
+    return guard.current_user.id
+
+
+def get_app_id():
+    return guard.current_app.id
+
+
+def get_remote_ip():
+    request.get('remote_addr', None)
 
 

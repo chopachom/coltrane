@@ -149,23 +149,23 @@ class ApiTestCase(ApiBaseTestClass):
         )
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.ID, forbidden_fields.WHERE)}
+                                  (forbidden_fields.WHERE, intf.ID)}
 
-        filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
+        filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE)}
+                                  (forbidden_fields.WHERE, intf.ID)}
 
-        filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
+        filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.delete(API_V1 + '/books?filter=' + json.dumps(filter))
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE)}
+                                  (forbidden_fields.WHERE, intf.ID)}
 
-        filter = {'a':21, intf.APP_ID:'app_id', 'b':[1,2,3],
+        filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter),
             data=json.dumps({'a':'b'}),
@@ -173,18 +173,18 @@ class ApiTestCase(ApiBaseTestClass):
         )
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE)}
+                                  (forbidden_fields.WHERE, intf.ID)}
 
 
         filter = {'a':21, 'b':[1,2,3],
                   'c': {'d': {'e': [1,2,3]}}}
         rv = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter),
-            data=json.dumps({intf.APP_ID:'app_id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}),
+            data=json.dumps({intf.ID:'app_id', 'a':{'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}),
             follow_redirects=True
         )
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (intf.APP_ID, forbidden_fields.WHERE)}
+                                  (forbidden_fields.WHERE, intf.ID)}
 
 
     def test_where_field_as_string(self):
@@ -263,8 +263,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         print rv.data
         data = from_json(rv.data)
         res = data['message']
-        assert res == exceptions.InvalidDocumentFieldsError.FORBIDDEN_FIELDS_MSG % ','.join([
-            intf.CREATED_AT, intf.APP_ID])
+        assert res == 'Document key has invalid format [%s,%s]' % (
+            intf.APP_ID, intf.CREATED_AT)
 
 
     def test_put_by_filter_with_force(self):
@@ -715,6 +715,37 @@ class PaginatingQueryCase(ApiBaseTestClass):
 
 class KeysValidationCase(ApiBaseTestClass):
 
+    def test_strong_filter(self):
+        data = {'a': 50, 'c':{'d':{'e':[{'i':10, 'j':1},{'k':9}]}},
+                'b': {'b': {'c':{'d':{'e':10}}}}}
+        self.app.post(API_V1 + '/books',
+            data=json.dumps(data))
+
+        filter = {'b.b.c':{'d':{'e':10}}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+
+        filter = {'c.d.e.0.j':1}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+
+        filter = {'c.d.e.j':1}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+
+        filter = {'b.b.c':{'d.e':10}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert res.status_code == http.NOT_FOUND
+
+
+        filter = {'b.__b.c': {'_d': {'e__': 10}}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert from_json(res.data)['message'] == 'Document key has invalid format [e__,__b]'
+
+
     def test_post_wrong_key_format(self):
         data = {"a": 50, 'b': {'b*s': [1,2,3]}}
         resp = self.app.post(API_V1 + '/books',
@@ -732,6 +763,19 @@ class KeysValidationCase(ApiBaseTestClass):
         assert data['message'] == "Document key has invalid format [%s*w,d#2,b*s]"
 
 
+    def test_put_filter(self):
+        filter = {'a.__b__.c__': 3, 'b': {'c': {'_sa-6767_': [10, 10]}}}
+        res = self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data="{}")
+        assert from_json(res.data)['message'] == 'Document key has invalid format [__b__,c__]'
+
+
+        doc = {'a.__b__.c__': 3, 'b': {'c': {'_sa-6767_': [10, 10]}}}
+        res = self.app.put(API_V1 + '/books',
+            data=json.dumps(doc))
+        assert from_json(res.data)['message'] == 'Document key has invalid format [__b__,c__]'
+        
+
     def test_get_filter(self):
         filter = {"a.b": 50, '$and': [{'b': [1,2,3]}, {'c':10}]}
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
@@ -747,7 +791,8 @@ class KeysValidationCase(ApiBaseTestClass):
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
         assert resp.status_code == http.BAD_REQUEST
         data = from_json(resp.data)
-        assert data['message'] == "Document key has invalid format [-a.-b]"
+        assert data['message'] == "Document key has invalid format [-a,-b]"
+
 
     def test_request_with_wrong_key(self):
 

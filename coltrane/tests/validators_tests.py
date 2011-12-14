@@ -1,5 +1,6 @@
 import unittest
-from coltrane.rest.validators import SimpleValidator, RecursiveValidator
+from coltrane.rest.exceptions import InvalidKeyNameError
+from coltrane.rest.validators import SimpleValidator, RecursiveValidator, UpdateDocumentKeysValidator, SaveDocumentKeysValidator, FilterKeysValidator
 from coltrane.appstorage.storage import intf, extf
 
 __author__ = 'Pasha'
@@ -107,6 +108,37 @@ class MixedValidationTestCase(unittest.TestCase):
         valid2 = SimpleValidator(doc, extf.values(), valid1)
         valid3 = RecursiveValidator(doc, intf.values(), valid2)
         valid3.validate()
+
+
+class KeyValidationTestCase(unittest.TestCase):
+
+    def test_key_save_doc_validation(self):
+        doc = {'__a_': 1, '_b___c_': 10}
+        with self.assertRaises(InvalidKeyNameError) as context:
+            SaveDocumentKeysValidator(doc).validate()
+        assert context.exception.message == 'Document key has invalid format [__a_]'
+
+        doc = {'__a_': 1, '_b___c_': 10, 'c':{'d':{'e':{'__i__':5}}}}
+        with self.assertRaises(InvalidKeyNameError) as context:
+            SaveDocumentKeysValidator(doc).validate()
+        assert context.exception.message == 'Document key has invalid format [__i__,__a_]'
+
+
+    def test_key_filter_doc_validation(self):
+        filter = {'b.b.c': {'_d': {'e__': 10}}}
+        with self.assertRaises(InvalidKeyNameError) as context:
+            FilterKeysValidator(filter).validate()
+        assert context.exception.message == 'Document key has invalid format [e__]'
+
+
+    def test_key_update_doc_validation(self):
+        doc = {'a.b.c': 3}
+        UpdateDocumentKeysValidator(doc).validate()
+
+        doc = {'a.b.c': 3, 'b': {'c': {'__sa-6767_': [10, 10]}}}
+        with self.assertRaises(InvalidKeyNameError) as context:
+            UpdateDocumentKeysValidator(doc).validate()
+        assert context.exception.message == 'Document key has invalid format [__sa-6767_]'
 
 
 if __name__ == '__main__':
