@@ -30,8 +30,6 @@ class ForbiddenFieldsValidator(Validator):
         next_validator - (object of any subclass of Validator).
             The next validator in the chain after current validator.
         """
-        if type(doc) is not dict:
-            raise RuntimeError('Document [%s] is not dict type.' % doc)
 
         self.doc = doc
         self.forbidden_fields = forbidden_fields
@@ -43,15 +41,19 @@ class ForbiddenFieldsValidator(Validator):
         Here is all logic of the delegating responsibilities to the next validator
         and raising Exception if there are any of forbidden fields in the document.
         """
-        found_fields = self._forbidden_fields_from_doc(self.doc)
-        if self.next_validator:
-            new_fields = self.next_validator._forbidden_fields_from_doc(self.doc)
-            found_fields.extend([f for f in new_fields if f not in found_fields])
+        found_fields = set()
+        validator = self
+        while validator:
+            found_new = validator._forbidden_fields_from_doc(validator.doc)
+            found_fields = found_fields.union(found_new)
+            validator = validator.next_validator
 
         if len(found_fields):
             raise exceptions.InvalidDocumentFieldsError(
-                exceptions.InvalidDocumentFieldsError.FORBIDDEN_FIELDS_MSG % ','.join(found_fields))
+                exceptions.InvalidDocumentFieldsError.FORBIDDEN_FIELDS_MSG %
+                ','.join(found_fields))
 
+        
     @abc.abstractmethod
     def _forbidden_fields_from_doc(self, doc=None):
         """
@@ -66,7 +68,7 @@ class SimpleValidator(ForbiddenFieldsValidator):
     """
     def _forbidden_fields_from_doc(self, doc):
         fields = [key for key in doc if key in self.forbidden_fields]
-        return fields
+        return set(fields)
 
         
 class RecursiveValidator(ForbiddenFieldsValidator):
@@ -74,15 +76,15 @@ class RecursiveValidator(ForbiddenFieldsValidator):
     Finds all forbidden fields from top to deepest embedded.
     """
     def _forbidden_fields_from_doc(self, doc):
-        found_fields = []
+        found_fields = set()
         for key in doc:
             if key in self.forbidden_fields:
-                found_fields.append(key)
+                found_fields.add(key)
             else:
                 embed_doc = doc[key]
                 if type(embed_doc) is dict:
                     new_fields = self._forbidden_fields_from_doc(embed_doc)
-                    found_fields.extend([f for f in new_fields if f not in found_fields])
+                    found_fields = found_fields.union(new_fields)
         return found_fields
 
 
@@ -106,7 +108,8 @@ class KeyValidator(object):
         else:
             found_keys = self._wrong_keys(self.data)
         if len(found_keys):
-            raise exceptions.InvalidKeyNameError('Document key has invalid format [%s]' % ','.join(found_keys))
+            raise exceptions.InvalidKeyNameError(
+                'Document key has invalid format [%s]' % ','.join(found_keys))
 
     def _wrong_keys(self, keys):
         found_keys = set()
