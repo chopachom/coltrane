@@ -1,14 +1,30 @@
-import re
-
 __author__ = 'qweqwe'
 
-from coltrane.rest.extensions import mongodb
 
+
+from coltrane.appstorage.storage import intf
+from coltrane.rest.extensions import mongodb
+from coltrane.utils import Enum
+
+import re
 from flask import current_app, request
 from functools import wraps
-
 import json
 import datetime
+
+
+class resp_msgs(Enum):
+    DOC_NOT_EXISTS  = "Document doesn't exist"
+    DOC_CREATED = "Document has been created"
+    DOC_DELETED = "Document has been deleted"
+    DOC_UPDATED = "Document has been updated"
+    INTERNAL_ERROR  = "Internal server error"
+
+
+class forbidden_fields(Enum):
+    WHERE      = '$where'
+    ID         = intf.ID
+
 
 
 class lazy_coll(object):
