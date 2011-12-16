@@ -17,32 +17,6 @@ LOG.debug('starting rest api')
 storage = AppdataStorage(lazy_coll)
 api = Blueprint("api_v1", __name__)
 
-@api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
-@api.route('/<bucket:bucket>/<key>', methods=['POST'])
-@jsonify
-def post_handler(bucket, key):
-    """ Create new document and get _key back
-    """
-    document = extract_form_data()
-
-    if key is not None:
-        document[extf.KEY] = key
-    else:
-        key = document.get(extf.KEY, None)
-        
-    if extf.KEY in document:
-        validators.KeyValidator((key,)).validate()
-
-        if storage.is_document_exists(get_app_id(), get_user_id(),
-                        bucket, {extf.KEY: key}):
-            raise exceptions.DocumentAlreadyExistsError(
-                key=key,
-                bucket=bucket)
-
-    document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
-                                  document, bucket=bucket)
-    return {extf.KEY: document_key}, http.CREATED
-
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['GET'])
 @jsonify
@@ -51,6 +25,7 @@ def get_by_keys_handler(bucket, keys):
     res = []
     http_status = http.OK
 
+    #Maybe it is better to just not include not found documents to the response?
     for key in keys:
         doc = storage.get(get_app_id(), get_user_id(), bucket, key)
         if doc:
@@ -90,52 +65,32 @@ def get_by_filter_handler(bucket):
     return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
 
 
-
-@api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
+@api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
+@api.route('/<bucket:bucket>/<key>', methods=['POST'])
 @jsonify
-def delete_by_keys_handler(bucket, keys):
-    """ Deletes existing document (C.O.)
+def post_handler(bucket, key):
+    """ Create new document and get _key back
     """
-    res = []
-    http_status = http.OK
-    
-    for key in keys:
-        filter_opts = {extf.KEY: key}
-        if not storage.is_document_exists(get_app_id(), get_user_id(),
-                                          bucket, filter_opts):
-            res.append({extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
-                        'message': resp_msgs.DOC_NOT_EXISTS})
-        else:
-            storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
-                           bucket=bucket, filter_opts=filter_opts)
-            res.append({extf.KEY: key, STATUS_CODE: app.OK,
-                        'message': resp_msgs.DOC_WAS_DELETED})
+    document = extract_form_data()
 
-    if len(res) == 1:
-        res = res[0]
-        if res[STATUS_CODE] == app.NOT_FOUND:
-            http_status = http.NOT_FOUND
-        res = {'message': res['message']}
+    if key:
+        document[extf.KEY] = key
     else:
-        res = {'response': res}
+        key = document.get(extf.KEY, None)
 
-    return res, http_status
+    if extf.KEY in document:
+        validators.KeyValidator((key,)).validate()
+        if storage.is_document_exists(get_app_id(), get_user_id(),
+                        bucket, {extf.KEY: key}):
+            raise exceptions.DocumentAlreadyExistsError(
+                key=key,
+                bucket=bucket)
+
+    document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
+                                  document, bucket=bucket)
+    return {extf.KEY: document_key}, http.CREATED
 
 
-@api.route('/<bucket:bucket>', methods=['DELETE'])
-@jsonify
-def delete_by_filter_handler(bucket):
-    """ Delete all documents matched with filter
-    """
-    filter_opts = extract_filter_opts()
-    if not storage.is_document_exists(get_app_id(), get_user_id(),
-                                      bucket, filter_opts):
-        return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
-    
-    storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
-                   bucket=bucket, filter_opts=filter_opts)
-
-    return {'message': resp_msgs.DOC_WAS_DELETED}, http.OK
 
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['PUT'])
@@ -159,11 +114,10 @@ def put_by_keys_handler(bucket, keys):
             if force:
                 document[extf.KEY] = key
                 document = generate_normal_view(document)
-                
                 storage.create(get_app_id(), get_user_id(), get_remote_ip(),
                                document, bucket=bucket)
                 res.append({extf.KEY: key, STATUS_CODE: app.CREATED,
-                        'message': resp_msgs.DOC_WAS_CREATED})
+                        'message': resp_msgs.DOC_CREATED})
             else:
                 res.append({extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
                         'message': resp_msgs.DOC_NOT_EXISTS})
@@ -171,7 +125,7 @@ def put_by_keys_handler(bucket, keys):
             storage.update(get_app_id(), get_user_id(), get_remote_ip(),
                            bucket, document, key=key)
             res.append({extf.KEY: key, STATUS_CODE: app.OK,
-                        'message': resp_msgs.DOC_WAS_UPDATED})
+                        'message': resp_msgs.DOC_UPDATED})
     if len(res) == 1:
         res = res[0]
         if res[STATUS_CODE] == app.CREATED:
@@ -204,7 +158,7 @@ def put_by_filter_handler(bucket):
                 get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
             )
             return {
-                extf.KEY: key, 'message': resp_msgs.DOC_WAS_CREATED
+                extf.KEY: key, 'message': resp_msgs.DOC_CREATED
             }, http.CREATED
 
         else:
@@ -215,7 +169,54 @@ def put_by_filter_handler(bucket):
     storage.update(get_app_id(), get_user_id(), get_remote_ip(),
                    bucket, document, filter_opts=filter_opts)
 
-    return {'message': resp_msgs.DOC_WAS_UPDATED}, http.OK
+    return {'message': resp_msgs.DOC_UPDATED}, http.OK
+
+@api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
+@jsonify
+def delete_by_keys_handler(bucket, keys):
+    """ Deletes existing document (C.O.)
+    """
+    res = []
+    http_status = http.OK
+    
+    for key in keys:
+        filter_opts = {extf.KEY: key}
+        if not storage.is_document_exists(get_app_id(), get_user_id(),
+                                          bucket, filter_opts):
+            res.append({extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
+                        'message': resp_msgs.DOC_NOT_EXISTS})
+        else:
+            storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
+                           bucket=bucket, filter_opts=filter_opts)
+            res.append({extf.KEY: key, STATUS_CODE: app.OK,
+                        'message': resp_msgs.DOC_DELETED})
+
+    if len(res) == 1:
+        res = res[0]
+        if res[STATUS_CODE] == app.NOT_FOUND:
+            http_status = http.NOT_FOUND
+        res = {'message': res['message']}
+    else:
+        res = {'response': res}
+
+    return res, http_status
+
+
+@api.route('/<bucket:bucket>', methods=['DELETE'])
+@jsonify
+def delete_by_filter_handler(bucket):
+    """ Delete all documents matched with filter
+    """
+    filter_opts = extract_filter_opts()
+    if not storage.is_document_exists(get_app_id(), get_user_id(),
+                                      bucket, filter_opts):
+        return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+    
+    storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
+                   bucket=bucket, filter_opts=filter_opts)
+
+    return {'message': resp_msgs.DOC_DELETED}, http.OK
+
 
 
 def validate_forbidden_fields(doc, fields=None):
@@ -274,8 +275,11 @@ def extract_form_data():
     """
     if request.json:
         obj = request.json
-    else:
+    elif request.data:
         obj = from_json(request.data)
+    else:
+        #FIXME: DIRTY DIRTY DIRTY SUCKER
+        obj = from_json(request.form.keys()[0])
 
     if request.method == 'POST':
         validate_document(obj)

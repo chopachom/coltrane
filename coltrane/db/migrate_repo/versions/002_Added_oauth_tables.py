@@ -4,42 +4,37 @@ from migrate import *
 meta = MetaData()
 
 users = Table('users', meta,
-            Column('id', Integer(), primary_key=True, nullable=False),
+            Column('id', Integer, primary_key=True, nullable=False),
         )
-users2 = Table('users', meta,
-            Column('id', Integer(), primary_key=True, nullable=False),
+#users2 = Table('users', meta,
+#            Column('id', Integer(), primary_key=True, nullable=False),
+#        )
+facebook_users = Table('facebook_users', meta,
+        Column('id', Integer, primary_key=True, nullable=False),
+        Column('user_id', Integer, ForeignKey('users.id'), nullable=False),
+        Column('facebook_id', BigInteger, nullable=False),
+        Column('access_token', String(512), nullable=False)
         )
-compute_nodes = Table('compute_nodes', meta,
-        Column('created_at', DateTime(timezone=False)),
-        Column('updated_at', DateTime(timezone=False)),
-        Column('deleted_at', DateTime(timezone=False)),
-        Column('deleted', Boolean(create_constraint=True, name=None)),
-        Column('id', Integer(), primary_key=True, nullable=False),
-        Column('service_id', Integer(), nullable=False),
 
-        Column('vcpus', Integer(), nullable=False),
-        Column('memory_mb', Integer(), nullable=False),
-        Column('local_gb', Integer(), nullable=False),
-        Column('vcpus_used', Integer(), nullable=False),
-        Column('memory_mb_used', Integer(), nullable=False),
-        Column('local_gb_used', Integer(), nullable=False),
-        Column('hypervisor_type',
-               Text(convert_unicode=False, assert_unicode=None,
-               unicode_error=None, _warn_on_bytestring=False),
-               nullable=False),
-        Column('hypervisor_version', Integer(), nullable=False),
-        Column('cpu_info',
-               Text(convert_unicode=False, assert_unicode=None,
-                    unicode_error=None, _warn_on_bytestring=False),
-               nullable=False),
+twitter_users = Table('twitter_users', meta,
+        Column('id', Integer, primary_key=True, nullable=False),
+        Column('user_id', Integer, ForeignKey('users.id'), nullable=False),
+        Column('twitter_name',  String(512), nullable=False),
+        Column('access_token', String(512), nullable=False),
+        Column('access_token_secret', String(512), nullable=False),
         )
 
 def upgrade(migrate_engine):
     # Upgrade operations go here. Don't create your own engine; bind
     # migrate_engine to your metadata
-    pass
+    meta.bind = migrate_engine
+
+    facebook_users.create()
+    twitter_users.create()
 
 
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
-    pass
+    meta.bind = migrate_engine
+    meta.drop_all(tables=[facebook_users])
+    meta.drop_all(tables=[twitter_users])

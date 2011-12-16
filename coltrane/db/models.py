@@ -68,6 +68,7 @@ class User(db.Model):
         #TODO: get_or_404
         return cls.query.filter(User.nickname == nickname).first()
 
+
 class FacebookUser(db.Model):
     __tablename__ = 'facebook_users'
     id = db.Column(db.Integer, primary_key=True)
