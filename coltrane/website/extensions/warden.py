@@ -107,6 +107,7 @@ class Warden(object):
         @blueprint.before_request
         def protector():
             if not self.current_user():
+                #TODO: shall return 401
                 return "Protected area"
 
 warden = Warden()

@@ -10,13 +10,14 @@ from coltrane.website.hooks import per_request_callbacks
 from logging.handlers import RotatingFileHandler
 
 
-DEFAULT_APP_NAME = "bitstant"
+DEFAULT_APP_NAME = "coltrane"
 
 DEFAULT_MODULES = (
     (views.index, ""),
     (views.user, ""),
     (views.developer, "/developer"),
-    (views.appstore, '/apps')
+    (views.appstore, '/apps'),
+    (views.auth, '/auth'),
 )
 
 
