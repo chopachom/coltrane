@@ -85,10 +85,10 @@ class AppdataStorage(object):
         if extf.KEY in document:
             document_id = _internal_id(app_id, user_id, bucket,
                                          document[extf.KEY])
+            del document[extf.KEY]
         else:
             document_id = _internal_id(app_id, user_id, bucket, uuid4())
 
-        document = _filter_ext_fields(document)
         # add required fields to document
         document[intf.ID] = document_id
         document[intf.APP_ID] = app_id
@@ -170,10 +170,9 @@ class AppdataStorage(object):
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts=filter_opts)
 
-        document_to_update = _filter_int_fields(_filter_ext_fields(document))
-        document_to_update[intf.IP_ADDRESS] = ip_address
-        document_to_update[intf.UPDATED_AT] = datetime.utcnow()
-        self.entities.update(criteria, {'$set': document_to_update}, multi=True)
+        document[intf.IP_ADDRESS] = ip_address
+        document[intf.UPDATED_AT] = datetime.utcnow()
+        self.entities.update(criteria, {'$set': document}, multi=True)
 
 
     @verify_tokens
@@ -225,7 +224,6 @@ class AppdataStorage(object):
              return False
 
 
-
 # Utility functions below
 
 def _internal_id(app_id, user_id, bucket, document_key):
@@ -235,7 +233,6 @@ def _internal_id(app_id, user_id, bucket, document_key):
 
 def _external_key(internal_id):
      return '|'.join(substr for substr in internal_id.split('|')[3:])
-
 
 
 def _filter_int_fields(document):
@@ -268,24 +265,53 @@ def _to_external(document):
 def _from_external_to_internal(doc, app_id, user_id, bucket):
     """
     Convert document from external view to the internal.
-    Deletes any internal fields at start.
     If document contains external fields, convert its values to the internal fields.
+    {<ext_1>:[{<ext_2>:10}, {'key':20}]} => {<int_1>:[{<int_2>:10}, {'key':20}]}
     """
-    internal = {}
-    doc = _filter_int_fields(doc)
-    for key in doc:
-        if key not in extf.values():
-            internal[key] = doc[key]
-        else:
-            if key == extf.BUCKET:
-                internal[intf.BUCKET] = doc[key]
-            elif key == extf.CREATED_AT:
-                internal[intf.CREATED_AT] = doc[key]
-            elif key == extf.KEY:
-                document_key = doc[key]
-                document_id = _internal_id(app_id, user_id, bucket, document_key)
-                internal[intf.ID] = document_id
-    return internal
+    def _from_doc(doc):
+        """
+            Gets document as a parameter of dict type.
+            Runs through top level keys. If object by key is dict
+            type then invokes _from_doc recursively. If object by
+            key is list then invokes _from_list.
+        """
+        internal = {}
+        for key in doc:
+            val = doc[key]
+            if key in extf.values():
+                if key == extf.BUCKET:
+                    internal[intf.BUCKET] = val
+                elif key == extf.CREATED_AT:
+                    internal[intf.CREATED_AT] = val
+                elif key == extf.KEY:
+                    document_key = val
+                    document_id = _internal_id(app_id, user_id, bucket, document_key)
+                    internal[intf.ID] = document_id
+            else:
+                if type(val) == dict:
+                    val = _from_doc(val)
+                elif type(val) == list:
+                    val = _from_list(val)
+                internal[key] = val
+        return internal
+
+    def _from_list(l):
+        """
+            Gets document as a parameter of list type.
+            Runs through top level keys. If object by key is dict
+            type then invokes _from_doc. If object by
+            key is list then invokes _from_list recursively.
+        """
+        internal = []
+        for val in l:
+            if type(val) == list:
+                val = _from_list(val)
+            elif type(val) == dict:
+                val = _from_doc(val)
+            internal.append(val)
+        return internal
+
+    return _from_doc(doc)
 
 
 def _generate_criteria(app_id, user_id, bucket, document_id=None,
@@ -318,18 +344,3 @@ def _fields_to_update_on_delete(ip_address):
         intf.IP_ADDRESS:ip_address,
         intf.UPDATED_AT:datetime.utcnow()
     }
-
-
-
-#
-#    #todo we don't need this function it didn't used anywhere
-#    def _assert_exists(self, bucket, criteria, document_key=None):
-#        if not self._is_document_exists(criteria):
-#            if document_key:
-#                raise DocumentNotFoundError(
-#                    message=DocumentNotFoundError.DOCUMENT_BY_KEY,
-#                    key=document_key, bucket=bucket
-#                )
-#            else:
-#                raise DocumentNotFoundError(criteria=json.dumps(criteria),
-#                                            bucket=bucket)

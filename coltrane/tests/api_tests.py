@@ -251,6 +251,16 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         super(ApiUpdateManyCase, self).tearDownClass()
         
 
+    def test_inner_query(self):
+        filter = {'$and': [{extf.KEY: 5}, {'age':15}]}
+        res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
+        assert len(from_json(res.data)['response']) == 1
+
+        filter = {'$and': [{extf.KEY: {'$gt':3}}, {extf.KEY: {'$lt':5}}]}
+        res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
+        assert res.status_code == http.NOT_FOUND
+
+
     def test_put_not_existing_document(self):
         src_key = "my_key"
         src = {"title": "Title3", "author": "Vasya Shkitin"}
@@ -275,6 +285,17 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         )
 
         print rv.data
+        data = from_json(rv.data)
+        res = data['message']
+        assert res == 'Document contains forbidden fields [%s,%s]' % (
+            extf.KEY, extf.BUCKET)
+
+        src = {intf.APP_ID: "123", intf.CREATED_AT: "12.12.1222",
+               "title": "Title3", "author": "Vasya Shkitin"}
+        rv = self.app.put(API_V1 + '/books/' + src_key,
+            data=json.dumps(src),
+            follow_redirects=True
+        )
         data = from_json(rv.data)
         res = data['message']
         assert res == 'Document key has invalid format [%s,%s]' % (
@@ -806,6 +827,12 @@ class KeysValidationCase(ApiBaseTestClass):
         assert resp.status_code == http.BAD_REQUEST
         data = from_json(resp.data)
         assert data['message'] == "Document key has invalid format [-a,-b]"
+
+        filter = {'$and': [{'_id': {'$gt': 20}}, {'_id': {'$lt': 80}, 'a':[1,2, {'$where':1}]}]}
+        resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert resp.status_code == http.BAD_REQUEST
+        assert from_json(resp.data)['message'] == \
+               "Document contains forbidden fields [_id,$where]"
 
 
     def test_request_with_wrong_key(self):

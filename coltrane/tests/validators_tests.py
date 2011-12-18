@@ -1,5 +1,5 @@
 import unittest
-from coltrane.rest.exceptions import InvalidKeyNameError
+from coltrane.rest.exceptions import InvalidKeyNameError, InvalidDocumentFieldsError
 from coltrane.rest.validators import SimpleValidator, RecursiveValidator, UpdateDocumentKeysValidator, SaveDocumentKeysValidator, FilterKeysValidator
 from coltrane.appstorage.storage import intf, extf
 
@@ -72,6 +72,13 @@ class RecursiveValidatorTestCase(unittest.TestCase):
             assert e.message == 'Document contains forbidden fields [%s,%s,%s]' % \
                                 (intf.BUCKET, extf.KEY, extf.BUCKET)
 
+    def test_forbidden(self):
+        filter = {'$and': [{'_id': {'$gt': 20}}, {'_id': {'$lt': 80}, 'a':[1,2, {'$where':1}]}]}
+        with self.assertRaises(InvalidDocumentFieldsError) as context:
+            RecursiveValidator(filter, ['_id', '$where']).validate()
+        assert context.exception.message == 'Document contains forbidden fields [_id,$where]'
+
+
     def test_fields_not_found(self):
         doc = {'a': 10, 'd': {'bucket': {intf.BUCKET: 'yes!!!'}},
                'b': 20, 'done': 'key',
@@ -139,6 +146,13 @@ class KeyValidationTestCase(unittest.TestCase):
         with self.assertRaises(InvalidKeyNameError) as context:
             UpdateDocumentKeysValidator(doc).validate()
         assert context.exception.message == 'Document key has invalid format [__sa-6767_]'
+
+
+    def test_strong_key_validation(self):
+        doc = {'a.b.c': [[{'key^2':2}, {'a':2}],{'__key':2}]}
+        with self.assertRaises(InvalidKeyNameError) as context:
+            UpdateDocumentKeysValidator(doc).validate()
+        assert context.exception.message == 'Document key has invalid format [__key,key^2]'
 
 
 if __name__ == '__main__':
