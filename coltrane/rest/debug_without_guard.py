@@ -2,9 +2,8 @@
 
 from app import create_app
 from config import DebugConfig
-from coltrane.api.rest import v1
-from coltrane.api import api_v1
-from coltrane.api.extensions import mongodb
+from coltrane.rest.api import api_v1, v1
+from coltrane.rest.extensions import mongodb
 
 __author__ = 'nik'
 
