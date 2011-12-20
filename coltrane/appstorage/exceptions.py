@@ -4,7 +4,8 @@ from coltrane.exceptions import AppException
 
 
 class StorageError(AppException):
-    pass
+    def __init__(self, message=None, **kwargs):
+        super(StorageError, self).__init__(message, **kwargs)
 
 
 
