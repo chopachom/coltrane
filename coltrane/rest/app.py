@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+from coltrane.rest.api.info import resp_msgs
 from coltrane.rest.api.statuses import ERROR_INFO_MATCHING, http, app as app_status
-from coltrane.rest.utils import jsonify, resp_msgs
+from coltrane.rest.utils import jsonify
 
 __author__ = 'apetrovich'
 

@@ -1,8 +1,10 @@
+from coltrane.rest.api.info import resp_msgs
+
 __author__ = 'qweqwe'
 import unittest
 from coltrane.rest.app import create_app
 from coltrane.rest import api_v1
-from coltrane.rest.api.v1 import from_json, resp_msgs
+from coltrane.rest.api.v1 import from_json
 from coltrane.rest.lib.guard_manager import GuardManager
 from coltrane.rest.extensions import guard
 from coltrane.rest.config import TestConfig

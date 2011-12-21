@@ -1,3 +1,4 @@
+from coltrane.rest.utils import try_convert_to_date
 __author__ = 'qweqwe'
 
 from datetime import datetime
@@ -82,15 +83,10 @@ class AppdataStorage(object):
 
 
         # check if a key is already exists, if it isn't - generate new
-        if extf.KEY in document:
-            document_id = _internal_id(app_id, user_id, bucket,
-                                         document[extf.KEY])
-            del document[extf.KEY]
-        else:
-            document_id = _internal_id(app_id, user_id, bucket, uuid4())
+        if extf.KEY not in document:
+            document[extf.KEY] = uuid4()
 
-        # add required fields to document
-        document[intf.ID] = document_id
+        document = _from_external_to_internal(document,app_id, user_id, bucket)
         document[intf.APP_ID] = app_id
         document[intf.USER_ID] = user_id
         document[intf.CREATED_AT] = datetime.utcnow()
@@ -100,7 +96,7 @@ class AppdataStorage(object):
 
         self.entities.insert(document)
 
-        return _external_key(document_id)
+        return _external_key(document[intf.ID])
 
 
     @verify_tokens
@@ -268,7 +264,7 @@ def _from_external_to_internal(doc, app_id, user_id, bucket):
     If document contains external fields, convert its values to the internal fields.
     {<ext_1>:[{<ext_2>:10}, {'key':20}]} => {<int_1>:[{<int_2>:10}, {'key':20}]}
     """
-    def _from_doc(doc):
+    def _from_dict(doc):
         """
             Gets document as a parameter of dict type.
             Runs through top level keys. If object by key is dict
@@ -282,6 +278,10 @@ def _from_external_to_internal(doc, app_id, user_id, bucket):
                 if key == extf.BUCKET:
                     internal[intf.BUCKET] = val
                 elif key == extf.CREATED_AT:
+                    if isinstance(val, basestring):
+                        val = try_convert_to_date(val)
+                    elif type(val) == dict:
+                        val = _from_dict(val)
                     internal[intf.CREATED_AT] = val
                 elif key == extf.KEY:
                     document_key = val
@@ -289,9 +289,11 @@ def _from_external_to_internal(doc, app_id, user_id, bucket):
                     internal[intf.ID] = document_id
             else:
                 if type(val) == dict:
-                    val = _from_doc(val)
+                    val = _from_dict(val)
                 elif type(val) == list:
                     val = _from_list(val)
+                elif isinstance(val, basestring):
+                    val = try_convert_to_date(val)
                 internal[key] = val
         return internal
 
@@ -307,11 +309,11 @@ def _from_external_to_internal(doc, app_id, user_id, bucket):
             if type(val) == list:
                 val = _from_list(val)
             elif type(val) == dict:
-                val = _from_doc(val)
+                val = _from_dict(val)
             internal.append(val)
         return internal
 
-    return _from_doc(doc)
+    return _from_dict(doc)
 
 
 def _generate_criteria(app_id, user_id, bucket, document_id=None,

@@ -1,27 +1,14 @@
-from coltrane.appstorage.storage import intf
+import re
 
 __author__ = 'qweqwe'
 
 from coltrane.rest.extensions import mongodb
-from coltrane.utils import Enum
 
 from flask import current_app, request
 from functools import wraps
 
 import json
 import datetime
-
-class resp_msgs(Enum):
-    DOC_NOT_EXISTS  = "Document doesn't exist"
-    DOC_WAS_CREATED = "Document was created"
-    DOC_WAS_DELETED = "Document was deleted"
-    DOC_WAS_UPDATED = "Document was updated"
-    INTERNAL_ERROR  = "Internal server error"
-
-
-class forbidden_fields(Enum):
-    WHERE      = '$where'
-    ID         = intf.ID
 
 
 class lazy_coll(object):
@@ -71,3 +58,15 @@ def jsonify(f):
             return body
 
     return wrapper
+
+
+reg = re.compile(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d*))?Z?$')
+def try_convert_to_date(data):
+    if not isinstance(data, basestring):
+        raise RuntimeError('Only str type data must be converted to date.')
+    res = re.match(reg, data)
+    if res:
+        val = [int(x) if x else 0 for x in res.groups()]
+        return datetime.datetime(*val)
+    else:
+        return data
