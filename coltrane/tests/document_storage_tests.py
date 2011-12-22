@@ -1,4 +1,4 @@
-
+import copy
 
 __author__ = 'nik'
 
@@ -6,7 +6,7 @@ import unittest
 from pymongo.connection import Connection
 
 from coltrane.rest import config
-from coltrane.appstorage.storage import AppdataStorage
+from coltrane.appstorage.storage import AppdataStorage, _from_external_to_internal, intf
 from coltrane.appstorage.storage import extf
 
 
@@ -193,7 +193,8 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         updated_data = {'test': 'updated_data',
                         extf.KEY: key,
                         extf.BUCKET: bucket}
-        storage.update(app_id, user_id, self.ip, bucket, updated_data, key=key)
+        storage.update(app_id, user_id, self.ip, bucket,
+            copy.deepcopy(updated_data), key=key)
 
         # assert entity was updated
         actual_data = storage.get(app_id, user_id, bucket, key)
@@ -219,6 +220,21 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         assert d['a'] == {'b': 'c'}
         assert d['a']['b'] == 'c'
         assert d['addition'] == [1,2,3]
+
+
+    def test_from_int_to_ext(self):
+        d = {extf.KEY:'key', 'a':{'b':[{'a':10},10,
+                {extf.KEY:15, extf.BUCKET:'buck'}, {extf.CREATED_AT:'10.10.2010'}]}}
+        res = _from_external_to_internal(d, 'a', 'b', 'c')
+        assert res == {'a':
+                           {'b':
+                              [
+                                 {'a': 10}, 10,
+                                 {intf.BUCKET: 'buck', intf.ID: 'a|b|c|15'},
+                                 {intf.CREATED_AT: '10.10.2010'}
+                              ]
+                           },
+                       '_id': 'a|b|c|key'}
 
 
 if __name__ == '__main__':

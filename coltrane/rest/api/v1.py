@@ -1,8 +1,9 @@
 import logging
 
 from flask import Blueprint
-from coltrane.appstorage.storage import AppdataStorage
+from coltrane.appstorage.storage import AppdataStorage, intf
 from coltrane.appstorage.storage import extf
+from coltrane.rest.api.info import forbidden_fields, resp_msgs
 from coltrane.rest.extensions import guard
 from coltrane.rest.api.statuses import *
 from coltrane.rest import exceptions, validators
@@ -217,13 +218,17 @@ def put_by_filter_handler(bucket):
     return {'message': resp_msgs.DOC_WAS_UPDATED}, http.OK
 
 
-def validate_forbidden_fields(doc):
-    valid1 = validators.RecursiveValidator(doc, forbidden_fields.values())
+def validate_forbidden_fields(doc, fields=None):
+    if not fields:
+        fields = forbidden_fields.values()
+    valid1 = validators.RecursiveValidator(doc, fields)
     valid1.validate()
 
     
 def validate_document(document):
-    validate_forbidden_fields(document)
+    fields = forbidden_fields.values() + \
+             [v for v in extf.values() if v != extf.KEY]
+    validate_forbidden_fields(document, fields)
     validators.SaveDocumentKeysValidator(document).validate()
 
 
@@ -233,7 +238,8 @@ def validate_filter(filter):
 
 
 def validate_doc_for_update(update_doc):
-    validate_forbidden_fields(update_doc)
+    fields = forbidden_fields.values() + extf.values()
+    validate_forbidden_fields(update_doc, fields)
     validators.UpdateDocumentKeysValidator(update_doc).validate()
 
     

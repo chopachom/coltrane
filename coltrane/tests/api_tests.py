@@ -1,8 +1,12 @@
+from datetime import date
 import json
 import unittest
+import datetime
+import time
 from coltrane.rest import api_v1
 from coltrane.rest.api import v1
-from coltrane.rest.api.v1 import from_json, forbidden_fields, storage, resp_msgs
+from coltrane.rest.api.info import resp_msgs, forbidden_fields
+from coltrane.rest.api.v1 import from_json, storage
 from coltrane.rest.api.statuses import app, STATUS_CODE, http
 from coltrane.rest.app import create_app
 from coltrane.rest.extensions import mongodb
@@ -251,6 +255,16 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         super(ApiUpdateManyCase, self).tearDownClass()
         
 
+    def test_inner_query(self):
+        filter = {'$and': [{extf.KEY: 5}, {'age':15}]}
+        res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
+        assert len(from_json(res.data)['response']) == 1
+
+        filter = {'$and': [{extf.KEY: {'$gt':3}}, {extf.KEY: {'$lt':5}}]}
+        res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
+        assert res.status_code == http.NOT_FOUND
+
+
     def test_put_not_existing_document(self):
         src_key = "my_key"
         src = {"title": "Title3", "author": "Vasya Shkitin"}
@@ -275,6 +289,17 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         )
 
         print rv.data
+        data = from_json(rv.data)
+        res = data['message']
+        assert res == 'Document contains forbidden fields [%s,%s]' % (
+            extf.KEY, extf.BUCKET)
+
+        src = {intf.APP_ID: "123", intf.CREATED_AT: "12.12.1222",
+               "title": "Title3", "author": "Vasya Shkitin"}
+        rv = self.app.put(API_V1 + '/books/' + src_key,
+            data=json.dumps(src),
+            follow_redirects=True
+        )
         data = from_json(rv.data)
         res = data['message']
         assert res == 'Document key has invalid format [%s,%s]' % (
@@ -807,6 +832,12 @@ class KeysValidationCase(ApiBaseTestClass):
         data = from_json(resp.data)
         assert data['message'] == "Document key has invalid format [-a,-b]"
 
+        filter = {'$and': [{'_id': {'$gt': 20}}, {'_id': {'$lt': 80}, 'a':[1,2, {'$where':1}]}]}
+        resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert resp.status_code == http.BAD_REQUEST
+        assert from_json(resp.data)['message'] == \
+               "Document contains forbidden fields [_id,$where]"
+
 
     def test_request_with_wrong_key(self):
 
@@ -820,6 +851,67 @@ class KeysValidationCase(ApiBaseTestClass):
         assert resp.status_code == http.BAD_REQUEST
         assert from_json(resp.data)['message'] == "Document key has invalid format [-key1_]"
 
+
+class FilterByDateCase(ApiBaseTestClass):
+    def tearDown(self):
+        super(FilterByDateCase, self).tearDownClass()
+
+    def setUp(self):
+        super(FilterByDateCase, self).setUpClass()
+
+
+
+    def to_json(self, dict):
+        DT_HANDLER = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
+        return json.dumps(dict, default=DT_HANDLER)
+
+    def test_filter_by_created_date(self):
+        data = {"a":{"b": 50}, 'b': [1,2,3], 'c':10}
+        self.app.post(API_V1 + '/books',
+            data = json.dumps(data))
+        now = datetime.datetime.utcnow()
+        time.sleep(1)
+        self.app.post(API_V1 + '/books',
+            data = json.dumps(data))
+
+        filter = {extf.CREATED_AT: {'$gt': now}}
+        filter = self.to_json(filter)
+        res = self.app.get(API_V1 + '/books?filter=%s' % filter)
+        res = from_json(res.data)['response']
+        v = datetime.datetime.strptime(res[0][extf.CREATED_AT], '%Y-%m-%dT%H:%M:%S.%f')
+        assert now.microsecond < v.microsecond
+        assert len(res) == 1
+
+
+    def test_filter_by_special_date(self):
+        data = {"a":{"b": 50}, 'date1': "2001-12-12T12:12:12.12Z", 'date2': "2011-12-12T12:12:12.12Z", 'c':10}
+        self.app.post(API_V1 + '/books',
+            data = json.dumps(data))
+        data = {"a":{"b": 50}, 'date1': "2002-12-12T12:12:12.12Z", 'date2': "2009-12-12T12:12:12.12Z", 'c':10}
+        self.app.post(API_V1 + '/books',
+            data = json.dumps(data))
+        data = {"a":{"b": 50}, 'date1': "2003-12-12T12:12:12.12Z", 'date2': "2012-12-12T12:12:12.12Z", 'c':10}
+        self.app.post(API_V1 + '/books',
+            data = json.dumps(data))
+
+
+        filter = {'date1': {'$gt': "2002-12-12T12:12:12.12Z"}}
+        filter = self.to_json(filter)
+        res = self.app.get(API_V1 + '/books?filter=%s' % filter)
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+
+        filter = {'date1': {'$gt': "2002-12-12T12:12:11.12Z"}}
+        filter = self.to_json(filter)
+        res = self.app.get(API_V1 + '/books?filter=%s' % filter)
+        res = from_json(res.data)['response']
+        assert len(res) == 2
+
+        filter = {'date1': {'$lt': "2003-12-12T12:12:13.12Z"}, 'date2': {'$gt': "2009-12-12T12:12:13.12Z"}}
+        filter = self.to_json(filter)
+        res = self.app.get(API_V1 + '/books?filter=%s' % filter)
+        res = from_json(res.data)['response']
+        assert len(res) == 2
 
 
 
