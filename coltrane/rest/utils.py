@@ -1,6 +1,8 @@
-__author__ = 'qweqwe'
-
-
+# -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+              - pasha
+"""
 
 from coltrane.appstorage.storage import intf
 from coltrane.rest.extensions import mongodb
@@ -13,6 +15,7 @@ import json
 import datetime
 
 
+#TODO: may be we need to move it to statuses module?
 class resp_msgs(Enum):
     DOC_NOT_EXISTS  = "Document doesn't exist"
     DOC_CREATED = "Document has been created"
@@ -79,8 +82,11 @@ def jsonify(f):
 reg = re.compile(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d*))?Z?$')
 def try_convert_to_date(data):
     if not isinstance(data, basestring):
+        #TODO:REMOVE THIS FUCKING SHAME
         raise RuntimeError('Only str type data must be converted to date.')
     res = re.match(reg, data)
+    #TODO: PASHA БЛЯ ДОБАВЛЯЙ КОММЕНТЫ К КОДУ НАХ!
+    # я запушил неглядя и теперь вот сижу думаю че тут происходит
     if res:
         val = [int(x) if x else 0 for x in res.groups()]
         return datetime.datetime(*val)

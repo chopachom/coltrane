@@ -4,6 +4,7 @@ __author__ = 'qweqwe'
 from datetime import datetime
 from uuid import uuid4
 from functools import wraps
+from hashlib import sha1
 
 from coltrane.appstorage.exceptions import *
 from coltrane.utils import Enum
@@ -11,10 +12,11 @@ from coltrane.utils import Enum
 
 
 class intf(Enum):
+    ID          = '_id'
     APP_ID      = '__app_id__'
     USER_ID     = '__user_id__'
     BUCKET      = '__bucket__'
-    ID          = '_id'
+    HASHID      = '__hashid__'
     DELETED     = '__deleted__'
     CREATED_AT  = '__created_at__'
     UPDATED_AT  = '__updated_at__'
@@ -29,7 +31,7 @@ class extf(Enum):
 
 # internal constants
 DICT_TYPE = type(dict())
-DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{document_key}'
+DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{deleted}|{document_key}'
 
 
 def verify_tokens(f):
@@ -83,15 +85,22 @@ class AppdataStorage(object):
 
 
         # check if a key is already exists, if it isn't - generate new
-        if extf.KEY not in document:
-            document[extf.KEY] = uuid4()
+        if extf.KEY in document:
+            document_id = _internal_id(app_id, user_id, bucket, 0,
+                                       document[extf.KEY])
+        else:
+            document_id = _internal_id(app_id, user_id, bucket, 0, uuid4())
 
-        document = _from_external_to_internal(document,app_id, user_id, bucket)
+        document = _filter_int_fields(_filter_ext_fields(document))
+        # add required fields to document
+        document[intf.ID] = document_id
         document[intf.APP_ID] = app_id
         document[intf.USER_ID] = user_id
+        document[intf.BUCKET] = bucket
+        # adding str(False) to hashid means that document isn't deleted
+        document[intf.HASHID] = sha1(app_id+user_id+bucket+str(False)).hexdigest()
         document[intf.CREATED_AT] = datetime.utcnow()
         document[intf.IP_ADDRESS] = ip_address
-        document[intf.BUCKET] = bucket
         document[intf.DELETED] = False
 
         self.entities.insert(document)
@@ -116,7 +125,7 @@ class AppdataStorage(object):
 
         # logic
 
-        document_id = _internal_id(app_id, user_id, bucket, key)
+        document_id = _internal_id(app_id, user_id, bucket, 0, key)
         res = self.entities.find_one({intf.ID: document_id, intf.DELETED: False})
         if res is None:
             return None
@@ -158,7 +167,6 @@ class AppdataStorage(object):
         if type(document) is not DICT_TYPE:
             raise InvalidDocumentError('Document must be instance of dict type')
 
-
         if key:
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts={extf.KEY: key})
@@ -180,19 +188,22 @@ class AppdataStorage(object):
         else:
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts=filter_opts)
-        self.entities.update(
-             criteria,
-             {'$set': _fields_to_update_on_delete(ip_address)},
-             multi=True
-        )
+        self.entities.update(criteria, {
+            '$set': {
+                intf.HASHID: sha1(app_id+user_id+bucket+str(True)).hexdigest(),
+                intf.DELETED:True,
+                intf.IP_ADDRESS:ip_address,
+                intf.UPDATED_AT:datetime.utcnow()
+            }
+        }, multi=True)
 
 
-     #TODO: REFUCK this FUNC
+    #TODO: REFUCK this FUNC
     def is_document_exists(self, app_id, user_id, bucket, criteria=None):
         """ Function for the external performing
         """
         if criteria and extf.KEY in criteria:
-            doc_id = _internal_id(app_id, user_id, bucket,criteria[extf.KEY])
+            doc_id = _internal_id(app_id, user_id, bucket, 0, criteria[extf.KEY])
             if len(criteria) == 1:
                 return self._is_document_exists({intf.ID: doc_id})
             kwargs = dict(document_id=doc_id)
@@ -222,13 +233,18 @@ class AppdataStorage(object):
 
 # Utility functions below
 
-def _internal_id(app_id, user_id, bucket, document_key):
+def _internal_id(app_id, user_id, bucket, deleted, document_key):
      return DOCUMENT_ID_FORMAT.format(app_id=app_id, user_id=user_id,
-                                      bucket=bucket, document_key=document_key)
+                                      bucket=bucket, deleted=deleted,
+                                      document_key=document_key)
 
 
 def _external_key(internal_id):
-     return '|'.join(substr for substr in internal_id.split('|')[3:])
+    """
+        Returns external _key by given internal id
+        example: applolo|usrlolo|ololo|flafffnl|asdf|asd| -> flaflaffnl|asdf|asd|
+    """
+    return '|'.join(substr for substr in internal_id.split('|')[4:])
 
 
 def _filter_int_fields(document):
@@ -256,6 +272,15 @@ def _to_external(document):
     external[extf.CREATED_AT]  = document[intf.CREATED_AT]
 
     return external
+
+def _to_internal(document):
+    """
+        Given a external document returns its internal representaions
+        This function adds internal fields if corresponding external fields
+        isn't present in document, i.e. it adds __created__ with new datetime
+        only if _created is not present in document
+    """
+    # we may need to create this func in next updates
 
 
 def _from_external_to_internal(doc, app_id, user_id, bucket):
@@ -285,7 +310,7 @@ def _from_external_to_internal(doc, app_id, user_id, bucket):
                     internal[intf.CREATED_AT] = val
                 elif key == extf.KEY:
                     document_key = val
-                    document_id = _internal_id(app_id, user_id, bucket, document_key)
+                    document_id = _internal_id(app_id, user_id, bucket, 0, document_key)
                     internal[intf.ID] = document_id
             else:
                 if type(val) == dict:
@@ -318,31 +343,19 @@ def _from_external_to_internal(doc, app_id, user_id, bucket):
 
 def _generate_criteria(app_id, user_id, bucket, document_id=None,
                        filter_opts=None):
-    criteria = {
-        intf.DELETED: False,
-    }
-
     if document_id:
-        criteria[intf.ID] = document_id
+        criteria = { intf.ID :document_id }
     else:
-        criteria.update({
-            intf.APP_ID: str(app_id),
-            intf.USER_ID: str(user_id),
-            intf.BUCKET: str(bucket),
-        })
+        criteria = {
+            intf.HASHID: sha1(app_id+user_id+bucket+str(False)).hexdigest()
+        }
 
     if filter_opts:
         filter_opts = _from_external_to_internal(filter_opts, app_id,
                                                  user_id, bucket)
-        for opt_key in filter_opts.keys():
-            criteria[opt_key] = filter_opts[opt_key]
+        if intf.ID in filter_opts:
+            criteria = { intf.ID : filter_opts[intf.ID] }
+        else:
+            criteria.update(filter_opts)
 
     return criteria
-
-
-def _fields_to_update_on_delete(ip_address):
-    return {
-        intf.DELETED:True,
-        intf.IP_ADDRESS:ip_address,
-        intf.UPDATED_AT:datetime.utcnow()
-    }
