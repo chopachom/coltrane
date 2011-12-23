@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+"""
 
 from flask import Blueprint, render_template, request, url_for, redirect
 from coltrane.website.forms import RegistrationForm, LoginForm
@@ -7,7 +10,7 @@ from coltrane.db.extension import db
 from coltrane.website.extensions.warden import warden
 
 
-user = Blueprint('user',__name__)
+user = Blueprint('user', __name__)
 
 @user.route('/login', methods=['GET', 'POST'])
 def login():

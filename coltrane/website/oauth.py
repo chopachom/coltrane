@@ -1,4 +1,7 @@
-__author__ = 'qweqwe'
+# -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+"""
 
 from flask import Flask, session, request, url_for, flash, redirect
 from flaskext.oauth import OAuth
@@ -34,22 +37,3 @@ def get_twitter_token():
 def get_facebook_token():
     #TODO: return facebook token from database by user.id
     return session['facebook_token']
-
-
-
-@app.route('/')
-def index():
-    if not (session.get('twitter_user') or session.get('facebook_token')):
-        return "<a href='{twitter}'>Login with twitter</a> or " \
-            "<a href='{facebook}'>Facebook</a>".format(
-            twitter=url_for('twitter_login'),
-            facebook=url_for('facebook_login')
-        )
-
-    if session.get('facebook_token'):
-        print session['facebook_token']
-        return session['facebook_token'][0]
-    else:
-        print session['twitter_token']
-        return session['twitter_user']
-

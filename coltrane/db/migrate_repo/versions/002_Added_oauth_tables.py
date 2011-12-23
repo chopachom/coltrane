@@ -12,14 +12,15 @@ users = Table('users', meta,
 facebook_users = Table('facebook_users', meta,
         Column('id', Integer, primary_key=True, nullable=False),
         Column('user_id', Integer, ForeignKey('users.id'), nullable=False),
-        Column('facebook_id', BigInteger, nullable=False),
+        Column('facebook_id', BigInteger, nullable=False, unique=True),
         Column('access_token', String(512), nullable=False)
         )
 
 twitter_users = Table('twitter_users', meta,
         Column('id', Integer, primary_key=True, nullable=False),
         Column('user_id', Integer, ForeignKey('users.id'), nullable=False),
-        Column('twitter_name',  String(512), nullable=False),
+        Column('twitter_name',  String(512), nullable=False, unique=True),
+        Column('twitter_id', BigInteger, nullable=False, unique=True),
         Column('access_token', String(512), nullable=False),
         Column('access_token_secret', String(512), nullable=False),
         )
