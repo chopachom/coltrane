@@ -34,7 +34,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         boobs_count = 3
         for _ in range(boobs_count):
             data = {'test': 'test_data'}
-            key = storage.create(app_id, user_id, self.ip, data, bucket=bucket)
+            key = storage.create(app_id, user_id, bucket, self.ip, data)
             data[extf.KEY] = key
             data[extf.BUCKET] = bucket
             expected_boobs.append(data)
@@ -57,7 +57,7 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         bucket = 'boobs'
 
         data = {'a': {'b': [1,2,3, {'c':'d'}]}}
-        key = storage.create(app_id, user_id, self.ip, data, bucket=bucket)
+        key = storage.create(app_id, user_id, bucket, self.ip, data)
 
         d = storage.get(app_id, user_id, bucket, key=key)
 
@@ -73,12 +73,11 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         user_id = '1'
         bucket = 'boobs'
 
-        storage.create(app_id, user_id, self.ip, {"title": "Title1", "author": "author1", "age":10, "name":"Pasha"}, bucket)
-        storage.create(app_id, user_id, self.ip, {"title": "Title1", "author": "author2", "age":20, "name":"Misha"}, bucket)
-        storage.create(app_id, user_id, self.ip,
-            {"title": "Title1", "author": "author3", "age":15, "name":"Sasha", 'cources': {'a': {'A': 1, 'B': 2}, 'b': 10}},
-                       bucket)
-        storage.create(app_id, user_id, self.ip, {"title": "Title1", "author": "author4", "age":10, "name":"Dasha"}, bucket)
+        storage.create(app_id, user_id, bucket, self.ip, {"title": "Title1", "author": "author1", "age":10, "name":"Pasha"})
+        storage.create(app_id, user_id, bucket, self.ip, {"title": "Title1", "author": "author2", "age":20, "name":"Misha"})
+        storage.create(app_id, user_id, bucket, self.ip,
+            {"title": "Title1", "author": "author3", "age":15, "name":"Sasha", 'cources': {'a': {'A': 1, 'B': 2}, 'b': 10}})
+        storage.create(app_id, user_id, bucket, self.ip, {"title": "Title1", "author": "author4", "age":10, "name":"Dasha"})
 
         docs = storage.find(app_id, user_id, bucket, {'age': 10})
         assert len(docs) == 2
@@ -106,10 +105,10 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # create 1 boob :)
         data = {'test': 'test'}
-        key = storage.create(app_id, user_id, self.ip, data, bucket)
+        key = storage.create(app_id, user_id, bucket, self.ip, data)
 
         # try to remove this boob
-        storage.delete(app_id, user_id, self.ip, bucket, filter_opts={extf.KEY: key})
+        storage.delete(app_id, user_id, bucket, self.ip, filter_opts={extf.KEY: key})
 
         # assert boob was removed
         boob = storage.get(app_id, user_id, bucket, key)
@@ -123,16 +122,16 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # create 1 boob :)
         data = {'test': 'test1'}
-        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        storage.create(app_id, user_id, boobs_type, self.ip, data)
         data = {'test': 'test2'}
-        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        storage.create(app_id, user_id, boobs_type, self.ip, data)
         data = {'test': 'test3'}
-        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        storage.create(app_id, user_id, boobs_type, self.ip, data)
 
         boobs = storage.find(app_id, user_id, boobs_type)
         assert len(boobs) == 3
         # remove all boobs
-        storage.delete(app_id, user_id, self.ip, boobs_type)
+        storage.delete(app_id, user_id, boobs_type, self.ip)
 
         # assert all boobs were removed
         boobs = storage.find(app_id, user_id, boobs_type)
@@ -146,18 +145,18 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # create 1 boob :)
         data = {'name': 'pasha'}
-        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        storage.create(app_id, user_id, boobs_type, self.ip, data)
         data = {'name': 'sasha'}
-        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        storage.create(app_id, user_id, boobs_type, self.ip, data)
         data = {'a': 'b'}
-        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        storage.create(app_id, user_id, boobs_type, self.ip, data)
         data = {'name': 'pasha'}
-        storage.create(app_id, user_id, self.ip, data, boobs_type)
+        storage.create(app_id, user_id, boobs_type, self.ip, data)
 
         boobs = storage.find(app_id, user_id, boobs_type)
         assert len(boobs) == 4
         # remove all boobs
-        storage.delete(app_id, user_id, self.ip, boobs_type, filter_opts={'name': 'pasha'})
+        storage.delete(app_id, user_id, boobs_type, self.ip, filter_opts={'name': 'pasha'})
 
         # assert all boobs were removed
         boobs = storage.find(app_id, user_id, boobs_type)
@@ -172,10 +171,10 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # create entity
         data = {'test': 'test'}
-        key = storage.create(app_id, user_id, self.ip, data, bucket)
+        key = storage.create(app_id, user_id, bucket, self.ip, data)
 
         # another user tries to remove entity
-        storage.delete(app_id, another_user_id, self.ip, bucket, key=key)
+        storage.delete(app_id, another_user_id, bucket, self.ip, key=key)
         obj = storage.get(app_id, another_user_id, bucket, key)
         assert obj is None
 
@@ -187,13 +186,13 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # create entity
         data = {'test': 'test'}
-        key = storage.create(app_id, user_id, self.ip, data, bucket)
+        key = storage.create(app_id, user_id, bucket, self.ip, data)
 
         # define new dict for update
         updated_data = {'test': 'updated_data',
                         extf.KEY: key,
                         extf.BUCKET: bucket}
-        storage.update(app_id, user_id, self.ip, bucket,
+        storage.update(app_id, user_id, bucket, self.ip,
             copy.deepcopy(updated_data), key=key)
 
         # assert entity was updated
@@ -210,9 +209,9 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
         bucket = 'boobs'
 
         data = {'a': {'b': [1,2,3, {'c':'d'}]}}
-        key = storage.create(app_id, user_id, self.ip, data, bucket=bucket)
+        key = storage.create(app_id, user_id, bucket, self.ip, data)
         update_data = {'a': {'b': 'c'}, 'addition': [1,2,3]}
-        storage.update(app_id, user_id, self.ip, bucket,
+        storage.update(app_id, user_id, bucket, self.ip,
                        update_data, key=key)
 
         d = storage.get(app_id, user_id, bucket, key)

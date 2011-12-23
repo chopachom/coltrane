@@ -1,4 +1,4 @@
-from coltrane.rest.api.info import resp_msgs
+from coltrane.rest.utils import resp_msgs
 from coltrane.rest.api.statuses import http
 
 __author__ = 'qweqwe'

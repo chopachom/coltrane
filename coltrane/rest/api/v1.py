@@ -1,9 +1,8 @@
 import logging
 
 from flask import Blueprint
-from coltrane.appstorage.storage import AppdataStorage, intf
+from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf
-from coltrane.rest.api.info import forbidden_fields, resp_msgs
 from coltrane.rest.extensions import guard
 from coltrane.rest.api.statuses import *
 from coltrane.rest import exceptions, validators
@@ -86,8 +85,8 @@ def post_handler(bucket, key):
                 key=key,
                 bucket=bucket)
 
-    document_key = storage.create(get_app_id(), get_user_id(), get_remote_ip(),
-                                  document, bucket=bucket)
+    document_key = storage.create(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+                                  document)
     return {extf.KEY: document_key}, http.CREATED
 
 
@@ -114,16 +113,16 @@ def put_by_keys_handler(bucket, keys):
             if force:
                 document[extf.KEY] = key
                 document = generate_normal_view(document)
-                storage.create(get_app_id(), get_user_id(), get_remote_ip(),
-                               document, bucket=bucket)
+                storage.create(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+                               document)
                 res.append({extf.KEY: key, STATUS_CODE: app.CREATED,
                         'message': resp_msgs.DOC_CREATED})
             else:
                 res.append({extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
                         'message': resp_msgs.DOC_NOT_EXISTS})
         else:
-            storage.update(get_app_id(), get_user_id(), get_remote_ip(),
-                           bucket, document, key=key)
+            storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+                           document, key=key)
             res.append({extf.KEY: key, STATUS_CODE: app.OK,
                         'message': resp_msgs.DOC_UPDATED})
     if len(res) == 1:
@@ -155,7 +154,7 @@ def put_by_filter_handler(bucket):
             document = generate_normal_view(document)
 
             key = storage.create(
-                get_app_id(), get_user_id(), get_remote_ip(), document, bucket=bucket
+                get_app_id(), get_user_id(),  bucket, get_remote_ip(), document
             )
             return {
                 extf.KEY: key, 'message': resp_msgs.DOC_CREATED
@@ -166,8 +165,8 @@ def put_by_filter_handler(bucket):
                 'message': resp_msgs.DOC_NOT_EXISTS
             }, http.NOT_FOUND
 
-    storage.update(get_app_id(), get_user_id(), get_remote_ip(),
-                   bucket, document, filter_opts=filter_opts)
+    storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+                   document, filter_opts=filter_opts)
 
     return {'message': resp_msgs.DOC_UPDATED}, http.OK
 
@@ -186,8 +185,8 @@ def delete_by_keys_handler(bucket, keys):
             res.append({extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
                         'message': resp_msgs.DOC_NOT_EXISTS})
         else:
-            storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
-                           bucket=bucket, filter_opts=filter_opts)
+            storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip()
+                           , filter_opts=filter_opts)
             res.append({extf.KEY: key, STATUS_CODE: app.OK,
                         'message': resp_msgs.DOC_DELETED})
 
@@ -212,8 +211,8 @@ def delete_by_filter_handler(bucket):
                                       bucket, filter_opts):
         return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
     
-    storage.delete(get_app_id(), get_user_id(), get_remote_ip(),
-                   bucket=bucket, filter_opts=filter_opts)
+    storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+                    filter_opts=filter_opts)
 
     return {'message': resp_msgs.DOC_DELETED}, http.OK
 

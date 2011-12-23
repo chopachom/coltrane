@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from coltrane.rest.api.info import resp_msgs
+from coltrane.rest.utils import resp_msgs
 from coltrane.rest.api.statuses import ERROR_INFO_MATCHING, http, app as app_status
 from coltrane.rest.utils import jsonify
 
@@ -111,6 +111,8 @@ def configure_errorhandlers(app):
         else:
             message = resp_msgs.INTERNAL_ERROR
             LOG.debug(error.message)
+            if app.debug or app.testing:
+                raise
 
         app_code, http_code = ERROR_INFO_MATCHING.get(
             error_class, (app_status.SERVER_ERROR, http.SERVER_ERROR))

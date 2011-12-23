@@ -1,5 +1,11 @@
-from coltrane.rest.utils import try_convert_to_date
-__author__ = 'qweqwe'
+# -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+              - pasha
+              - dreambrother
+"""
+
+import re
 
 from datetime import datetime
 from uuid import uuid4
@@ -56,7 +62,7 @@ class AppdataStorage(object):
         self.entities = entities
 
     @verify_tokens
-    def create(self, app_id, user_id, ip_address, document, bucket):
+    def create(self, app_id, user_id, bucket, ip_address, document):
         """ Create operation for CRUD.
          Saves entity to db in this format:
          {
@@ -91,7 +97,9 @@ class AppdataStorage(object):
         else:
             document_id = _internal_id(app_id, user_id, bucket, 0, uuid4())
 
-        document = _filter_int_fields(_filter_ext_fields(document))
+        document = _from_external_to_internal(app_id, user_id, bucket,
+            _filter_int_fields(_filter_ext_fields(document))
+        )
         # add required fields to document
         document[intf.ID] = document_id
         document[intf.APP_ID] = app_id
@@ -152,7 +160,7 @@ class AppdataStorage(object):
 
 
     @verify_tokens
-    def update(self, app_id, user_id, ip_address, bucket, document,
+    def update(self, app_id, user_id, bucket, ip_address, document,
                 key=None, filter_opts=None):
         """ Update operation for CRUD.
             Parameters:
@@ -167,6 +175,8 @@ class AppdataStorage(object):
         if type(document) is not DICT_TYPE:
             raise InvalidDocumentError('Document must be instance of dict type')
 
+        document =  _from_external_to_internal(app_id, user_id, bucket, document)
+
         if key:
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts={extf.KEY: key})
@@ -180,7 +190,7 @@ class AppdataStorage(object):
 
 
     @verify_tokens
-    def delete(self, app_id, user_id, ip_address, bucket,
+    def delete(self, app_id, user_id, bucket, ip_address,
                key=None, filter_opts=None):
         if key:
             criteria = _generate_criteria(app_id, user_id, bucket,
@@ -283,7 +293,7 @@ def _to_internal(document):
     # we may need to create this func in next updates
 
 
-def _from_external_to_internal(doc, app_id, user_id, bucket):
+def _from_external_to_internal(app_id, user_id, bucket, doc):
     """
     Convert document from external view to the internal.
     If document contains external fields, convert its values to the internal fields.
@@ -351,11 +361,20 @@ def _generate_criteria(app_id, user_id, bucket, document_id=None,
         }
 
     if filter_opts:
-        filter_opts = _from_external_to_internal(filter_opts, app_id,
-                                                 user_id, bucket)
+        filter_opts = _from_external_to_internal(app_id, user_id, bucket, filter_opts)
         if intf.ID in filter_opts:
             criteria = { intf.ID : filter_opts[intf.ID] }
         else:
             criteria.update(filter_opts)
 
     return criteria
+
+
+reg = re.compile(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d*))?Z?$')
+def try_convert_to_date(data):
+    res = re.match(reg, data)
+    if res:
+        val = [int(x) if x else 0 for x in res.groups()]
+        return datetime(*val)
+    else:
+        return data
