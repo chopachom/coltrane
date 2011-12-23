@@ -23,7 +23,7 @@ class SecurityTestCase(unittest.TestCase):
     def setUp(self):
         for i in range(10):
             data = {'a': i, 'b': [1, 2, 3, i]}
-            storage.create(app_id, user_id, ip, data, bucket=bucket)
+            storage.create(app_id, user_id, bucket, ip, data)
 
 
     def tearDown(self):
@@ -53,7 +53,7 @@ class SecurityTestCase(unittest.TestCase):
         another_user_id = '2'
         for i in range(5):
             data = {'_key': 'k%d' % i, 'a': 10 + i, 'b': [1, 2, 3, 10 + i]}
-            storage.create(app_id, another_user_id, ip, data, bucket=bucket)
+            storage.create(app_id, another_user_id, bucket, ip, data)
 
         res = storage.find(app_id, another_user_id, bucket)
         assert 5 == len(res)
