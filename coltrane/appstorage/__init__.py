@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+    :Authors: - pshkitin
+"""
+
 from time import sleep
 from pymongo.cursor import Cursor
 from pymongo.errors import AutoReconnect
 from coltrane.appstorage.exceptions import StorageError
-
-__author__ = 'qweqwe'
 
 
 AUTO_RECONNECT_ATTEMPTS = 10
@@ -33,5 +36,5 @@ def auto_reconnect(func):
                 sleep(AUTO_RECONNECT_DELAY)
     return retry_function
 
-# monkeypatch: wrap Cursor.__send_message (name-mangled)
+# monkeypatch: wrap Cursor.__send_message (name-mangl   ed)
 Cursor._Cursor__send_message = auto_reconnect(Cursor._Cursor__send_message)

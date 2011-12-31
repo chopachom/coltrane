@@ -17,6 +17,7 @@ class TestConfig(object):
 
 
 class DebugConfig(object):
+    WEBROOT = os.getcwd()
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = MYSQL_DEBUG_URI
     SQLALCHEMY_ECHO = True

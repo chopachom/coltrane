@@ -2,7 +2,7 @@
 from flask import request, g, session
 from flaskext.bcrypt import check_password_hash
 from coltrane.db.models import User
-from coltrane.website.hooks import after_this_request
+from coltrane.website.lib.hooks import after_this_request
 from hashlib import sha256
 from functools import wraps
 from datetime import datetime, timedelta

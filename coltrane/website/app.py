@@ -5,7 +5,7 @@ from flask import Flask
 from coltrane.website.config import DefaultConfig
 from coltrane.db.extension import db
 from coltrane.website.extensions.warden import warden
-from coltrane.website.hooks import per_request_callbacks
+from coltrane.website.lib.hooks import per_request_callbacks
 
 from logging.handlers import RotatingFileHandler
 
