@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+"""
 
 from flask import Blueprint, render_template, request,\
                   url_for, redirect, current_app
-
 from coltrane.website.forms import CreateAppForm, EditAppForm
 from coltrane.db.models import  Developer, Application
 from coltrane.db.extension import db
@@ -58,7 +60,6 @@ def edit_app(domain):
 
 
 ALLOWED_EXTENSIONS = {'zip',}
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 

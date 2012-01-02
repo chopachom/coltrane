@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+"""
 from  flaskext.wtf import (Form, TextField, PasswordField, TextAreaField,
                            FileField, DecimalField, ValidationError, validators)
 from coltrane.website.extensions.warden import warden

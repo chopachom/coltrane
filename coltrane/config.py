@@ -1,10 +1,16 @@
-__author__ = 'qweqwe'
+# -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+"""
 
 import os
 
 COOKIE_USER_AUTH_TOKEN = 'auth_token'
 COOKIE_APP_TOKEN       = 'app_token'
 COOKIE_ANONYMOUS_TOKEN = 'anonymous'
+
+MYSQL_URI       = os.environ.get('COLTRANE_MYSQL_URI') or \
+                  'mysql://coltrane@127.0.0.1:3306/coltrane'
 
 MYSQL_DEBUG_URI = os.environ.get('COLTRANE_MYSQL_DEBUG_URI') or \
                   'mysql://root@127.0.0.1:3306/coltrane'
