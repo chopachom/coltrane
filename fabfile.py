@@ -14,6 +14,9 @@ uwsgi_cfgs    = {
     'hosting.xml':'/web/hosting/config.xml',
     'website.xml':'/web/website/config.xml'
 }
+nginx_cfgs    = {
+    'website.cfg'   :'website',
+}
 
 
 env.hosts     = ['192.168.42.101']
@@ -51,5 +54,17 @@ def deploy(force=False):
                 remote_webdir[2:], config, uwsgi_cfgs[config]
             )
             run(cmd)
+        run('touch {}/reloader'.format(uwsgi_cfgs[config][:-11]))
+    for config in nginx_cfgs:
+        if not exists('/etc/nginx/sites-available/' + config):
+            user = run('whoami')
+            sudo('ln -sf /home/{}/{}/etc/nginx/{} /etc/nginx/sites-available/{}'.format(
+                #remote_webdir[2:] = '~/web/app' -> 'web/app'
+                user, remote_webdir[2:], config, nginx_cfgs[config]
+            ))
+            sudo('ln -sf /etc/nginx/sites-available/{} /etc/nginx/sites-enabled/'.format(
+                nginx_cfgs[config]
+            ))
+    sudo('service nginx reload')
     with prefix('workon coltrane'):
         run('pip install -r '+remote_webdir+'/etc/requirements.txt')

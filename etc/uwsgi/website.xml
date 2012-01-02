@@ -1,11 +1,11 @@
 <!-- UWSGI XML Configuration File -->
 <uwsgi>
-    <!-- <uid>80</uid>
-    <gid>80</gid>-->
+    <uid>www-data</uid>
+    <gid>www-data</gid>
     <pidfile>/web/website/uwsgi.pid</pidfile>
     <!-- Сокет для передачи данных -->
-    <socket>/web/website/uwsgi.sock</socket>
-    <!-- <daemonize>/web/logs/uwsgi.log</daemonize> -->
+    <socket>127.0.0.1:9001</socket>
+    <daemonize>/web/website/uwsgi.log</daemonize>
     <touch-reload>/web/website/reloader</touch-reload>
     <!-- Путь к виртуальному окружению -->
     <home>/var/lib/venv/coltrane</home>
