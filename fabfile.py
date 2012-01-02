@@ -37,15 +37,19 @@ def deploy(force=False):
         else:
             run('git pull origin master')
     with cd(remote_repo):
-        run('pwd')
+        #TODO: add new revision only if source code have been changed
         #using xargs to prevent grep for returning 1 error code when nothing have been found
-        revno = run("git tag|grep -E '^r[0-9]+'|sort|tail -1|grep -oE '[0-9]+'|xargs -i echo {}")
+        revno = run("git tag|grep -E '^r[0-9]+'|grep -oE '[0-9]+'|sort -n|tail -1|xargs -i echo {}")
         new_revno = int(revno) + 1 if revno else 0
         run('git tag r{}'.format(new_revno))
     for config in uwsgi_cfgs:
-        run('mkdir -p {}'.format(uwsgi_cfgs[config][:-11]))
-        #remote_webdir[2:] = '~/web/app' -> 'web/app'
-        cmd = 'ln -sf /home/`whoami`/{}/etc/uwsgi/{} {}'.format(
-            remote_webdir[2:], config, uwsgi_cfgs[config]
-        )
-        run(cmd)
+        if not exists(uwsgi_cfgs[config]):
+            #uwsgi_cfgs[config][:-11] = /web/hosting/config.xml -> /web/hosting
+            run('mkdir -p {}'.format(uwsgi_cfgs[config][:-11]))
+            cmd = 'ln -sf /home/`whoami`/{}/etc/uwsgi/{} {}'.format(
+                #remote_webdir[2:] = '~/web/app' -> 'web/app'
+                remote_webdir[2:], config, uwsgi_cfgs[config]
+            )
+            run(cmd)
+    with prefix('workon coltrane'):
+        run('pip install -r '+remote_webdir+'/etc/requirements.txt')
