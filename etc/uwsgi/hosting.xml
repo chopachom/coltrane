@@ -1,7 +1,10 @@
 <!-- UWSGI XML Configuration File -->
 <uwsgi>
+    <uid>www-data</uid>
+    <gid>www-data</gid>
     <!-- Сокет для передачи данных -->
-    <socket>/web/hosting/uwsgi.sock</socket>
+    <socket>127.0.0.1:9003</socket>
+    <pidfile>/web/hosting/uwsgi.pid</pidfile>
     <!-- Путь к виртуальному окружению -->
     <home>/var/lib/venv/coltrane</home>
     <!-- Нам понадобится включенный python плагин -->

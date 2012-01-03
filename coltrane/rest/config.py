@@ -16,8 +16,8 @@ class DefaultConfig(object):
     MONGODB_USERNAME   = None
     MONGODB_PASSWORD   = None
     APPDATA_COLLECTION ='appdata'
-    DEBUG_LOG              = '/web/rest/debug.log'
-    ERROR_LOG              = '/web/rest/error.log'
+    DEBUG_LOG          = '/web/rest/debug.log'
+    ERROR_LOG          = '/web/rest/error.log'
 
 class TestConfig(object):
     TESTING            = True
