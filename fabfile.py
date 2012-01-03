@@ -6,6 +6,7 @@
 from fabric.api import *
 from fabric.contrib.files import exists
 
+root_mysql    = 'mysql://root:qweqwe@127.0.0.1:3306/coltrane'
 repo_host     = '192.168.42.101'
 remote_repo   = '~/repos/coltrane.git'
 remote_webdir = '~/web/app'
@@ -58,8 +59,9 @@ def deploy(force=False):
 
     with prefix('workon coltrane'):
         run('pip install -r '+remote_webdir+'/etc/requirements.txt')
-        with cd(remote_webdir+'coltrane/db'):
-            run('manage.py version_control')
+        with cd(remote_webdir+'/coltrane/db'):
+            with prefix('COLTRANE_MYSQL_URI="{}"'.format(root_mysql)):
+                run('python syncdb.py')
 
     for config in uwsgi_cfgs:
         if not exists(uwsgi_cfgs[config]):

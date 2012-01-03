@@ -25,3 +25,7 @@ sudo chown www-data /web/hosting/
 sudo chown www-data /web/website/
 
 echo "export PYTHONPATH=\$PYTHONPATH:/home/`whoami`/web/app" >> ~/.bash_profile
+echo "export COLTRANE_MYSQL_URI=\"mysql://coltrane:$COLTRANE_PASSWORD@127.0.0.1:3306/coltrane\"" >> ~/.bash_profile
+
+
+chmod +x /web/uwsgi_runner

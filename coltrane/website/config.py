@@ -3,11 +3,11 @@
     :Authors: - qweqwe
 """
 
-from coltrane.config import TestConfig, DebugConfig
+from coltrane.config import TestConfig, DebugConfig, DefaultConfig as dc
 
 #TODO: replace all literal values with values from environment variables
 
-class DefaultConfig(object):
+class DefaultConfig(dc):
     SECRET_KEY             = 'A0Zr98˙™£ª¶3yX R~XHH!jmMPC.s39 LWfk wN]LWX/,?RT'
     BCRYPT_LOG_ROUNDS      = 8
     FACEBOOK_APP_ID        = '183128768399686'
