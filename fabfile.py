@@ -18,7 +18,6 @@ nginx_cfgs    = {
     'website.cfg'   :'website',
 }
 
-
 env.hosts     = ['192.168.42.101']
 env.key_filename = '/Users/qweqwe/.ssh/git_rsa'
 

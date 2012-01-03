@@ -2,10 +2,10 @@
 <uwsgi>
     <uid>www-data</uid>
     <gid>www-data</gid>
+    <daemonize>/web/website/uwsgi.log</daemonize>
     <pidfile>/web/website/uwsgi.pid</pidfile>
     <!-- Сокет для передачи данных -->
     <socket>127.0.0.1:9001</socket>
-    <daemonize>/web/website/uwsgi.log</daemonize>
     <touch-reload>/web/website/reloader</touch-reload>
     <!-- Путь к виртуальному окружению -->
     <home>/var/lib/venv/coltrane</home>

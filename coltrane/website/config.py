@@ -5,7 +5,7 @@
 
 from coltrane.config import TestConfig, DebugConfig
 
-#TODO: replace all literal values with valuef from environment variables
+#TODO: replace all literal values with values from environment variables
 
 class DefaultConfig(object):
     SECRET_KEY             = 'A0Zr98˙™£ª¶3yX R~XHH!jmMPC.s39 LWfk wN]LWX/,?RT'
