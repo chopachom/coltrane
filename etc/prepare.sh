@@ -23,3 +23,5 @@ mkdir /web/website/
 sudo chown www-data /web/rest/
 sudo chown www-data /web/hosting/
 sudo chown www-data /web/website/
+
+echo "export PYTHONPATH=\$PYTHONPATH:/home/`whoami`/web/app" >> ~/.bash_profile

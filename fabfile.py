@@ -58,6 +58,8 @@ def deploy(force=False):
 
     with prefix('workon coltrane'):
         run('pip install -r '+remote_webdir+'/etc/requirements.txt')
+        with cd(remote_webdir+'coltrane/db'):
+            run('manage.py version_control')
 
     for config in uwsgi_cfgs:
         if not exists(uwsgi_cfgs[config]):
@@ -88,6 +90,7 @@ def deploy(force=False):
         ))
 
     #TODO: gracefuly reload nginx and supervisor configuration
-    sudo('service supervisor restart')
+    sudo('supervisorctl update')
+    sudo('supervisorctl status')
     sudo('service nginx reload')
 
