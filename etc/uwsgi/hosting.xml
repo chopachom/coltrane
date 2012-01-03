@@ -12,7 +12,7 @@
     <!-- Дополнительный python-путь -->
     <pythonpath>/web/app</pythonpath>
     <!-- Модуль python с определением wsgi приложения -->
-    <module>coltrane.hosting.run:app</module>
+    <module>coltrane.apphosting.run:app</module>
     <!-- Количество процессов -->
     <processes>4</processes>
     <!-- Максимальное количество соединений для каждого процесса -->
