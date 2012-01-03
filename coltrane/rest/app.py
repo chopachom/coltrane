@@ -83,14 +83,14 @@ def configure_logging(app):
         logging.getLogger('coltrane').addHandler(stdout_handler)
         return
 
-    debug_log = app.config['DEBUG_LOG_FILE']
+    debug_log = app.config['DEBUG_LOG']
     debug_file_handler = RotatingFileHandler(debug_log, maxBytes=100000,
                                              backupCount=10)
     debug_file_handler.setLevel(logging.DEBUG)
     debug_file_handler.setFormatter(formatter)
     app.logger.addHandler(debug_file_handler)
 
-    error_log = app.config['ERROR_LOG_FILE']
+    error_log = app.config['ERROR_LOG']
     error_file_handler =  RotatingFileHandler(error_log, maxBytes=100000,
                                               backupCount=10)
     error_file_handler.setLevel(logging.WARNING)
