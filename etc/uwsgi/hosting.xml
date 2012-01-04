@@ -2,24 +2,15 @@
 <uwsgi>
     <uid>www-data</uid>
     <gid>www-data</gid>
-    <!-- Сокет для передачи данных -->
+    <daemonize>/web/hosting/uwsgi.log</daemonize>
     <socket>127.0.0.1:9003</socket>
     <pidfile>/web/hosting/uwsgi.pid</pidfile>
-    <!-- Путь к виртуальному окружению -->
     <home>/var/lib/venv/coltrane</home>
-    <!-- Нам понадобится включенный python плагин -->
     <plugins>python</plugins>
-    <!-- Дополнительный python-путь -->
     <pythonpath>/web/app</pythonpath>
-    <!-- Модуль python с определением wsgi приложения -->
     <module>coltrane.apphosting.run:app</module>
-    <!-- Количество процессов -->
-    <processes>4</processes>
-    <!-- Максимальное количество соединений для каждого процесса -->
     <max-requests>5000</max-requests>
-    <!-- Максимальный размер запроса -->
     <buffer-size>32768</buffer-size>
-    <!-- Убивать каждое соединение требующее больше 30 сек для обработки -->
     <harakiri>30</harakiri>
     <reload-mercy>8</reload-mercy>
     <master />

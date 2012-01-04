@@ -10,6 +10,7 @@ root_mysql    = 'mysql://root:qweqwe@127.0.0.1:3306/coltrane'
 repo_host     = '192.168.42.101'
 remote_repo   = '~/repos/coltrane.git'
 remote_webdir = '~/web/app'
+vassals_dir   = '/web/vassals'
 uwsgi_cfgs    = {
     'rest.xml'   :'/web/rest/config.xml',
     'hosting.xml':'/web/hosting/config.xml',
@@ -20,12 +21,12 @@ nginx_cfgs    = {
     'rest.cfg'    : 'rest',
     'hosting.cfg' : 'hosting'
 }
-
-supervisor_cfgs = [
-    'hosting.conf',
-    'rest.conf',
-    'website.conf'
-]
+#
+#supervisor_cfgs = [
+#    'hosting.conf',
+#    'rest.conf',
+#    'website.conf'
+#]
 
 env.hosts     = ['192.168.42.101']
 env.key_filename = '/Users/qweqwe/.ssh/git_rsa'
@@ -72,6 +73,10 @@ def deploy(force=False):
                 remote_webdir[2:], config, uwsgi_cfgs[config]
             )
             run(cmd)
+        if not exists(vassals_dir+'/'+config):
+            run('ln -sf /home/`whoami`/{}/etc/uwsgi/{} {}'.format(
+                remote_webdir[2:], config, vassals_dir+'/'+config
+            ))
         run('touch {}/reloader'.format(uwsgi_cfgs[config][:-11]))
 
     for config in nginx_cfgs:
@@ -85,14 +90,6 @@ def deploy(force=False):
                 nginx_cfgs[config]
             ))
 
-    for config in supervisor_cfgs:
-        user = run('whoami')
-        sudo('ln -sf /home/{}/{}/etc/supervisor/{} /etc/supervisor/conf.d/'.format(
-            user, remote_webdir[2:], config
-        ))
-
     #TODO: gracefuly reload nginx and supervisor configuration
-    sudo('supervisorctl update')
-    sudo('supervisorctl status')
     sudo('service nginx reload')
 

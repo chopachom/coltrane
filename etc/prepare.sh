@@ -19,6 +19,7 @@ sudo ln -s /home/`whoami`/web /web
 mkdir /web/rest/
 mkdir /web/hosting/
 mkdir /web/website/
+mkdir /web/vassals/
 
 sudo chown www-data /web/rest/
 sudo chown www-data /web/hosting/
