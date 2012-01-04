@@ -2,6 +2,7 @@
 #TODO: USE HANDLER SOCKET OR SOME FORM OF CACHING
 import logging
 from logging.handlers import RotatingFileHandler
+from hashlib import sha256
 
 __author__ = 'qweqwe'
 
@@ -51,7 +52,7 @@ def before_request():
     # if user opens this app for the first time
     if auth_token and not app_token:
         # generate token
-        user = User.query.filter(User.token == auth_token).first()
+        user = User.query.filter(User.auth_hash ==  sha256(auth_token).hexdigest()).first()
         app  = Application.query.filter(Application.domain == app_domain).first()
         if not app:
             print 'app with domin %s was not found' % app_domain

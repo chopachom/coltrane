@@ -41,7 +41,7 @@ class GuardTestCase(unittest.TestCase):
 
 
     def test_allow_access(self):
-        self.client.set_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN, self.user.token)
+        self.client.set_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN, self.user.auth_hash)
         self.client.set_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN, self.apptoken.token)
         rv = self.client.get('/v1/books')
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)
@@ -61,7 +61,7 @@ class GuardTestCase(unittest.TestCase):
 
 
     def test_deny_access_for_app_token(self):
-        self.client.set_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN, self.user.token)
+        self.client.set_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN, self.user.auth_hash)
         self.client.set_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN, 'ololo')
         res = self.client.get('/v1/books')
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)

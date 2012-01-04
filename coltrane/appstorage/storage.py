@@ -106,7 +106,7 @@ class AppdataStorage(object):
         document[intf.USER_ID] = user_id
         document[intf.BUCKET] = bucket
         # adding str(False) to hashid means that document isn't deleted
-        document[intf.HASHID] = sha1(app_id+user_id+bucket+str(False)).hexdigest()
+        document[intf.HASHID] = sha1(str(app_id)+str(user_id)+str(bucket)+str(False)).hexdigest()
         document[intf.CREATED_AT] = datetime.utcnow()
         document[intf.IP_ADDRESS] = ip_address
         document[intf.DELETED] = False
@@ -200,7 +200,7 @@ class AppdataStorage(object):
                                           filter_opts=filter_opts)
         self.entities.update(criteria, {
             '$set': {
-                intf.HASHID: sha1(app_id+user_id+bucket+str(True)).hexdigest(),
+                intf.HASHID: sha1(str(app_id)+str(user_id)+str(bucket)+str(True)).hexdigest(),
                 intf.DELETED:True,
                 intf.IP_ADDRESS:ip_address,
                 intf.UPDATED_AT:datetime.utcnow()
@@ -357,7 +357,7 @@ def _generate_criteria(app_id, user_id, bucket, document_id=None,
         criteria = { intf.ID :document_id }
     else:
         criteria = {
-            intf.HASHID: sha1(app_id+user_id+bucket+str(False)).hexdigest()
+            intf.HASHID: sha1(str(app_id)+str(user_id)+str(bucket)+str(False)).hexdigest()
         }
 
     if filter_opts:

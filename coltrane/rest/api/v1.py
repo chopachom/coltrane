@@ -55,7 +55,7 @@ def get_by_filter_handler(bucket):
 
     filter_opts = extract_filter_opts()
     skip, limit = extract_pagination_data()
-    
+
     documents = storage.find(get_app_id(), get_user_id(), bucket,
                              filter_opts, skip, limit)
     if len(documents):
