@@ -79,9 +79,15 @@ def deploy(force=False):
             ))
         run('touch {}/reloader'.format(uwsgi_cfgs[config][:-11]))
 
+    user = run('whoami')
+
+    sudo('ln -sf /home/{}/{}/etc/emperor.upstart.conf /etc/init/emperor.conf'.format(
+        user, remote_webdir[2:]
+    ))
+
     for config in nginx_cfgs:
         if not exists('/etc/nginx/sites-available/' + nginx_cfgs[config]):
-            user = run('whoami')
+
             sudo('ln -sf /home/{}/{}/etc/nginx/{} /etc/nginx/sites-available/{}'.format(
                 #remote_webdir[2:] = '~/web/app' -> 'web/app'
                 user, remote_webdir[2:], config, nginx_cfgs[config]
@@ -90,6 +96,6 @@ def deploy(force=False):
                 nginx_cfgs[config]
             ))
 
-    #TODO: gracefuly reload nginx and supervisor configuration
+    sudo('sudo service emperor start')
     sudo('service nginx reload')
 
