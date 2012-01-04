@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from urlparse import urlparse
 from flask import request, g, session
 from flaskext.bcrypt import check_password_hash
 from coltrane.db.models import User
@@ -78,6 +79,7 @@ class Warden(object):
                     COOKIE_AUTH_TOKEN,
                     user.auth_token,
                     expires=datetime.utcnow() + timedelta(days=14),
+                    domain = urlparse(request.url_root).netloc.split(':')[0],
                     httponly=True) or resp # using 'or' because set_cookie returns NoneType without it
             )
             g.current_user = user
