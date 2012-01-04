@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 #TODO: USE HANDLER SOCKET OR SOME FORM OF CACHING
+import logging
+from logging.handlers import RotatingFileHandler
 
 __author__ = 'qweqwe'
 
@@ -9,10 +11,30 @@ from datetime import datetime
 from coltrane.db.models import User, Application, AppToken
 from coltrane.db.extension import db
 from coltrane import config
+from coltrane.apphosting.config import DefaultConfig
 
 app = Flask(__name__)
-app.config.from_object(config.DefaultConfig)
+app.config.from_object(DefaultConfig)
 db.init_app(app)
+
+#configure logging
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s '
+                              '[in %(pathname)s:%(lineno)d]')
+
+debug_log = app.config['DEBUG_LOG']
+debug_file_handler = RotatingFileHandler(debug_log, maxBytes=100000,
+                                        backupCount=10)
+debug_file_handler.setLevel(logging.DEBUG)
+debug_file_handler.setFormatter(formatter)
+app.logger.addHandler(debug_file_handler)
+
+error_log = app.config['ERROR_LOG']
+error_file_handler =  RotatingFileHandler(error_log, maxBytes=100000,
+                                         backupCount=10)
+error_file_handler.setLevel(logging.WARNING)
+error_file_handler.setFormatter(formatter)
+app.logger.addHandler(error_file_handler)
+
 
 @app.before_request
 def before_request():
@@ -29,7 +51,7 @@ def before_request():
     # if user opens this app for the first time
     if auth_token and not app_token:
         # generate token
-        user = User.query.filter(User.auth_token == auth_token).first()
+        user = User.query.filter(User.token == auth_token).first()
         app  = Application.query.filter(Application.domain == app_domain).first()
         if not app:
             print 'app with domin %s was not found' % app_domain

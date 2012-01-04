@@ -4,12 +4,10 @@ from flask import request, g, session
 from flaskext.bcrypt import check_password_hash
 from coltrane.db.models import User
 from coltrane.website.lib.hooks import after_this_request
+from coltrane.config import COOKIE_USER_AUTH_TOKEN
 from hashlib import sha256
 from functools import wraps
 from datetime import datetime, timedelta
-
-
-COOKIE_AUTH_TOKEN = 'auth_tkn'
 
 
 class Warden(object):
@@ -32,9 +30,9 @@ class Warden(object):
             return None
 
     def cookie_login(self):
-        if request.cookies.get(COOKIE_AUTH_TOKEN):
+        if request.cookies.get(COOKIE_USER_AUTH_TOKEN):
             #print request.cookies.get('auth_tkn')
-            self.login_by_token(request.cookies.get(COOKIE_AUTH_TOKEN))
+            self.login_by_token(request.cookies.get(COOKIE_USER_AUTH_TOKEN))
 
     def login_by_token(self, token):
         user = User.query.filter(User.auth_hash == sha256(token).hexdigest()).first()
@@ -76,7 +74,7 @@ class Warden(object):
             user.regenerate_auth_tokens()
             after_this_request(
                 lambda resp: resp.set_cookie(
-                    COOKIE_AUTH_TOKEN,
+                    COOKIE_USER_AUTH_TOKEN,
                     user.auth_token,
                     expires=datetime.utcnow() + timedelta(days=14),
                     domain = urlparse(request.url_root).netloc.split(':')[0],
@@ -95,7 +93,7 @@ class Warden(object):
 
         after_this_request(
             lambda resp: resp.set_cookie(
-                COOKIE_AUTH_TOKEN,
+                COOKIE_USER_AUTH_TOKEN,
                 '',
                 expires=datetime(1971,01,01),
                 httponly=True) or resp # using 'or' because set_cookie returns NoneType

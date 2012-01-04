@@ -4,6 +4,7 @@
     <gid>www-data</gid>
     <daemonize>/web/rest/uwsgi.log</daemonize>
     <pidfile>/web/rest/uwsgi.pid</pidfile>
+    <touch-reload>/web/rest/reloader</touch-reload>
     <socket>127.0.0.1:9002</socket>
     <home>/var/lib/venv/coltrane</home>
     <plugins>python</plugins>
