@@ -65,7 +65,9 @@ def allowed_file(filename):
 
 
 def apps_files_path(username, domain):
-    webroot = os.path.join(current_app.config['WEBROOT'], 'webroot')
+    webroot = current_app.config['HOSTING_ROOT']
+    if not webroot:
+        raise RuntimeError("Web root for hosting is not specified")
     return os.path.join(webroot, username, domain)
 
 

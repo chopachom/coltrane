@@ -11,6 +11,7 @@ repo_host     = '192.168.42.101'
 remote_repo   = '~/repos/coltrane.git'
 remote_webdir = '~/web/app'
 vassals_dir   = '/web/vassals'
+hosting_root  = '/web/hosting/webroot'
 uwsgi_cfgs    = {
     'rest.xml'   :'/web/rest/config.xml',
     'hosting.xml':'/web/hosting/config.xml',
@@ -81,7 +82,7 @@ def deploy(force=False):
 
     user = run('whoami')
 
-    sudo('ln -sf /home/{}/{}/etc/emperor.upstart.conf /etc/init/emperor.conf'.format(
+    sudo('cp /home/{}/{}/etc/emperor.upstart.conf /etc/init/emperor.conf'.format(
         user, remote_webdir[2:]
     ))
 
@@ -95,7 +96,8 @@ def deploy(force=False):
             sudo('ln -sf /etc/nginx/sites-available/{} /etc/nginx/sites-enabled/'.format(
                 nginx_cfgs[config]
             ))
-
-    sudo('sudo service emperor start')
+    with settings(warn_only=True):
+        sudo('service emperor start')
     sudo('service nginx reload')
+    sudo('chown -R www-data:www-data {}'.format(hosting_root))
 
