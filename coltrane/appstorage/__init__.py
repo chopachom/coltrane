@@ -36,5 +36,5 @@ def auto_reconnect(func):
                 sleep(AUTO_RECONNECT_DELAY)
     return retry_function
 
-# monkeypatch: wrap Cursor.__send_message (name-mangl   ed)
+# monkeypatch: wrap Cursor.__send_message (name-mangled)
 Cursor._Cursor__send_message = auto_reconnect(Cursor._Cursor__send_message)

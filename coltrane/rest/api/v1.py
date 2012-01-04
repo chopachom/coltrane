@@ -338,6 +338,6 @@ def get_app_id():
 
 
 def get_remote_ip():
-    request.get('remote_addr', None)
+    return request.remote_addr
 
 
