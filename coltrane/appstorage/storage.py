@@ -1,4 +1,5 @@
-from coltrane.rest.utils import try_convert_to_date
+from . import try_convert_to_date
+
 __author__ = 'qweqwe'
 
 from datetime import datetime
@@ -137,7 +138,7 @@ class AppdataStorage(object):
             raise RuntimeError("limit parameter must be greater then 0")
         opt_criteria['skip']  = skip
         opt_criteria['limit'] = limit
-        
+
         documents = list(self.entities.find(criteria, **opt_criteria))
         return map(_to_external, documents)
 
