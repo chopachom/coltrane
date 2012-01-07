@@ -1,3 +1,4 @@
+from pymongo.errors import OperationFailure
 from coltrane.rest import exceptions
 from coltrane.utils import Enum
 
@@ -37,5 +38,6 @@ ERROR_INFO_MATCHING = {
     exceptions.DocumentAlreadyExistsError: (app.CONFLICT, http.CONFLICT),
     exceptions.InvalidDocumentFieldsError:    (app.BAD_REQUEST, http.BAD_REQUEST),
     exceptions.InvalidJSONFormatError:  (app.BAD_REQUEST, http.BAD_REQUEST),
-    exceptions.InvalidRequestError:     (app.BAD_REQUEST, http.BAD_REQUEST)
+    exceptions.InvalidRequestError:     (app.BAD_REQUEST, http.BAD_REQUEST),
+    OperationFailure: (app.BAD_REQUEST, http.BAD_REQUEST)
 }

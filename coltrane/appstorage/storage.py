@@ -169,7 +169,7 @@ class AppdataStorage(object):
 
         document[intf.IP_ADDRESS] = ip_address
         document[intf.UPDATED_AT] = datetime.utcnow()
-        self.entities.update(criteria, {'$set': document}, multi=True)
+        self.entities.update(criteria, {'$set': document}, multi=True, safe=True)
 
 
     @verify_tokens

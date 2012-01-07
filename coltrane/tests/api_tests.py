@@ -1,4 +1,3 @@
-from datetime import date
 import json
 import unittest
 import datetime
@@ -253,7 +252,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
 
     def tearDown(self):
         super(ApiUpdateManyCase, self).tearDownClass()
-        
+
 
     def test_inner_query(self):
         filter = {'$and': [{extf.KEY: 5}, {'age':15}]}

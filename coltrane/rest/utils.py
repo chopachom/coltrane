@@ -1,5 +1,3 @@
-import re
-
 __author__ = 'qweqwe'
 
 from coltrane.rest.extensions import mongodb
