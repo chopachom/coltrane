@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-import copy
+__author__ = 'pshkitin'
 from functools import wraps
 import sys
-
-__author__ = 'pshkitin'
 
 import time
 from pymongo.connection import Connection
 from pymongo.database import Database
-from coltrane.appstorage.storage import AppdataStorage
+from coltrane.appstorage.storage import AppdataStorage, intf
 
-app_id = 'app_id'
+index = False
+app_id = 'app_id1'
 user_id = 'user_id'
 bucket = 'books'
 ip = '127.0.0.1'
@@ -40,11 +39,15 @@ coll = connection[db][coll]
 storage = AppdataStorage(coll)
 storage.entities.drop()
 
+def get_appid():
+    return app_id
+
+
 def average(v):
     return sum(v, 0.0) / len(v)
 
 def save(doc):
-    return storage.create(app_id, user_id, bucket, ip, doc)
+    return storage.create(get_appid(), user_id, bucket, ip, doc)
 
 def get(key):
     return storage.get(app_id, user_id, bucket, key)
@@ -76,6 +79,27 @@ big_doc = {'a': {'b': [{'asdasdsadsad': {'sdafdsfdskfnbkjnb': [234324, 234324, 2
 small_doc = {'a':{'b':10}, 'Key1': {'Key2': [1,2,3],
                       'Key3': 'abcdefjhi'}}
 
+
+def init_indexing():
+    app_number = 100
+    init_indexing.i = app_number
+    app_ids = []
+    for j in range(app_number):
+        app_ids.append('app_id%d' % j)
+    def get_appid_indexed():
+
+        res = app_ids[init_indexing.i % app_number]
+        init_indexing.i += 1
+        return res
+    global get_appid
+    get_appid = get_appid_indexed
+
+    coll.ensure_index(intf.HASHID)
+#    coll.ensure_index('a.c.e')
+#    coll.ensure_index([(intf.HASHID, 1), ('a.c.e', 1)])
+    print 'With index: %s' % coll.index_information()
+
+
 t = sys.argv[1]
 if t == 'big':
     print 'Big document'
@@ -83,3 +107,7 @@ if t == 'big':
 else:
     print 'Small document'
     document = small_doc
+
+if len(sys.argv) > 2:
+    if sys.argv[2] == 'index':
+        init_indexing()

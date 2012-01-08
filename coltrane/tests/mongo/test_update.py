@@ -5,7 +5,7 @@ __author__ = 'pshkitin'
 
 import copy
 import time
-from coltrane.tests.mongo.utils import save, storage, average, big_doc, find, small_doc, update, document
+from coltrane.tests.mongo.utils import save, storage, average, update, document
 
 print 'test_update'
 
@@ -24,7 +24,7 @@ numbers = [100, 1000, 10000, 100000, 1000000, 4000000]
 
 for num in numbers:
     res = []
-    storage.entities.drop()
+    storage.entities.remove()
     for n in range(num):
         d = copy.deepcopy(doc)
         d['a']['c'] = {'d':[1,2,3], 'e':n}

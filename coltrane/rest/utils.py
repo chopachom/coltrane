@@ -46,6 +46,8 @@ class lazy_coll(object):
                 db   = conf['MONGODB_DATABASE']
                 coll = conf['APPDATA_COLLECTION']
                 self.coll = mongodb.connection[db][coll]
+
+                self.coll.ensure_index(intf.HASHID)
                 return self.coll
         def __getattr__(self, name):
             return getattr(self.entities, name)

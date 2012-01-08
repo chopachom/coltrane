@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import copy
-import sys
-
 __author__ = 'pshkitin'
 
+import copy
 import time
-from coltrane.tests.mongo.utils import save, storage, average, big_doc, small_doc, document
+from coltrane.tests.mongo.utils import save, storage, average, document
 
 print 'test_save'
 
@@ -33,7 +31,7 @@ number = [100, 1000, 10000, 100000, 1000000, 4000000]
 for num in number:
     res = []
     for i in range(3):
-        storage.entities.drop()
+        storage.entities.remove()
         res.append(test_save(num))
     duration, friq = tuple([average(vals) for vals in zip(*res)])
     print 'Save document. Documents amount: %d; Duration: %f; Friquency: %f' %\

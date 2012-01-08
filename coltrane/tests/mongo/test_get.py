@@ -23,7 +23,7 @@ def test_get(key):
 numbers = [100, 1000, 10000, 100000, 1000000, 4000000]
 for num in numbers:
     res = []
-    storage.entities.drop()
+    storage.entities.remove()
     for n in range(num):
         doc['_key'] = 'key_%d' % n
         save(doc)
