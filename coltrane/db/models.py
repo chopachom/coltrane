@@ -69,6 +69,13 @@ class User(db.Model):
         return cls.query.filter(User.nickname == nickname).first()
 
 
+class FacebookUser(db.Model):
+    __tablename__ = 'facebook_users'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    facebook_id = db.Column(db.BigInteger, nullable=False)
+    access_token = db.Column(db.String(512), nullable=False)
+
 
 
 class Developer(db.Model):

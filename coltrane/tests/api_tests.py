@@ -4,7 +4,7 @@ import datetime
 import time
 from coltrane.rest import api_v1
 from coltrane.rest.api import v1
-from coltrane.rest.api.info import resp_msgs, forbidden_fields
+from coltrane.rest.utils import resp_msgs, forbidden_fields
 from coltrane.rest.api.v1 import from_json, storage
 from coltrane.rest.api.statuses import app, STATUS_CODE, http
 from coltrane.rest.app import create_app
@@ -136,7 +136,7 @@ class ApiTestCase(ApiBaseTestClass):
         assert from_json(resp.data)[extf.KEY] == key
 
         resp = self.app.delete(API_V1 + '/books/' + key)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
 
     def test_fail_delete_request(self):
         rv = self.app.delete(API_V1 + '/books/4')
@@ -319,7 +319,6 @@ class ApiUpdateManyCase(ApiBaseTestClass):
 
 
     def test_put_not_existing_document_with_key_in_url(self):
-        src_key = "my_key"
         src = {"title": "Title3", "author": "Vasya Shkitin"}
         rv = self.app.put(API_V1 + '/books/new_key',
             data=json.dumps(src),
@@ -351,7 +350,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         )
 
         data = from_json(rv.data)
-        assert data == {'message': resp_msgs.DOC_WAS_UPDATED}
+        assert data == {'message': resp_msgs.DOC_UPDATED}
 
     def test_update_all(self):
         resp = self.app.get(API_V1 + '/books')
@@ -361,7 +360,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         src_update = {"age": 50}
         resp = self.app.put(API_V1 + '/books',
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -375,7 +374,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -388,7 +387,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}, "name": "Pasha"}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -401,7 +400,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}, "cources.one": {"$lt": 3}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -414,7 +413,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         src_update = {"new_field": 100}
         resp = self.app.put(API_V1 + '/books',
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -432,9 +431,9 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         resp = self.app.put(API_V1 + '/books/1,2,5,not_existing',
                             data=json.dumps(src_update))
         status = from_json(resp.data)['response']
-        assert status == [{extf.KEY: '1', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_WAS_UPDATED},
-                        {extf.KEY: '2', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_WAS_UPDATED},
-                        {extf.KEY: '5', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_WAS_UPDATED},
+        assert status == [{extf.KEY: '1', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_UPDATED},
+                        {extf.KEY: '2', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_UPDATED},
+                        {extf.KEY: '5', STATUS_CODE: app.OK, 'message': resp_msgs.DOC_UPDATED},
                         {extf.KEY: 'not_existing', STATUS_CODE: app.NOT_FOUND, 'message': resp_msgs.DOC_NOT_EXISTS}]
 
         resp = self.app.get(API_V1 + '/books')
@@ -445,6 +444,16 @@ class ApiUpdateManyCase(ApiBaseTestClass):
             else:
                 assert b['age'] != 50
 
+    def test_update_with_dot(self):
+        src = {"cources.one": 2}
+        resp = self.app.put(API_V1 + '/books/5', data=json.dumps(src))
+        assert resp.status_code == http.OK
+
+        resp = self.app.get(API_V1 + '/books/5')
+        data = from_json(resp.data)
+        assert data['cources']['two'] == 2
+        assert data['cources']['one'] == 2
+
                 
     def test_update_non_existing_with_force(self):
         filter = {'a': 1}
@@ -453,7 +462,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
                             data=json.dumps(src_update))
         data = from_json(resp.data)
         assert resp.status_code == http.CREATED
-        assert data['message'] == resp_msgs.DOC_WAS_CREATED
+        assert data['message'] == resp_msgs.DOC_CREATED
         key = data[extf.KEY]
 
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(src_update))
@@ -493,7 +502,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert len(books) == 5
 
         resp = self.app.delete(API_V1 + '/books')
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -507,7 +516,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
     def test_delete_two_by_age(self):
         filter_opts = '{"age":10}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -525,7 +534,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
     def test_delete_one_by_filter(self):
         filter_opts = '{"age":10, "name":"Sasha"}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -536,7 +545,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
     def test_delete_by_LT_filter(self):
         filter_opts = '{"age": { "$lt" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -553,7 +562,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
     def test_delete_by_GT_filter(self):
         filter_opts = '{"age": { "$gt" : 10 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -571,7 +580,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
     def test_delete_by_NE_filter(self):
         filter_opts = '{"age": { "$ne" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -589,7 +598,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
     def test_delete_by_NE_and_other_filter(self):
         filter_opts = '{"age": { "$ne" : 15 }, "name": {"$ne" : "Sasha"}}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_WAS_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -652,15 +661,15 @@ class ApiSpecialEndpointsCase(ApiBaseTestClass):
         assert resp.status_code == 404
 
 
-    def test_sever_error(self):
-        old_get = storage.get
-        def get_by_ket(app_id, user_id, bucket, key):
-            raise RuntimeError("My error")
-        storage.get= get_by_ket
-
-        res = self.app.get(API_V1 + '/books/key1')
-        storage.get = old_get
-        assert res.status_code == 500
+#    def test_sever_error(self):
+#        old_get = storage.get
+#        def get_by_ket(app_id, user_id, bucket, key):
+#            raise RuntimeError("My error")
+#        storage.get= get_by_ket
+#
+#        res = self.app.get(API_V1 + '/books/key1')
+#        storage.get = old_get
+#        assert res.status_code == 500
 
 
 
