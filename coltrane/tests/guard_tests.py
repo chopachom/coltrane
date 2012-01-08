@@ -1,3 +1,4 @@
+from sqlalchemy.orm import session
 from coltrane.rest.utils import resp_msgs
 
 __author__ = 'qweqwe'
@@ -20,6 +21,7 @@ class GuardTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+
         cls.app = create_app(
             modules=((api_v1, '/v1'),),
             exts=(guard, db),
@@ -29,14 +31,20 @@ class GuardTestCase(unittest.TestCase):
         cls.client = cls.app.test_client()
         cls.context = cls.app.test_request_context()
         cls.context.__enter__()
+
+        db.session.query(AppToken).delete()
+        db.session.query(Application).delete()
+        db.session.query(User).delete()
+        db.session.commit()
+
         u = User('user_id1', 'ololo@gmail.com', '123456')
         a = Application("Mrazish ololo", "mrazish", "description", u)
         at = AppToken(u,a)
         db.session.add_all([u, a, at])
         db.session.commit()
-        cls.user=u
+        cls.user = u
         cls.apptoken = at
-        cls.application =a
+        cls.application = a
         cls.session = db.session
 
 

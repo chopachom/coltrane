@@ -217,7 +217,6 @@ def delete_by_filter_handler(bucket):
     return {'message': resp_msgs.DOC_DELETED}, http.OK
 
 
-
 def validate_forbidden_fields(doc, fields=None):
     if not fields:
         fields = forbidden_fields.values()
@@ -330,11 +329,11 @@ def extract_pagination_data():
 
 
 def get_user_id():
-    return guard.current_user.id
+    return str(guard.current_user.id)
 
 
 def get_app_id():
-    return guard.current_app.id
+    return str(guard.current_app.id)
 
 
 def get_remote_ip():

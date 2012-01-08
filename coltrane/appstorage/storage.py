@@ -10,8 +10,9 @@ from datetime import datetime
 from uuid import uuid4
 from functools import wraps
 from hashlib import sha1
+from . import try_convert_to_date
 
-from coltrane.appstorage.exceptions import *
+from .exceptions import *
 from coltrane.utils import Enum
 
 
@@ -90,17 +91,11 @@ class AppdataStorage(object):
 
 
         # check if a key is already exists, if it isn't - generate new
-        if extf.KEY in document:
-            document_id = _internal_id(app_id, user_id, bucket, 0,
-                                       document[extf.KEY])
-        else:
-            document_id = _internal_id(app_id, user_id, bucket, 0, uuid4())
+        if extf.KEY not in document:
+            document[extf.KEY] = uuid4()
 
-        document = _from_external_to_internal(app_id, user_id, bucket,
-            _filter_int_fields(_filter_ext_fields(document))
-        )
+        document = _from_external_to_internal(app_id, user_id, bucket, document)
         # add required fields to document
-        document[intf.ID] = document_id
         document[intf.APP_ID] = app_id
         document[intf.USER_ID] = user_id
         document[intf.BUCKET] = bucket
@@ -174,8 +169,6 @@ class AppdataStorage(object):
         if type(document) is not DICT_TYPE:
             raise InvalidDocumentError('Document must be instance of dict type')
 
-        document =  _from_external_to_internal(app_id, user_id, bucket, document)
-
         if key:
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts={extf.KEY: key})
@@ -207,19 +200,11 @@ class AppdataStorage(object):
         }, multi=True)
 
 
-    #TODO: REFUCK this FUNC
-    def is_document_exists(self, app_id, user_id, bucket, criteria=None):
+    def is_document_exists(self, app_id, user_id, bucket, filter_opts=None):
         """ Function for the external performing
         """
-        if criteria and extf.KEY in criteria:
-            doc_id = _internal_id(app_id, user_id, bucket, 0, criteria[extf.KEY])
-            if len(criteria) == 1:
-                return self._is_document_exists({intf.ID: doc_id})
-            kwargs = dict(document_id=doc_id)
-        else:
-            kwargs = dict(filter_opts=criteria)
-        res_criteria = _generate_criteria(app_id, user_id, bucket,**kwargs)
-        return self._is_document_exists(res_criteria)
+        criteria = _generate_criteria(app_id, user_id, bucket, filter_opts)
+        return self._is_document_exists(criteria)
 
 
     def _is_document_exists(self, criteria):
@@ -350,30 +335,15 @@ def _from_external_to_internal(app_id, user_id, bucket, doc):
     return _from_dict(doc)
 
 
-def _generate_criteria(app_id, user_id, bucket, document_id=None,
-                       filter_opts=None):
-    if document_id:
-        criteria = { intf.ID :document_id }
-    else:
-        criteria = {
-            intf.HASHID: sha1(app_id+user_id+bucket+str(False)).hexdigest()
-        }
+def _generate_criteria(app_id, user_id, bucket, filter_opts=None):
+    """ Generates criteria object for searching or filtering in mongodb"""
+
+    criteria = {intf.HASHID: sha1(app_id + user_id + bucket + str(False)).hexdigest()}
 
     if filter_opts:
         filter_opts = _from_external_to_internal(app_id, user_id, bucket, filter_opts)
         if intf.ID in filter_opts:
-            criteria = { intf.ID : filter_opts[intf.ID] }
-        else:
-            criteria.update(filter_opts)
+            del criteria[intf.HASHID]
+        criteria.update(filter_opts)
 
     return criteria
-
-
-reg = re.compile(r'^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d*))?Z?$')
-def try_convert_to_date(data):
-    res = re.match(reg, data)
-    if res:
-        val = [int(x) if x else 0 for x in res.groups()]
-        return datetime(*val)
-    else:
-        return data

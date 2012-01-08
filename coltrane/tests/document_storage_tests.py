@@ -190,7 +190,6 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # define new dict for update
         updated_data = {'test': 'updated_data',
-                        extf.KEY: key,
                         extf.BUCKET: bucket}
         storage.update(app_id, user_id, bucket, self.ip,
             copy.deepcopy(updated_data), key=key)
@@ -224,16 +223,16 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
     def test_from_int_to_ext(self):
         d = {extf.KEY:'key', 'a':{'b':[{'a':10},10,
                 {extf.KEY:15, extf.BUCKET:'buck'}, {extf.CREATED_AT:'10.10.2010'}]}}
-        res = _from_external_to_internal(d, 'a', 'b', 'c')
+        res = _from_external_to_internal('a', 'b', 'c', d)
         assert res == {'a':
                            {'b':
                               [
                                  {'a': 10}, 10,
-                                 {intf.BUCKET: 'buck', intf.ID: 'a|b|c|15'},
+                                 {intf.BUCKET: 'buck', intf.ID: 'a|b|c|0|15'},
                                  {intf.CREATED_AT: '10.10.2010'}
                               ]
                            },
-                       '_id': 'a|b|c|key'}
+                       '_id': 'a|b|c|0|key'}
 
 
 if __name__ == '__main__':

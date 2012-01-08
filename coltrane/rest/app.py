@@ -110,7 +110,7 @@ def configure_errorhandlers(app):
             message = error.message
         else:
             message = resp_msgs.INTERNAL_ERROR
-            LOG.debug(error.message)
+            LOG.error(error.message)
             if app.debug or app.testing:
                 raise
 

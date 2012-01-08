@@ -44,7 +44,7 @@ def average(v):
     return sum(v, 0.0) / len(v)
 
 def save(doc):
-    return storage.create(app_id, user_id, ip, doc, bucket)
+    return storage.create(app_id, user_id, bucket, ip, doc)
 
 def get(key):
     return storage.get(app_id, user_id, bucket, key)
@@ -53,7 +53,7 @@ def find(filter):
         return storage.find(app_id, user_id, bucket, filter)
 
 def update(filter, doc):
-    storage.update(app_id, user_id, ip, bucket, doc, filter_opts=filter)
+    storage.update(app_id, user_id, bucket, ip, doc, filter_opts=filter)
 
 def duration_seconds(fn):
     @wraps(fn)

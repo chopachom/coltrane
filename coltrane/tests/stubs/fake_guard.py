@@ -10,13 +10,13 @@ APP_TOKEN  = 'tHiSiSaPpLiCaTiOnToKeN'
 
 
 class user(Enum):
-    id = 101
+    id = "101"
     name = 'Fake and Gay'
     token = AUTH_TOKEN
 
 
 class app(Enum):
-    id = 100500
+    id = "100500"
     title = 'Anal Prestige'
     token = APP_TOKEN
 

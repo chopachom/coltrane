@@ -253,6 +253,14 @@ class ApiUpdateManyCase(ApiBaseTestClass):
     def tearDown(self):
         super(ApiUpdateManyCase, self).tearDownClass()
 
+    def test_get_by_filter_with_key(self):
+        filter = {extf.KEY: 5, 'age':15}
+        res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
+        assert len(from_json(res.data)['response']) == 1
+
+        filter = {extf.KEY: 5, 'age':25}
+        res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
+        assert res.status_code == http.NOT_FOUND
 
     def test_inner_query(self):
         filter = {'$and': [{extf.KEY: 5}, {'age':15}]}
