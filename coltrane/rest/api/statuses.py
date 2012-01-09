@@ -23,13 +23,13 @@ class http(Enum):
 class app(Enum):
     OK                = 0
     BAD_REQUEST       = 1
-    APP_UNAUTHORIZED  = 2
-    USER_UNAUTHORIZED = 3
-    NOT_FOUND         = 4
-    NOT_IMPLEMENTED   = 5
-    SERVER_ERROR      = 6
-    CREATED           = 7
-    CONFLICT          = 8
+    CREATED           = 2
+    NOT_FOUND         = 3
+    CONFLICT          = 4
+    APP_UNAUTHORIZED  = 5
+    USER_UNAUTHORIZED = 6
+    NOT_IMPLEMENTED   = 7
+    SERVER_ERROR      = 8
 
 
 

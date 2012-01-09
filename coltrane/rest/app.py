@@ -117,4 +117,4 @@ def configure_errorhandlers(app):
         app_code, http_code = ERROR_INFO_MATCHING.get(
             error_class, (app_status.SERVER_ERROR, http.SERVER_ERROR))
 
-        return {'message': message}, http_code
+        return {'message': message, 'code': app_code}, http_code

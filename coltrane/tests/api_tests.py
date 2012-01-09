@@ -84,7 +84,7 @@ class ApiTestCase(ApiBaseTestClass):
     def test_get_all_request(self):
         rv = self.app.get(API_V1 + '/books')
         res = from_json(rv.data)
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
 
 
     def test_get_by_multiple_keys(self):
@@ -136,12 +136,12 @@ class ApiTestCase(ApiBaseTestClass):
         assert from_json(resp.data)[extf.KEY] == key
 
         resp = self.app.delete(API_V1 + '/books/' + key)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED, STATUS_CODE: app.OK}
 
     def test_fail_delete_request(self):
         rv = self.app.delete(API_V1 + '/books/4')
         assert  from_json(rv.data) == \
-                {'message': resp_msgs.DOC_NOT_EXISTS}
+                {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
         assert rv.status_code == http.NOT_FOUND
 
 
@@ -152,21 +152,23 @@ class ApiTestCase(ApiBaseTestClass):
         )
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (forbidden_fields.WHERE, intf.ID)}
+                                  (forbidden_fields.WHERE, intf.ID), STATUS_CODE: app.BAD_REQUEST}
 
         filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (forbidden_fields.WHERE, intf.ID)}
+                                  (forbidden_fields.WHERE, intf.ID),
+                       STATUS_CODE: app.BAD_REQUEST}
 
         filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
         rv = self.app.delete(API_V1 + '/books?filter=' + json.dumps(filter))
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (forbidden_fields.WHERE, intf.ID)}
+                                  (forbidden_fields.WHERE, intf.ID),
+                       STATUS_CODE: app.BAD_REQUEST}
 
         filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
@@ -176,7 +178,8 @@ class ApiTestCase(ApiBaseTestClass):
         )
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (forbidden_fields.WHERE, intf.ID)}
+                                  (forbidden_fields.WHERE, intf.ID),
+                       STATUS_CODE: app.BAD_REQUEST}
 
 
         filter = {'a':21, 'b':[1,2,3],
@@ -187,7 +190,8 @@ class ApiTestCase(ApiBaseTestClass):
         )
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (forbidden_fields.WHERE, intf.ID)}
+                                  (forbidden_fields.WHERE, intf.ID),
+                       STATUS_CODE: app.BAD_REQUEST}
 
 
     def test_where_field_as_string(self):
@@ -210,7 +214,8 @@ class ApiTestCase(ApiBaseTestClass):
 
         rv = self.app.get(API_V1 + '/books?filter=\'this.a > 3\'')
         res = from_json(rv.data)
-        assert res == {"message": "Invalid json object \"\'this.a > 3\'\""}
+        assert res == {"message": "Invalid json object \"\'this.a > 3\'\"",
+                       STATUS_CODE: app.BAD_REQUEST}
 
 
     def test_creating_docs_with_same_key(self):
@@ -283,7 +288,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         print rv.data
         data = from_json(rv.data)
         res = data
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
 
 
     def test_put_with_forbidden_fields(self):
@@ -336,7 +341,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         print rv.data
         data = from_json(rv.data)
         res = data
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
 
 
     def test_put_existing_document(self):
@@ -358,7 +363,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         )
 
         data = from_json(rv.data)
-        assert data == {'message': resp_msgs.DOC_UPDATED}
+        assert data == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
 
     def test_update_all(self):
         resp = self.app.get(API_V1 + '/books')
@@ -368,7 +373,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         src_update = {"age": 50}
         resp = self.app.put(API_V1 + '/books',
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -382,7 +387,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -395,7 +400,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}, "name": "Pasha"}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED,
+                                        STATUS_CODE: app.OK}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -408,7 +414,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}, "cources.one": {"$lt": 3}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -421,7 +427,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         src_update = {"new_field": 100}
         resp = self.app.put(API_V1 + '/books',
                             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED,
+                                        STATUS_CODE: app.OK}
         assert resp.status_code == http.OK
 
         resp = self.app.get(API_V1 + '/books')
@@ -515,11 +522,13 @@ class ApiDeleteManyCase(ApiBaseTestClass):
 
         resp = self.app.get(API_V1 + '/books')
         assert resp.status_code == http.NOT_FOUND
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_NOT_EXISTS,
+                                        STATUS_CODE: app.NOT_FOUND}
 
     def test_delete_all_with_wrong_filter(self):
         resp = self.app.get(API_V1 + '/books?filter=all')
-        assert from_json(resp.data) == {'message': 'Invalid json object "all"'}
+        assert from_json(resp.data) == {'message': 'Invalid json object "all"',
+                                        STATUS_CODE: app.BAD_REQUEST}
 
     def test_delete_two_by_age(self):
         filter_opts = '{"age":10}'
@@ -624,7 +633,8 @@ class ApiDeleteManyCase(ApiBaseTestClass):
     def test_delete_nothing(self):
         filter_opts = '{"age":10, "name":"Sergey"}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
-        assert  from_json(resp.data) == {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert  from_json(resp.data) == {'message': resp_msgs.DOC_NOT_EXISTS,
+                                         STATUS_CODE: app.NOT_FOUND}
         assert resp.status_code == http.NOT_FOUND
 
         resp = self.app.get(API_V1 + '/books')
@@ -637,7 +647,8 @@ class ApiDeleteManyCase(ApiBaseTestClass):
 
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         resp = from_json(resp.data)
-        expected = {'message': 'Invalid json object \"{"age":10, name:"Sergey"all}\"'}
+        expected = {'message': 'Invalid json object \"{"age":10, name:"Sergey"all}\"',
+                    STATUS_CODE: app.BAD_REQUEST}
         assert resp == expected
 
 
@@ -646,7 +657,8 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         resp = from_json(resp.data)
         print resp
-        expected = {'message': 'Invalid request syntax. Filter options were not specified'}
+        expected = {'message': 'Invalid request syntax. Filter options were not specified',
+                    STATUS_CODE: app.BAD_REQUEST}
         assert resp == expected
 
 

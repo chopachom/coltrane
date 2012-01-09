@@ -41,7 +41,7 @@ def get_by_keys_handler(bucket, keys):
         if res[STATUS_CODE] == app.OK:
             res = res['document']
         elif res[STATUS_CODE] == app.NOT_FOUND:
-            res = {'message': res['message']}
+            res = {'message': res['message'], STATUS_CODE: app.NOT_FOUND}
             http_status = http.NOT_FOUND
     else:
         res = {'response': res}
@@ -61,7 +61,8 @@ def get_by_filter_handler(bucket):
     if len(documents):
         return {'response': documents}, http.OK
 
-    return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+    return {'message': resp_msgs.DOC_NOT_EXISTS,
+            STATUS_CODE: app.NOT_FOUND}, http.NOT_FOUND
 
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
@@ -90,16 +91,12 @@ def post_handler(bucket, key):
     return {extf.KEY: document_key}, http.CREATED
 
 
-
-
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['PUT'])
 @jsonify
 def put_by_keys_handler(bucket, keys):
     """ Update existing documents by keys.
         If document with any key doesn't exist then create it
     """
-#    if not len(keys):
-#        raise exceptions.InvalidRequestError('At least one key must be passed.')
     document = extract_form_data()
     force = is_force_mode()
 
@@ -127,11 +124,14 @@ def put_by_keys_handler(bucket, keys):
                         'message': resp_msgs.DOC_UPDATED})
     if len(res) == 1:
         res = res[0]
+        app_status = app.OK
         if res[STATUS_CODE] == app.CREATED:
             http_status = http.CREATED
+            app_status = app.CREATED
         elif res[STATUS_CODE] == app.NOT_FOUND:
             http_status = http.NOT_FOUND
-        res = {'message': res['message']}
+            app_status = app.NOT_FOUND
+        res = {'message': res['message'], STATUS_CODE: app_status}
     else:
         res = {'response': res}
 
@@ -157,17 +157,20 @@ def put_by_filter_handler(bucket):
                 get_app_id(), get_user_id(),  bucket, get_remote_ip(), document
             )
             return {
-                extf.KEY: key, 'message': resp_msgs.DOC_CREATED
+                extf.KEY: key, 'message': resp_msgs.DOC_CREATED,
+                STATUS_CODE: app.CREATED
             }, http.CREATED
 
         else:
             return {
-                'message': resp_msgs.DOC_NOT_EXISTS
+                'message': resp_msgs.DOC_NOT_EXISTS,
+                STATUS_CODE: app.NOT_FOUND
             }, http.NOT_FOUND
 
     storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                    document, filter_opts=filter_opts)
-    return {'message': resp_msgs.DOC_UPDATED}, http.OK
+
+    return {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}, http.OK
 
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
@@ -192,9 +195,11 @@ def delete_by_keys_handler(bucket, keys):
 
     if len(res) == 1:
         res = res[0]
+        app_status = app.OK
         if res[STATUS_CODE] == app.NOT_FOUND:
             http_status = http.NOT_FOUND
-        res = {'message': res['message']}
+            app_status = app.NOT_FOUND
+        res = {'message': res['message'], STATUS_CODE: app_status}
     else:
         res = {'response': res}
 
@@ -209,7 +214,8 @@ def delete_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     if not storage.is_document_exists(get_app_id(), get_user_id(),
                                       bucket, filter_opts):
-        return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+        return {'message': resp_msgs.DOC_NOT_EXISTS,
+                STATUS_CODE: app.NOT_FOUND}, http.NOT_FOUND
     
     storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                     filter_opts=filter_opts)
