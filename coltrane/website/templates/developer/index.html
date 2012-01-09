@@ -1,21 +1,34 @@
 {% from "_formhelpers.html" import render_field %}
 {% extends "layout.html" %}
 {% block content %}
+<div class="apps container">
     <div class="page-header">
-      <h1>Developer's area <small>Supporting text or tagline</small></h1>
+        <h2>Your Apllications</h2>
     </div>
-    <div class="row">
-      <div class="span10">
-          <h3>Your apps:</h3>
-          {% for app in apps %}
-              <div>
-                <h5><a href="{{ url_for('developer.app_details', domain=app.domain) }}">{{ app.name }}</a> <small> at {{ app.domain }}.{{ current_user.nickname }}.appshit.com</small></h5>
-                <p>{{ app.description or '' }}</p>
-              </div>
-          {% endfor %}
-      </div>
-      <div class="span4">
-        <h3>Secondary content</h3>
-      </div>
+    <div class="content apps-bar">
+        <div class="row">
+            <div class="span8 total">
+                You have 3 apps
+            </div>
+            <div class="span2">
+                <a href="{{ url_for('developer.create_app') }}" class="btn">Create new</a>
+            </div>
+        </div>
     </div>
+    <div class="content">
+        <div class="row">
+            <div class="span10">
+                {% for app in apps %}
+                    <div class="app">
+                        <h5><a href="{{ url_for('developer.app_details', domain=app.domain) }}">{{ app.name }}</a> <small> at {{ app.domain }}.{{ app.author.nickname }}.appshit.com</small></h5>
+                        <p>{{ app.description or '' }}</p>
+                        <small>git: git@appshit.com:{{ app.author.nickname }}/{{ app.domain }}.git</small>
+                        <br>
+                        <small>by {{ app.author.nickname }}</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

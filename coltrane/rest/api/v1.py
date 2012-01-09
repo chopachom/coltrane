@@ -55,7 +55,7 @@ def get_by_filter_handler(bucket):
 
     filter_opts = extract_filter_opts()
     skip, limit = extract_pagination_data()
-    
+
     documents = storage.find(get_app_id(), get_user_id(), bucket,
                              filter_opts, skip, limit)
     if len(documents):
@@ -167,8 +167,8 @@ def put_by_filter_handler(bucket):
 
     storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                    document, filter_opts=filter_opts)
-
     return {'message': resp_msgs.DOC_UPDATED}, http.OK
+
 
 @api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
 @jsonify
@@ -215,6 +215,7 @@ def delete_by_filter_handler(bucket):
                     filter_opts=filter_opts)
 
     return {'message': resp_msgs.DOC_DELETED}, http.OK
+
 
 
 def validate_forbidden_fields(doc, fields=None):
@@ -337,6 +338,6 @@ def get_app_id():
 
 
 def get_remote_ip():
-    request.get('remote_addr', None)
+    return request.remote_addr
 
 

@@ -1,9 +1,9 @@
 __author__ = 'qweqwe'
 
 from flask import Blueprint, render_template, request, url_for, redirect
-from website.forms import CreateAppForm
-from website.models import  Application, User
-from website.extensions.warden import warden
+from coltrane.website.forms import CreateAppForm
+from coltrane.db.models import  Application, User
+from coltrane.website.extensions.warden import warden
 
 
 appstore = Blueprint('appstore', __name__)

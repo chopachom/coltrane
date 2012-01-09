@@ -1,16 +1,20 @@
 {% from "_formhelpers.html" import render_field %}
 {% extends "layout.html" %}
 {% block content %}
+<div class="apps container">
     <div class="page-header">
-      <h1>Page name <small>Supporting text or tagline</small></h1>
+        <h2>Your Apllications</h2>
     </div>
-    <div class="row">
-      <div class="span10">
-        <h2>{{ app.name }} <small> at {{ app.domain }}.{{ current_user.nickname }}.appshit.com</small></h2>
-          <p>{{ app.description }}</p>
-      </div>
-      <div class="span4">
-        <h3>Secondary content</h3>
-      </div>
+    <div class="content">
+        <div class="row">
+            <div class="span10">
+                    <div class="app">
+                        <h5><a href="{{ url_for('appstore.details', nickname=app.author.nickname, domain=app.domain) }}">{{ app.name }}</a> <small> at {{ app.domain }}.{{ app.author.nickname }}.appshit.com</small></h5>
+                        <p>{{ app.description or '' }}</p>
+                        <small>by {{ app.author.nickname }}</small>
+                    </div>
+            </div>
+        </div>
     </div>
+</div>
 {% endblock %}

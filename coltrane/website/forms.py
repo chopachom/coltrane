@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+    :Authors: - qweqwe
+"""
 from  flaskext.wtf import (Form, TextField, PasswordField, TextAreaField,
-                           DecimalField, ValidationError, validators)
-from website.extensions.warden import warden
-from website.models import User, Application
+                           FileField, DecimalField, ValidationError, validators)
+from coltrane.website.extensions.warden import warden
+from coltrane.db.models import User, Application
 from flaskext.bcrypt import check_password_hash
 
 
@@ -78,3 +81,11 @@ class CreateAppForm(Form):
         app = Application.get(domain=field.data, author=warden.current_user())
         if app:
             raise ValidationError("Domain already taken")
+
+class EditAppForm(Form):
+    name =  TextField("App name", [
+        validators.Length(min=2, max=255),
+        validators.Required()
+    ])
+    description = TextAreaField("Description")
+    zipfile     = FileField("Zip file with app")

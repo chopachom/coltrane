@@ -13,10 +13,10 @@ class User(Base):
     nickname  = Column(String(80), unique=True)
     firstname = Column(String(255), unique=True)
     lastname  = Column(String(255), unique=True)
-    email     = Column(String(255))
+    email     = Column(String(255), unique=True)
     pwd_hash  = Column(String(255))
     #: used to identify user in applications
-    token     = Column(String(255), default=uuid4)
+    token     = Column(String(255), default=uuid4, unique=True)
     #: used in cookies to identify user
     auth_hash = Column(String(255))
     created   = Column(DateTime, default=datetime.utcnow)
@@ -53,7 +53,7 @@ class AppToken(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     app_id  = Column(Integer, ForeignKey("applications.id"))
-    token   = Column(String(255))
+    token   = Column(String(255),default=uuid4,  unique=True)
     created = Column(DateTime, default=datetime.utcnow)
     
 

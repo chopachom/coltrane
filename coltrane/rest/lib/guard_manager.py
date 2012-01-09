@@ -1,6 +1,7 @@
 __author__ = 'qweqwe'
 
 from coltrane.db.models import User, AppToken
+from hashlib import sha256
 
 #TODO: (Someday) use HandlerSocket
 class GuardManager(object):
@@ -9,7 +10,7 @@ class GuardManager(object):
         pass
 
     def authenticate_user(self, token):
-        return User.query.filter(User.token==token).first()
+        return User.query.filter(User.auth_hash == sha256(token).hexdigest()).first()
 
     def authenticate_app(self, token):
         token = AppToken.query.filter(AppToken.token == token).first()
