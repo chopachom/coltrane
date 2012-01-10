@@ -108,9 +108,20 @@ class AppdataStorage(object):
         document[intf.IP_ADDRESS] = ip_address
         document[intf.DELETED] = False
 
-        self.entities.insert(document)
+        id = document[intf.ID]
+        criteria_for_search_removed_doc = {
+            intf.ID: id,
+            intf.DELETED: True
+        }
+        if self._is_document_exists(criteria_for_search_removed_doc):
+            # if removed doc with same id exists - update it
+            del document[intf.ID]
+            self.entities.update(criteria_for_search_removed_doc, {'$set': document},
+                multi=False, safe=True)
+        else:
+            self.entities.insert(document, safe=True)
 
-        return _external_key(document[intf.ID])
+        return _external_key(id)
 
 
     @verify_tokens
@@ -129,7 +140,6 @@ class AppdataStorage(object):
             raise InvalidDocumentKeyError('Document key must be not null')
 
         # logic
-
         document_id = _internal_id(app_id, user_id, bucket, 0, key)
         res = self.entities.find_one({intf.ID: document_id, intf.DELETED: False})
         if res is None:
@@ -203,7 +213,7 @@ class AppdataStorage(object):
                 intf.IP_ADDRESS:ip_address,
                 intf.UPDATED_AT:datetime.utcnow()
             }
-        }, multi=True)
+        }, multi=True, safe=True)
 
 
 

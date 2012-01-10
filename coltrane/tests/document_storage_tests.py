@@ -235,5 +235,24 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
                        '_id': 'a|b|c|0|key'}
 
 
+    def test_delete_and_save_with_same_key(self):
+        app_id = '1'
+        user_id = '2'
+        bucket = 'docmgmt'
+        client_key = 'doc#1'
+        document = {
+            extf.KEY: client_key,
+            'value': 'test document'
+        }
+
+        storage.create(app_id, user_id, bucket, self.ip, document)
+        storage.delete(app_id, user_id, bucket, self.ip, client_key)
+
+        # try to save another doc with same key
+        storage.create(app_id, user_id, bucket, self.ip, document)
+
+        assert storage.get(app_id, user_id, bucket, client_key) != None
+
+
 if __name__ == '__main__':
     unittest.main()
