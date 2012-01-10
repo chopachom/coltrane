@@ -1,0 +1,20 @@
+<!-- UWSGI XML Configuration File -->
+<uwsgi>
+    <uid>www-data</uid>
+    <gid>www-data</gid>
+    <daemonize>/web/website/uwsgi.log</daemonize>
+    <pidfile>/web/website/uwsgi.pid</pidfile>
+    <touch-reload>/web/website/reloader</touch-reload>
+    <socket>127.0.0.1:9001</socket>
+    <home>/var/lib/venv/coltrane</home>
+    <plugins>python</plugins>
+    <pythonpath>/web/app</pythonpath>
+    <module>coltrane.website.run:app</module>
+    <processes>4</processes>
+    <max-requests>5000</max-requests>
+    <buffer-size>32768</buffer-size>
+    <harakiri>30</harakiri>
+    <reload-mercy>8</reload-mercy>
+    <master />
+    <no-orphans />
+</uwsgi>

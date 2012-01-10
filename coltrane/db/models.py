@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-__author__ = 'qweqwe'
+"""
+    :Authors: - qweqwe
+"""
 
 from coltrane.db.extension import db
 from datetime import datetime
@@ -19,10 +21,10 @@ class User(db.Model):
     nickname  = db.Column(db.String(80), unique=True)
     firstname = db.Column(db.String(255), unique=True)
     lastname  = db.Column(db.String(255), unique=True)
-    email     = db.Column(db.String(255))
+    email     = db.Column(db.String(255), unique=True)
     pwd_hash  = db.Column(db.String(255))
     #: used to identify user in applications
-    token     = db.Column(db.String(255), default=uuid4)
+    token     = db.Column(db.String(255), default=uuid4, unique=True)
     #: used in cookies to identify user
     auth_hash = db.Column(db.String(255))
     created   = db.Column(db.DateTime, default=datetime.utcnow)
@@ -31,7 +33,8 @@ class User(db.Model):
     def __init__(self, nickname, email, password):
         self.nickname  = nickname
         self.email     = email
-        self.pwd_hash  = generate_password_hash(password)
+        if password:
+            self.pwd_hash  = generate_password_hash(password)
         self.generate_auth_tokens()
 
 
@@ -62,6 +65,43 @@ class User(db.Model):
         db.session.commit()
         return self.auth_token
 
+    @property
+    def screen_name(self):
+        """
+            Used to display username on the site.
+            If user doesn't have nor nickname nor email nor last or first names
+            he probably had registered using twitter, so we return his twitter
+            name.
+            If user have last or first names, we return them
+            If user have no last of first names he probably have nickname or
+            at least an email
+        """
+        if not self.nickname and not self.email and \
+           not self.firstname and not self.lastname:
+            if self.twitter_user:
+                return "@{0}".format(self.twitter_user.twitter_name)
+            else:
+                #TODO: CRITICAL ERROR
+                return
+        if self.firstname or self.lastname:
+            #TODO: remove space if user doesn't have a first name
+            return '{0} {1}'.format(self.firstname, self.lastname)
+        else:
+            return self.nickname or self.email
+
+
+
+
+
+    @classmethod
+    def create(cls, nickname=None, email=None, password=None,
+               first_name=None, last_name=None):
+        user = cls(nickname, email, password)
+        user.firstname = first_name
+        user.lastname  = last_name
+        db.session.add(user)
+        db.session.commit()
+        return user
 
     @classmethod
     def get(cls, nickname):
@@ -73,8 +113,67 @@ class FacebookUser(db.Model):
     __tablename__ = 'facebook_users'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    facebook_id = db.Column(db.BigInteger, nullable=False)
+    facebook_id = db.Column(db.BigInteger, nullable=False, unique=True)
     access_token = db.Column(db.String(512), nullable=False)
+
+    #primaryjoin=(user_id==User.id),
+    user = db.relationship(User, uselist=False, backref=db.backref('facebook_user'))
+
+    def __init__(self, user, id, access_token):
+        self.user = user
+        self.facebook_id = id
+        self.access_token = access_token
+
+    def update_token(self, access_token):
+        self.access_token = access_token
+        db.session.commit()
+
+    @classmethod
+    def create(cls, user, id, access_token):
+        facebook_user = cls(user, id, access_token)
+        db.session.add(facebook_user)
+        db.session.commit()
+        return facebook_user
+
+    @classmethod
+    def get(cls, id):
+        return cls.query.filter(FacebookUser.facebook_id == id).first()
+
+
+
+class TwitterUser(db.Model):
+    __tablename__ = 'twitter_users'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    twitter_name = db.Column(db.String(512), nullable=False, unique=True)
+    twitter_id   = db.Column(db.BigInteger, nullable=False, unique=True)
+    access_token = db.Column(db.String(512), nullable=False)
+    access_token_secret = db.Column(db.String(512), nullable=False)
+
+    user = db.relationship(User, uselist=False, backref=db.backref('twitter_user'))
+
+    def __init__(self, user, name, twitter_id, access_token, access_token_secret):
+        self.user = user
+        self.twitter_name = name
+        self.twitter_id = twitter_id
+        self.access_token = access_token
+        self.access_token_secret = access_token_secret
+
+    def update_tokens(self, access_token, access_toke_secret):
+        self.access_token = access_token
+        self.access_token_secret = access_toke_secret
+        db.session.commit()
+
+    @classmethod
+    def create(cls, user, name, twitter_id, access_token, access_token_secret):
+        twitter_user = cls(user, name, twitter_id, access_token, access_token_secret)
+        db.session.add(twitter_user)
+        db.session.commit()
+        return twitter_user
+
+    @classmethod
+    def get(cls, name):
+        return cls.query.filter(TwitterUser.twitter_name == name).first()
 
 
 
@@ -202,7 +301,7 @@ class AppToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     app_id  = db.Column(db.Integer, db.ForeignKey("applications.id"))
-    token   = db.Column(db.String(255))
+    token   = db.Column(db.String(255), default=uuid4,  unique=True)
     created   = db.Column(db.DateTime, default=datetime.utcnow)
 
 

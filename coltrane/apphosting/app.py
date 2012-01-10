@@ -1,22 +1,41 @@
 # -*- coding: utf-8 -*-
 #TODO: USE HANDLER SOCKET OR SOME FORM OF CACHING
+import logging
+from logging.handlers import RotatingFileHandler
+from hashlib import sha256
 
 __author__ = 'qweqwe'
 
 from flask import Flask, request, make_response, abort
-from pprint import PrettyPrinter
 from urlparse import urlparse
-from hashlib import sha256
-from os import urandom
 from datetime import datetime
 from coltrane.db.models import User, Application, AppToken
 from coltrane.db.extension import db
 from coltrane import config
-
-pp = PrettyPrinter(indent=4)
+from coltrane.apphosting.config import DefaultConfig
 
 app = Flask(__name__)
+app.config.from_object(DefaultConfig)
 db.init_app(app)
+
+#configure logging
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s '
+                              '[in %(pathname)s:%(lineno)d]')
+
+debug_log = app.config['DEBUG_LOG']
+debug_file_handler = RotatingFileHandler(debug_log, maxBytes=100000,
+                                        backupCount=10)
+debug_file_handler.setLevel(logging.DEBUG)
+debug_file_handler.setFormatter(formatter)
+app.logger.addHandler(debug_file_handler)
+
+error_log = app.config['ERROR_LOG']
+error_file_handler =  RotatingFileHandler(error_log, maxBytes=100000,
+                                         backupCount=10)
+error_file_handler.setLevel(logging.WARNING)
+error_file_handler.setFormatter(formatter)
+app.logger.addHandler(error_file_handler)
+
 
 @app.before_request
 def before_request():
@@ -24,12 +43,6 @@ def before_request():
     base_path = get_base_path()
     app_domain = get_subdomain()
     full_domain = get_topdomain()
-
-    if app.debug:
-        print 'domain:', full_domain
-        print base_path, app_domain
-        print 'cookies: '
-        pp.pprint(request.cookies)
 
     #TODO: add anonymous users
     auth_token = request.cookies.get(config.COOKIE_USER_AUTH_TOKEN)
@@ -39,7 +52,7 @@ def before_request():
     # if user opens this app for the first time
     if auth_token and not app_token:
         # generate token
-        user = User.query.filter(User.auth_token == auth_token).first()
+        user = User.query.filter(User.auth_hash ==  sha256(auth_token).hexdigest()).first()
         app  = Application.query.filter(Application.domain == app_domain).first()
         if not app:
             print 'app with domin %s was not found' % app_domain
@@ -65,15 +78,6 @@ def before_request():
     return response
 
 
-#def generate_token(user_id, app_id):
-#    return sha256(
-#        str(datetime.utcnow()) +
-#        str(user_id) +
-#        str(app_id)  +
-#        str(urandom(12))
-#    ).hexdigest()
-
-
 def get_subdomain():
     host = urlparse(request.url_root).netloc.split(':')[0]
     #olololo, super magic,
@@ -84,7 +88,6 @@ def get_subdomain():
 
 def get_topdomain():
     return urlparse(request.url_root).netloc.split(':')[0]
-
 
 def get_base_path():
     url = request.url[::-1]

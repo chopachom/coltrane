@@ -1,11 +1,15 @@
-import re
-from time import sleep
+# -*- coding: utf-8 -*-
+"""
+    :Authors: - pshkitin
+"""
+
 import datetime
+import re
+
+from time import sleep
 from pymongo.cursor import Cursor
 from pymongo.errors import AutoReconnect
 from coltrane.appstorage.exceptions import StorageError
-
-__author__ = 'qweqwe'
 
 
 AUTO_RECONNECT_ATTEMPTS = 10

@@ -8,6 +8,7 @@ from coltrane.appstorage.storage import intf
 from coltrane.rest.extensions import mongodb
 from coltrane.utils import Enum
 
+import re
 from flask import current_app, request
 from functools import wraps
 import json

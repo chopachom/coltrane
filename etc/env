@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#populate it with your configs
+export COLTRANE_MYSQL_URI="mysql://coltrane:C*#VS@fakFHvT&qfnsр]8@127.0.0.1:3306/coltrane"
+export HOSTING_ROOT=/web/hosting/webroot

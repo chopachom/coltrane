@@ -4,14 +4,18 @@
               - pasha
               - dreambrother
 """
+
+import re
+
 from datetime import datetime
 from uuid import uuid4
 from functools import wraps
 from hashlib import sha1
-from . import try_convert_to_date
 
-from .exceptions import *
 from coltrane.utils import Enum
+from . import try_convert_to_date
+from .exceptions import *
+
 
 
 
@@ -88,6 +92,7 @@ class AppdataStorage(object):
             raise InvalidDocumentError('Document must be instance of dict type')
 
 
+        # check if a key is already exists, if it isn't - generate new
         # check if a key is already exists, if it isn't - generate new
         if extf.KEY not in document:
             document[extf.KEY] = uuid4()
@@ -167,6 +172,9 @@ class AppdataStorage(object):
         if type(document) is not DICT_TYPE:
             raise InvalidDocumentError('Document must be instance of dict type')
 
+
+        document =  _from_external_to_internal(app_id, user_id, bucket, document)
+
         if key:
             criteria = _generate_criteria(app_id, user_id, bucket,
                                           filter_opts={extf.KEY: key})
@@ -196,6 +204,7 @@ class AppdataStorage(object):
                 intf.UPDATED_AT:datetime.utcnow()
             }
         }, multi=True)
+
 
 
     def is_document_exists(self, app_id, user_id, bucket, filter_opts=None):
@@ -274,7 +283,6 @@ def _to_internal(document):
     """
     # we may need to create this func in next updates
 
-
 def _from_external_to_internal(app_id, user_id, bucket, doc):
     """
     Convert document from external view to the internal.
@@ -333,6 +341,7 @@ def _from_external_to_internal(app_id, user_id, bucket, doc):
     return _from_dict(doc)
 
 
+
 def _generate_criteria(app_id, user_id, bucket, filter_opts=None):
     """ Generates criteria object for searching or filtering in mongodb"""
 
@@ -345,3 +354,4 @@ def _generate_criteria(app_id, user_id, bucket, filter_opts=None):
         criteria.update(filter_opts)
 
     return criteria
+
