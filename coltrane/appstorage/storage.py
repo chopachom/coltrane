@@ -109,17 +109,16 @@ class AppdataStorage(object):
         document[intf.DELETED] = False
 
         id = document[intf.ID]
-        criteria_for_search_removed_doc = {
+        removed_doc_criteria = {
             intf.ID: id,
             intf.DELETED: True
         }
-        if self._is_document_exists(criteria_for_search_removed_doc):
+        if self._is_document_exists(removed_doc_criteria):
             # if removed doc with same id exists - update it
             del document[intf.ID]
-            self.entities.update(criteria_for_search_removed_doc, {'$set': document},
-                multi=False, safe=True)
+            self.entities.update(removed_doc_criteria, {'$set': document}, multi=False)
         else:
-            self.entities.insert(document, safe=True)
+            self.entities.insert(document)
 
         return _external_key(id)
 
@@ -213,7 +212,7 @@ class AppdataStorage(object):
                 intf.IP_ADDRESS:ip_address,
                 intf.UPDATED_AT:datetime.utcnow()
             }
-        }, multi=True, safe=True)
+        }, multi=True)
 
 
 
