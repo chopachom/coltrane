@@ -116,8 +116,7 @@ class AppdataStorage(object):
         if self._is_document_exists(removed_doc_criteria):
             # if removed doc with same id exists - update it
             del document[intf.ID]
-            self.entities.update(removed_doc_criteria, {'$set': document},
-                multi=False, safe=True)
+            self.entities.update(removed_doc_criteria, {'$set': document}, multi=False)
         else:
             self.entities.insert(document)
 
@@ -213,7 +212,7 @@ class AppdataStorage(object):
                 intf.IP_ADDRESS:ip_address,
                 intf.UPDATED_AT:datetime.utcnow()
             }
-        }, multi=True, safe=True)
+        }, multi=True)
 
 
 
