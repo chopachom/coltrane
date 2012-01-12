@@ -55,20 +55,30 @@ class Guard(object):
 
 
     def _before_request(self):
-        if not self.get_auth_token() or not self.get_app_token():
-            #TODO FORMAT
-            return jsonify({'response': {
+        if not self.get_auth_token():
+            return jsonify({
+                'message': 'User is not authorized',
+                statuses.STATUS_CODE: statuses.app.USER_UNAUTHORIZED
+            }), statuses.http.UNAUTHORIZED
+        if not self.get_app_token():
+            return jsonify({
+                'message': 'App is not authorized',
                 statuses.STATUS_CODE: statuses.app.APP_UNAUTHORIZED
-            }}), statuses.http.UNAUTHORIZED
+            }), statuses.http.UNAUTHORIZED
 
         user = self._authenticate_user(self.get_auth_token())
         app = self._authenticate_app(self.get_app_token())
 
-        if not user or not app:
-            #TODO FORMAT abort(401)
-            return jsonify({'response': {
+        if not user:
+            return jsonify({
+                'message': 'User is not authorized',
+                statuses.STATUS_CODE: statuses.app.USER_UNAUTHORIZED
+            }), statuses.http.UNAUTHORIZED
+        if not app:
+            return jsonify({
+                'message': 'App is not authorized',
                 statuses.STATUS_CODE: statuses.app.APP_UNAUTHORIZED
-            }}), statuses.http.UNAUTHORIZED
+            }), statuses.http.UNAUTHORIZED
 
         g.current_user = user
         g.current_app = app
