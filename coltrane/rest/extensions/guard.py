@@ -23,10 +23,6 @@ class Guard(object):
 
 
     def init_manager(self):
-        # Dirty, dirty, dirty,  dirty,  dirty,  dirty, sucka
-        self.manager = self.manager()
-        self._authenticate_user = self.manager.authenticate_user
-        self._authenticate_app = self.manager.authenticate_app
         if hasattr(self.manager, 'get_auth_token'):
             self.get_auth_token = self.manager.get_auth_token
             self.get_app_token  = self.manager.get_app_token
@@ -66,8 +62,8 @@ class Guard(object):
                 statuses.STATUS_CODE: statuses.app.APP_UNAUTHORIZED
             }), statuses.http.UNAUTHORIZED
 
-        user = self._authenticate_user(self.get_auth_token())
-        app = self._authenticate_app(self.get_app_token())
+        user = self.manager.authenticate_user(self.get_auth_token())
+        app = self.manager.authenticate_app(self.get_app_token())
 
         if not user:
             return jsonify({

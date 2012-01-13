@@ -41,4 +41,4 @@ class FakeGuardManager(object):
         return APP_TOKEN
 
 guard = Guard()
-guard.manager = FakeGuardManager
+guard.manager = FakeGuardManager()

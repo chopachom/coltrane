@@ -16,7 +16,7 @@ from coltrane.db.extension import db
 from coltrane import config
 
 
-guard.manager = GuardManager
+guard.manager = GuardManager()
 
 class GuardTestCase(unittest.TestCase):
 

@@ -18,7 +18,7 @@ from coltrane.rest.api import api_v1, converters
 
 LOG = logging.getLogger('coltrane.rest.app')
 
-guard.manager = GuardManager
+guard.manager = GuardManager()
 
 DEFAULT_APP_NAME = "coltrane"
 
