@@ -24,6 +24,18 @@ class KeysConverter(BaseConverter):
         return ','.join(BaseConverter.to_url(value) for value in values)
 
 
+class KeyConverter(BaseConverter):
+    def to_python(self, value):
+        key = value.strip()
+
+        if not key:
+            raise InvalidKey('No key has been passed')
+        return key
+
+    def to_url(self, value):
+        return BaseConverter.to_url(value)
+
+
 class BucketConverter(BaseConverter):
     def __init__(self, url_map):
         super(BucketConverter, self).__init__(url_map)

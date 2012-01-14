@@ -10,13 +10,13 @@ from coltrane.rest.api.v1 import from_json
 from coltrane.rest.lib.guard_manager import GuardManager
 from coltrane.rest.extensions import guard
 from coltrane.rest.config import TestConfig
-from coltrane.rest.api.statuses import http
+from coltrane.rest.api.statuses import http, app, STATUS_CODE
 from coltrane.db.models import User, AppToken, Application
 from coltrane.db.extension import db
 from coltrane import config
 
 
-guard.manager = GuardManager
+guard.manager = GuardManager()
 
 class GuardTestCase(unittest.TestCase):
 
@@ -56,7 +56,7 @@ class GuardTestCase(unittest.TestCase):
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN)
         res = from_json(rv.data)
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
         assert rv.status_code == http.NOT_FOUND
 
 

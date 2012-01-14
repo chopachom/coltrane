@@ -17,36 +17,16 @@ storage = AppdataStorage(lazy_coll)
 api = Blueprint("api_v1", __name__)
 
 
-@api.route('/<bucket:bucket>/<keys:keys>', methods=['GET'])
+@api.route('/<bucket:bucket>/<key:key>', methods=['GET'])
 @jsonify
-def get_by_keys_handler(bucket, keys):
+def get_by_keys_handler(bucket, key):
 
-    res = []
-    http_status = http.OK
-
-    #Maybe it is better to just not include not found documents to the response?
-    for key in keys:
-        doc = storage.get(get_app_id(), get_user_id(), bucket, key)
-        if doc:
-            doc_resp = {extf.KEY: key, STATUS_CODE: app.OK,
-                        'document': doc}
-            res.append(doc_resp)
-        else:
-            doc_resp = {extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
-                        'message': resp_msgs.DOC_NOT_EXISTS}
-            res.append(doc_resp)
-
-    if len(res) == 1:
-        res = res[0]
-        if res[STATUS_CODE] == app.OK:
-            res = res['document']
-        elif res[STATUS_CODE] == app.NOT_FOUND:
-            res = {'message': res['message']}
-            http_status = http.NOT_FOUND
+    doc = storage.get(get_app_id(), get_user_id(), bucket, key)
+    if doc:
+        return doc, http.OK
     else:
-        res = {'response': res}
-
-    return res, http_status
+        return {STATUS_CODE: app.NOT_FOUND,
+                'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
 
 
 @api.route('/<bucket:bucket>', methods=['GET'])
@@ -61,11 +41,12 @@ def get_by_filter_handler(bucket):
     if len(documents):
         return {'response': documents}, http.OK
 
-    return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+    return {'message': resp_msgs.DOC_NOT_EXISTS,
+            STATUS_CODE: app.NOT_FOUND}, http.NOT_FOUND
 
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
-@api.route('/<bucket:bucket>/<key>', methods=['POST'])
+@api.route('/<bucket:bucket>/<key:key>', methods=['POST'])
 @jsonify
 def post_handler(bucket, key):
     """ Create new document and get _key back
@@ -78,7 +59,6 @@ def post_handler(bucket, key):
         key = document.get(extf.KEY, None)
 
     if extf.KEY in document:
-        validators.KeyValidator((key,)).validate()
         if storage.is_document_exists(get_app_id(), get_user_id(),
                         bucket, {extf.KEY: key}):
             raise exceptions.DocumentAlreadyExistsError(
@@ -90,52 +70,33 @@ def post_handler(bucket, key):
     return {extf.KEY: document_key}, http.CREATED
 
 
-
-
-@api.route('/<bucket:bucket>/<keys:keys>', methods=['PUT'])
+@api.route('/<bucket:bucket>/<key:key>', methods=['PUT'])
 @jsonify
-def put_by_keys_handler(bucket, keys):
+def put_by_keys_handler(bucket, key):
     """ Update existing documents by keys.
         If document with any key doesn't exist then create it
     """
-#    if not len(keys):
-#        raise exceptions.InvalidRequestError('At least one key must be passed.')
     document = extract_form_data()
     force = is_force_mode()
 
-    res = []
-    http_status = http.OK
-    for key in keys:
-        filter_opts = {extf.KEY: key}
+    filter_opts = {extf.KEY: key}
 
-        if not storage.is_document_exists(get_app_id(), get_user_id(),
-                                          bucket, filter_opts):
-            if force:
-                document[extf.KEY] = key
-                document = generate_normal_view(document)
-                storage.create(get_app_id(), get_user_id(), bucket, get_remote_ip(),
-                               document)
-                res.append({extf.KEY: key, STATUS_CODE: app.CREATED,
-                        'message': resp_msgs.DOC_CREATED})
-            else:
-                res.append({extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
-                        'message': resp_msgs.DOC_NOT_EXISTS})
+    if not storage.is_document_exists(get_app_id(), get_user_id(),
+        bucket, filter_opts):
+        if force:
+            document[extf.KEY] = key
+            document = generate_normal_view(document)
+            storage.create(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+                document)
+            return {extf.KEY: key}, http.CREATED
         else:
-            storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
-                           document, key=key)
-            res.append({extf.KEY: key, STATUS_CODE: app.OK,
-                        'message': resp_msgs.DOC_UPDATED})
-    if len(res) == 1:
-        res = res[0]
-        if res[STATUS_CODE] == app.CREATED:
-            http_status = http.CREATED
-        elif res[STATUS_CODE] == app.NOT_FOUND:
-            http_status = http.NOT_FOUND
-        res = {'message': res['message']}
+            return {STATUS_CODE: app.NOT_FOUND,
+                    'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
     else:
-        res = {'response': res}
-
-    return res, http_status
+        storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+            document, key=key)
+        return {STATUS_CODE: app.OK,
+                'message': resp_msgs.DOC_UPDATED}, http.OK
 
 
 @api.route('/<bucket:bucket>', methods=['PUT'])
@@ -157,48 +118,37 @@ def put_by_filter_handler(bucket):
                 get_app_id(), get_user_id(),  bucket, get_remote_ip(), document
             )
             return {
-                extf.KEY: key, 'message': resp_msgs.DOC_CREATED
+                extf.KEY: key, 'message': resp_msgs.DOC_CREATED,
+                STATUS_CODE: app.CREATED
             }, http.CREATED
 
         else:
             return {
-                'message': resp_msgs.DOC_NOT_EXISTS
+                'message': resp_msgs.DOC_NOT_EXISTS,
+                STATUS_CODE: app.NOT_FOUND
             }, http.NOT_FOUND
 
     storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                    document, filter_opts=filter_opts)
-    return {'message': resp_msgs.DOC_UPDATED}, http.OK
+
+    return {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}, http.OK
 
 
-@api.route('/<bucket:bucket>/<keys:keys>', methods=['DELETE'])
+@api.route('/<bucket:bucket>/<key:key>', methods=['DELETE'])
 @jsonify
-def delete_by_keys_handler(bucket, keys):
+def delete_by_keys_handler(bucket, key):
     """ Deletes existing document (C.O.)
     """
-    res = []
-    http_status = http.OK
-    
-    for key in keys:
-        filter_opts = {extf.KEY: key}
-        if not storage.is_document_exists(get_app_id(), get_user_id(),
-                                          bucket, filter_opts):
-            res.append({extf.KEY: key, STATUS_CODE: app.NOT_FOUND,
-                        'message': resp_msgs.DOC_NOT_EXISTS})
-        else:
-            storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip()
-                           , filter_opts=filter_opts)
-            res.append({extf.KEY: key, STATUS_CODE: app.OK,
-                        'message': resp_msgs.DOC_DELETED})
-
-    if len(res) == 1:
-        res = res[0]
-        if res[STATUS_CODE] == app.NOT_FOUND:
-            http_status = http.NOT_FOUND
-        res = {'message': res['message']}
+    filter_opts = {extf.KEY: key}
+    if not storage.is_document_exists(get_app_id(), get_user_id(),
+        bucket, filter_opts):
+        return {STATUS_CODE: app.NOT_FOUND,
+                'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
     else:
-        res = {'response': res}
-
-    return res, http_status
+        storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip(),
+            filter_opts=filter_opts)
+        return {STATUS_CODE: app.OK,
+                'message': resp_msgs.DOC_DELETED}, http.OK
 
 
 @api.route('/<bucket:bucket>', methods=['DELETE'])
@@ -209,7 +159,8 @@ def delete_by_filter_handler(bucket):
     filter_opts = extract_filter_opts()
     if not storage.is_document_exists(get_app_id(), get_user_id(),
                                       bucket, filter_opts):
-        return {'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+        return {'message': resp_msgs.DOC_NOT_EXISTS,
+                STATUS_CODE: app.NOT_FOUND}, http.NOT_FOUND
     
     storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                     filter_opts=filter_opts)
