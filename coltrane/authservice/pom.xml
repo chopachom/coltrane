@@ -10,6 +10,14 @@
 
     <name>AuthService</name>
     <url>http://coltrane.io</url>
+    
+    <pluginRepositories>
+        <pluginRepository>
+            <id>dtrott</id>
+            <url>http://maven.davidtrott.com/repository</url>
+        </pluginRepository>
+    </pluginRepositories>
+    
     <build>
         <plugins>
             <plugin>
@@ -24,7 +32,7 @@
             <plugin>
                 <groupId>org.apache.thrift.tools</groupId>
                 <artifactId>maven-thrift-plugin</artifactId>
-                <version>0.1.12-SNAPSHOT</version>
+                <version>0.1.10</version>
                 <executions>
                     <execution>
                         <id>thrift-sources</id>
