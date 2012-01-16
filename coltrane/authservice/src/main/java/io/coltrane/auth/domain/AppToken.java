@@ -9,6 +9,7 @@ import javax.persistence.*;
  *
  * @author nik
  */
+@Entity
 public class AppToken {
 
     @Id

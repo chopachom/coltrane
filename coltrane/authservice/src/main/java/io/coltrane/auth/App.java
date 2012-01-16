@@ -1,6 +1,6 @@
 package io.coltrane.auth;
 
-import io.coltrane.auth.exposure.Server;
+import io.coltrane.auth.server.Server;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
