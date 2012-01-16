@@ -10,15 +10,16 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 /**
  *
  * @author nik
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("/spring/repositories-context.xml")
+@Transactional
 public class FacebookUserRepositoryTest {
     
     @Autowired
@@ -26,6 +27,24 @@ public class FacebookUserRepositoryTest {
     
     @Test
     public void testCreateAndRead() {
+        FacebookUser user = createFacebookUser();
+        
+        FacebookUser savedUser = repository.save(user);
+        assertNotNull(savedUser.getId());
+        
+        FacebookUser actualUser = repository.findOne(savedUser.getId());
+        assertEquals(savedUser, actualUser);
+    }
+    
+    @Test
+    public void testDelete() {
+        FacebookUser user = createFacebookUser();
+        FacebookUser savedUser = repository.save(user);
+        repository.delete(savedUser.getId());
+        assertNull(repository.findOne(savedUser.getId()));
+    }
+
+    private FacebookUser createFacebookUser() {
         FacebookUser user = new FacebookUser();
         user.setAccessToken("123");
         user.setAuthHash("321");
@@ -36,11 +55,6 @@ public class FacebookUserRepositoryTest {
         user.setNickName("Nickname");
         user.setPasswordHash("12321323");
         user.setToken("111");
-        
-        FacebookUser savedUser = repository.save(user);
-        assertNotNull(savedUser.getId());
-        
-        FacebookUser actualUser = repository.findOne(savedUser.getId());
-        assertEquals(savedUser, actualUser);
+        return user;
     }
 }
