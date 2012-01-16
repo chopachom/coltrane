@@ -28,20 +28,18 @@ public class FacebookUserRepositoryTest {
     @Test
     public void testCreateAndRead() {
         FacebookUser user = createFacebookUser();
-        
-        FacebookUser savedUser = repository.save(user);
-        assertNotNull(savedUser.getId());
-        
-        FacebookUser actualUser = repository.findOne(savedUser.getId());
-        assertEquals(savedUser, actualUser);
+        repository.save(user);
+        assertNotNull(user.getId());
+        FacebookUser actualUser = repository.findOne(user.getId());
+        assertEquals(user, actualUser);
     }
     
     @Test
     public void testDelete() {
         FacebookUser user = createFacebookUser();
-        FacebookUser savedUser = repository.save(user);
-        repository.delete(savedUser.getId());
-        assertNull(repository.findOne(savedUser.getId()));
+        repository.save(user);
+        repository.delete(user.getId());
+        assertNull(repository.findOne(user.getId()));
     }
 
     private FacebookUser createFacebookUser() {
