@@ -3,3 +3,5 @@
 .*
 target
 gen
+nb-configuration.xml
+*.log
