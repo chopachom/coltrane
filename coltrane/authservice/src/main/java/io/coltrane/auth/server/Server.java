@@ -1,4 +1,4 @@
-package io.coltrane.auth.exposure;
+package io.coltrane.auth.server;
 
 import io.coltrane.auth.thrift.AuthService;
 import javax.annotation.Resource;
