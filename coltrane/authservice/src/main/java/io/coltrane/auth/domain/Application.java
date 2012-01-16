@@ -21,8 +21,8 @@ public class Application {
     @Column(length = 2048)
     private String description;
     @Column(nullable = false)
-    private String domain;
-    @Temporal(TemporalType.DATE)
+    private String appDomain;
+    @Temporal(TemporalType.TIMESTAMP)
     private Date created = new Date(); // default value
 
     public Developer getAuthor() {
@@ -49,12 +49,12 @@ public class Application {
         this.description = description;
     }
 
-    public String getDomain() {
-        return domain;
+    public String getAppDomain() {
+        return appDomain;
     }
 
-    public void setDomain(String domain) {
-        this.domain = domain;
+    public void setAppDomain(String appDomain) {
+        this.appDomain = appDomain;
     }
 
     public Integer getId() {
@@ -94,7 +94,7 @@ public class Application {
         if (!Objects.equals(this.description, other.description)) {
             return false;
         }
-        if (!Objects.equals(this.domain, other.domain)) {
+        if (!Objects.equals(this.appDomain, other.appDomain)) {
             return false;
         }
         if (!Objects.equals(this.created, other.created)) {
@@ -110,7 +110,7 @@ public class Application {
         hash = 17 * hash + Objects.hashCode(this.author);
         hash = 17 * hash + Objects.hashCode(this.name);
         hash = 17 * hash + Objects.hashCode(this.description);
-        hash = 17 * hash + Objects.hashCode(this.domain);
+        hash = 17 * hash + Objects.hashCode(this.appDomain);
         hash = 17 * hash + Objects.hashCode(this.created);
         return hash;
     }

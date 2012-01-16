@@ -17,7 +17,7 @@ public class AppToken {
     private Integer id;
     @Column(unique = true)
     private String token = UUID.randomUUID().toString(); // default value
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date created = new Date();
     @ManyToOne(optional = false)
     private User user;

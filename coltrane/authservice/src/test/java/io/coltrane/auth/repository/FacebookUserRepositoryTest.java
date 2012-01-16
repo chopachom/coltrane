@@ -12,6 +12,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertEquals;
 /**
  *
  * @author nik
@@ -38,5 +39,8 @@ public class FacebookUserRepositoryTest {
         
         FacebookUser savedUser = repository.save(user);
         assertNotNull(savedUser.getId());
+        
+        FacebookUser actualUser = repository.findOne(savedUser.getId());
+        assertEquals(savedUser, actualUser);
     }
 }

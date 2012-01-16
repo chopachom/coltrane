@@ -26,7 +26,7 @@ public class User {
     @Column(unique = true)
     private String token = UUID.randomUUID().toString(); // default value
     private String authHash;
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date created = new Date(); // default value
 
     public String getAuthHash() {

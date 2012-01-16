@@ -18,7 +18,7 @@ public class ApplicationAsset {
     private String url;
     @Enumerated(EnumType.STRING)
     private ApplicationAssetType type;
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date created = new Date(); // default value
 
     public Date getCreated() {
