@@ -3,6 +3,7 @@ package io.coltrane.auth.repository;
 import io.coltrane.auth.domain.Application;
 import io.coltrane.auth.domain.Developer;
 import io.coltrane.auth.domain.FacebookUser;
+import io.coltrane.auth.domain.User;
 
 /**
  *

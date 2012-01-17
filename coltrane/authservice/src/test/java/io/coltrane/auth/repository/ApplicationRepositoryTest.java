@@ -3,6 +3,7 @@ package io.coltrane.auth.repository;
 import io.coltrane.auth.domain.Application;
 import io.coltrane.auth.domain.Developer;
 import java.util.Arrays;
+import java.util.Collections;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,11 +55,26 @@ public class ApplicationRepositoryTest {
     @Test
     public void testDelete() {
         Developer developer = DomainHelper.createDeveloper();
-        Application app1 = DomainHelper.createApplication("app1");
-        app1.setAuthor(developer);
+        Application app = DomainHelper.createApplication("app1");
+        app.setAuthor(developer);
+        
         developerRepository.save(developer);
-        appRepository.save(app1);
-        appRepository.delete(app1.getId());
-        assertNull(appRepository.findOne(app1.getId()));
+        appRepository.save(app);
+        appRepository.delete(app.getId());
+        assertNull(appRepository.findOne(app.getId()));
+    }
+    
+    @Test
+    public void testFindByAuthorAndAppDomain() {
+        Developer developer = DomainHelper.createDeveloper();
+        Application app = DomainHelper.createApplication("app1");
+        app.setAuthor(developer);
+        developer.setApplications(Collections.singletonList(app));
+        
+        developerRepository.save(developer);
+        appRepository.save(app);
+        
+        Application findedApp = appRepository.findByAuthorAndAppDomain(developer.getNickName(), app.getAppDomain());
+        assertEquals(app, findedApp);
     }
 }
