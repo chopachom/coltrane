@@ -30,8 +30,8 @@ public class UserRepositoryTest {
         Developer developer = DomainHelper.createDeveloper();
         developerRepository.save(developer);
         
-        User findedUser = userRepository.findByNickNameAndPasswordHash(developer.getNickName(), 
+        User result = userRepository.findByNickNameAndPasswordHash(developer.getNickName(), 
                 developer.getPasswordHash());
-        Assert.assertEquals(developer, findedUser);
+        Assert.assertEquals(developer, result);
     }
 }

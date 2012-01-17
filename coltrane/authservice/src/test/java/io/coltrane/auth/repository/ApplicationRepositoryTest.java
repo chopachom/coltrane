@@ -74,7 +74,7 @@ public class ApplicationRepositoryTest {
         developerRepository.save(developer);
         appRepository.save(app);
         
-        Application findedApp = appRepository.findByAuthorAndAppDomain(developer.getNickName(), app.getAppDomain());
-        assertEquals(app, findedApp);
+        Application result = appRepository.findByAuthorAndAppDomain(developer.getNickName(), app.getAppDomain());
+        assertEquals(app, result);
     }
 }
