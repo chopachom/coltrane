@@ -13,6 +13,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.Assert.*;
+
 /**
  *
  * @author nik
@@ -27,7 +28,7 @@ public class FacebookUserRepositoryTest {
     
     @Test
     public void testCreateAndRead() {
-        FacebookUser user = createFacebookUser();
+        FacebookUser user = DomainHelper.createFacebookUser();
         repository.save(user);
         assertNotNull(user.getId());
         FacebookUser actualUser = repository.findOne(user.getId());
@@ -36,23 +37,9 @@ public class FacebookUserRepositoryTest {
     
     @Test
     public void testDelete() {
-        FacebookUser user = createFacebookUser();
+        FacebookUser user = DomainHelper.createFacebookUser();
         repository.save(user);
         repository.delete(user.getId());
         assertNull(repository.findOne(user.getId()));
-    }
-
-    private FacebookUser createFacebookUser() {
-        FacebookUser user = new FacebookUser();
-        user.setAccessToken("123");
-        user.setAuthHash("321");
-        user.setEmail("test@mail.com");
-        user.setFacebookId(123L);
-        user.setFirstName("Firstname");
-        user.setLastName("Lastname");
-        user.setNickName("Nickname");
-        user.setPasswordHash("12321323");
-        user.setToken("111");
-        return user;
     }
 }

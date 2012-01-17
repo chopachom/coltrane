@@ -12,7 +12,12 @@ import org.springframework.stereotype.Service;
 public class AuthServiceImpl implements AuthService.Iface {
 
     @Override
-    public boolean isHaveAccessToRepo(String userName, String appDomain) throws TException {
+    public boolean checkCredentials(String username, String password) throws TException {
+        throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public boolean canAccessRepo(String username, String repo) throws TException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 }
