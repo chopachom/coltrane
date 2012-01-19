@@ -12,5 +12,5 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.MANDATORY)
 public interface UserRepository extends Repository<User, Integer> {
 
-    User findByNickNameAndPasswordHash(String nickName, String passwordHash);
+    User findByNickName(String nickName);
 }

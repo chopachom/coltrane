@@ -1,8 +1,10 @@
 package io.coltrane.auth.service.impl;
 
+import io.coltrane.auth.domain.User;
 import io.coltrane.auth.repository.ApplicationRepository;
 import io.coltrane.auth.repository.UserRepository;
 import io.coltrane.auth.service.UserService;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +28,11 @@ public class UserServiceImpl implements UserService {
         if (userName == null || password == null || userName.isEmpty() || password.isEmpty()) {
             // throw exception
         }
-        return userRepository.findByNickNameAndPasswordHash(userName, password) != null;
+        User user = userRepository.findByNickName(userName);
+        if (user == null) {
+            return false;
+        }
+        return BCrypt.checkpw(password, user.getPasswordHash());
     }
 
     @Override

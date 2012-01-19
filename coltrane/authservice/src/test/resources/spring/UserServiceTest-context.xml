@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+">
+
+    <!-- Mocks -->
+    <bean id="userRepositoryMock" class="org.mockito.Mockito" factory-method="mock">
+        <constructor-arg value="io.coltrane.auth.repository.UserRepository"/>
+    </bean>
+    
+    <bean id="applicationRepositoryMock" class="org.mockito.Mockito" factory-method="mock">
+        <constructor-arg value="io.coltrane.auth.repository.ApplicationRepository"/>
+    </bean>
+    
+    <!-- Service for test -->
+    <bean id="userRepository" class="io.coltrane.auth.service.impl.UserServiceImpl"/>
+</beans>
