@@ -1,4 +1,5 @@
 import unittest
+from coltrane.appstorage import reservedf
 from coltrane.rest.exceptions import InvalidKeyNameError, InvalidDocumentFieldsError
 from coltrane.rest.validators import SimpleValidator, RecursiveValidator, UpdateDocumentKeysValidator, SaveDocumentKeysValidator, FilterKeysValidator
 from coltrane.appstorage.storage import intf, extf
@@ -8,26 +9,26 @@ __author__ = 'Pasha'
 class SimpleValidatorTestCase(unittest.TestCase):
 
     def test_simple1(self):
-        doc = {'a': 10, intf.BUCKET: 'bucket', 'b': 20, extf.KEY: 'key'}
-        fields = intf + extf
+        doc = {'a': 10, reservedf.BUCKET: 'bucket', 'b': 20, extf.KEY: 'key'}
+        fields = intf + extf + reservedf.values()
         valid = SimpleValidator(doc, fields)
 
         try:
             valid.validate()
         except Exception, e:
             assert e.message == 'Document contains forbidden fields [%s,%s]' % \
-                                (intf.BUCKET, extf.KEY)
+                                (extf.KEY, reservedf.BUCKET)
 
     def test_chain(self):
-        doc = {'a': 10, intf.BUCKET: 'bucket', 'b': 20, extf.KEY: 'key'}
+        doc = {'a': 10, reservedf.BUCKET: 'bucket', 'b': 20, extf.KEY: 'key'}
         valid1 = SimpleValidator(doc, extf.values())
-        valid2 = SimpleValidator(doc, intf.values(), valid1)
+        valid2 = SimpleValidator(doc, reservedf.values(), valid1)
 
         try:
             valid2.validate()
         except Exception, e:
             assert e.message == 'Document contains forbidden fields [%s,%s]' % \
-                                (intf.BUCKET, extf.KEY)
+                                (extf.KEY, reservedf.BUCKET)
 
     def test_no_duplicate_fields(self):
         doc = {'a': 10, 'd': 'bucket', 'b': 20, extf.KEY: 'key'}
@@ -47,30 +48,30 @@ class SimpleValidatorTestCase(unittest.TestCase):
 class RecursiveValidatorTestCase(unittest.TestCase):
 
     def test_simple1(self):
-        doc = {'a': 10, 'd': {'bucket': {intf.BUCKET: 'yes!!!'}}, 'b': 20, extf.KEY: 'key'}
-        fields = extf + intf
+        doc = {'a': 10, 'd': {'bucket': {reservedf.BUCKET: 'yes!!!'}}, 'b': 20, extf.KEY: 'key'}
+        fields = extf + intf + reservedf.values()
         valid = RecursiveValidator(doc, fields)
 
         try:
             valid.validate()
         except Exception, e:
             assert e.message == 'Document contains forbidden fields [%s,%s]' % \
-                                (extf.KEY, intf.BUCKET)
+                                (extf.KEY, reservedf.BUCKET)
 
     def test_chain_and_duplicate(self):
-        doc = {'a': 10, 'd': {'bucket': {intf.BUCKET: 'yes!!!'}},
+        doc = {'a': 10, 'd': {'bucket': {reservedf.BUCKET: 'yes!!!'}},
                'b': 20, extf.KEY: 'key',
-               'd2': {'bucket2': {intf.BUCKET: 'no!!!'}},
-               'd3': {'bucket3': {extf.BUCKET: 'yes!!!'}}}
+               'd2': {'bucket2': {reservedf.BUCKET: 'no!!!'}},
+               'd3': {'bucket3': {reservedf.BUCKET: 'yes!!!'}}}
         valid1 = RecursiveValidator(doc, intf.values())
         valid2 = RecursiveValidator(doc, extf.values(), valid1)
-        valid3 = RecursiveValidator(doc, intf.values(), valid2)
+        valid3 = RecursiveValidator(doc, reservedf.values(), valid2)
 
         try:
             valid3.validate()
         except Exception, e:
-            assert e.message == 'Document contains forbidden fields [%s,%s,%s]' % \
-                                (intf.BUCKET, extf.KEY, extf.BUCKET)
+            assert e.message == 'Document contains forbidden fields [%s,%s]' % \
+                                (extf.KEY, reservedf.BUCKET)
 
     def test_forbidden(self):
         filter = {'$and': [{'_id': {'$gt': 20}}, {'_id': {'$lt': 80}, 'a':[1,2, {'$where':1}]}]}
@@ -80,10 +81,10 @@ class RecursiveValidatorTestCase(unittest.TestCase):
 
 
     def test_fields_not_found(self):
-        doc = {'a': 10, 'd': {'bucket': {intf.BUCKET: 'yes!!!'}},
+        doc = {'a': 10, 'd': {'bucket': {reservedf.BUCKET: 'yes!!!'}},
                'b': 20, 'done': 'key',
-               'd2': {'bucket2': {intf.BUCKET: 'no!!!'}},
-               'd3': {'bucket3': {intf.BUCKET: 'yes!!!'}}}
+               'd2': {'bucket2': {reservedf.BUCKET: 'no!!!'}},
+               'd3': {'bucket3': {reservedf.BUCKET: 'yes!!!'}}}
         valid1 = SimpleValidator(doc, extf.values())
         valid2 = SimpleValidator(doc, extf.values(), valid1)
         valid2.validate()
@@ -92,11 +93,11 @@ class RecursiveValidatorTestCase(unittest.TestCase):
 class MixedValidationTestCase(unittest.TestCase):
 
     def test_chain_and_duplicate(self):
-        doc = {'a': 10, 'd': {'bucket': {intf.BUCKET: 'yes!!!'}},
+        doc = {'a': 10, 'd': {'bucket': {reservedf.BUCKET: 'yes!!!'}},
                'b': 20, extf.KEY: 'key',
-               'd2': {'bucket2': {intf.BUCKET: 'no!!!'}},
-               'd3': {'bucket3': {extf.BUCKET: 'yes!!!'}}}
-        valid1 = RecursiveValidator(doc, intf.values())
+               'd2': {'bucket2': {reservedf.BUCKET: 'no!!!'}},
+               'd3': {'bucket3': {reservedf.BUCKET: 'yes!!!'}}}
+        valid1 = RecursiveValidator(doc, reservedf.values())
         valid2 = SimpleValidator(doc, extf.values(), valid1)
         valid3 = RecursiveValidator(doc, intf.values(), valid2)
 
@@ -104,15 +105,15 @@ class MixedValidationTestCase(unittest.TestCase):
             valid3.validate()
         except Exception, e:
             assert e.message == 'Document contains forbidden fields [%s,%s]' % \
-                                (intf.BUCKET, extf.KEY)
+                                (extf.KEY, reservedf.BUCKET)
 
     def test_fields_not_found(self):
         doc = {'a': 10, 'd': {'bucket': {'a': 'yes!!!'}},
                'b': 20, 's': {extf.KEY: 'key'},
                'd2': {'bucket2': {'a': 'no!!!'}},
-               'd3': {'bucket3': {extf.BUCKET: 'yes!!!'}}}
+               'd3': {'bucket3': {reservedf.BUCKET: 'yes!!!'}}}
         valid1 = RecursiveValidator(doc, intf.values())
-        valid2 = SimpleValidator(doc, extf.values(), valid1)
+        valid2 = SimpleValidator(doc, reservedf.values(), valid1)
         valid3 = RecursiveValidator(doc, intf.values(), valid2)
         valid3.validate()
 

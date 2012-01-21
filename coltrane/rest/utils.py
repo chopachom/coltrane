@@ -26,6 +26,8 @@ class resp_msgs(Enum):
 
 class forbidden_fields(Enum):
     WHERE      = '$where'
+    EXISTS     = '$exists'
+    TYPE       = '$type'
     ID         = intf.ID
 
 

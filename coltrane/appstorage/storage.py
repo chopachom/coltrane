@@ -5,42 +5,19 @@
               - dreambrother
 """
 
-import re
-
 from datetime import datetime
 from uuid import uuid4
 from functools import wraps
 from hashlib import sha1
+from coltrane.appstorage import _external_key, _internal_id, intf, extf, reservedf
+from coltrane.appstorage.datatypes import BaseType
+from coltrane.appstorage.typeconverters import get_external_converter, try_get_geopoint_external_converter, get_internal_converter
 
-from coltrane.utils import Enum
-from . import try_convert_to_date
 from .exceptions import *
-
-
-
-
-class intf(Enum):
-    ID          = '_id'
-    APP_ID      = '__app_id__'
-    USER_ID     = '__user_id__'
-    BUCKET      = '__bucket__'
-    HASHID      = '__hashid__'
-    DELETED     = '__deleted__'
-    CREATED_AT  = '__created_at__'
-    UPDATED_AT  = '__updated_at__'
-    IP_ADDRESS  = '__ip_address__'
-
-
-class extf(Enum):
-    KEY         = '_key'
-    BUCKET      = '_bucket'
-    CREATED_AT  = '_created'
 
 
 # internal constants
 DICT_TYPE = type(dict())
-DOCUMENT_ID_FORMAT = '{app_id}|{user_id}|{bucket}|{deleted}|{document_key}'
-
 
 def verify_tokens(f):
     @wraps(f)
@@ -101,12 +78,13 @@ class AppdataStorage(object):
         # add required fields to document
         document[intf.APP_ID] = app_id
         document[intf.USER_ID] = user_id
-        document[intf.BUCKET] = bucket
         # adding str(False) to hashid means that document isn't deleted
         document[intf.HASHID] = sha1(app_id+user_id+bucket+str(False)).hexdigest()
-        document[intf.CREATED_AT] = datetime.utcnow()
         document[intf.IP_ADDRESS] = ip_address
         document[intf.DELETED] = False
+
+        document[reservedf.BUCKET] = bucket
+        document[reservedf.CREATED_AT] = datetime.utcnow()
 
         id = document[intf.ID]
         removed_doc_criteria = {
@@ -192,7 +170,7 @@ class AppdataStorage(object):
                                           filter_opts=filter_opts)
 
         document[intf.IP_ADDRESS] = ip_address
-        document[intf.UPDATED_AT] = datetime.utcnow()
+        document[reservedf.UPDATED_AT] = datetime.utcnow()
         self.entities.update(criteria, {'$set': document}, multi=True, safe=True)
 
 
@@ -210,7 +188,7 @@ class AppdataStorage(object):
                 intf.HASHID: sha1(app_id+user_id+bucket+str(True)).hexdigest(),
                 intf.DELETED:True,
                 intf.IP_ADDRESS:ip_address,
-                intf.UPDATED_AT:datetime.utcnow()
+                reservedf.UPDATED_AT:datetime.utcnow()
             }
         }, multi=True)
 
@@ -241,22 +219,6 @@ class AppdataStorage(object):
              return False
 
 
-# Utility functions below
-
-def _internal_id(app_id, user_id, bucket, deleted, document_key):
-     return DOCUMENT_ID_FORMAT.format(app_id=app_id, user_id=user_id,
-                                      bucket=bucket, deleted=deleted,
-                                      document_key=document_key)
-
-
-def _external_key(internal_id):
-    """
-        Returns external _key by given internal id
-        example: applolo|usrlolo|ololo|flafffnl|asdf|asd| -> flaflaffnl|asdf|asd|
-    """
-    return '|'.join(substr for substr in internal_id.split('|')[4:])
-
-
 def _filter_int_fields(document):
     """
     Filter out all internal fields
@@ -277,9 +239,8 @@ def _to_external(document):
         return None
 
     external = _filter_int_fields(document)
+    external = _from_internal_to_external(external)
     external[extf.KEY] = _external_key(document[intf.ID])
-    external[extf.BUCKET]      = document[intf.BUCKET]
-    external[extf.CREATED_AT]  = document[intf.CREATED_AT]
 
     return external
 
@@ -308,26 +269,18 @@ def _from_external_to_internal(app_id, user_id, bucket, doc):
         internal = {}
         for key in doc:
             val = doc[key]
-            if key in extf.values():
-                if key == extf.BUCKET:
-                    internal[intf.BUCKET] = val
-                elif key == extf.CREATED_AT:
-                    if isinstance(val, basestring):
-                        val = try_convert_to_date(val)
-                    elif type(val) == dict:
-                        val = _from_dict(val)
-                    internal[intf.CREATED_AT] = val
-                elif key == extf.KEY:
-                    document_key = val
-                    document_id = _internal_id(app_id, user_id, bucket, 0, document_key)
-                    internal[intf.ID] = document_id
+            if key == extf.KEY:
+                document_key = val
+                document_id = _internal_id(app_id, user_id, bucket, 0, document_key)
+                internal[intf.ID] = document_id
             else:
                 if type(val) == dict:
                     val = _from_dict(val)
                 elif type(val) == list:
                     val = _from_list(val)
-                elif isinstance(val, basestring):
-                    val = try_convert_to_date(val)
+                elif isinstance(val, BaseType):
+                    converter = get_internal_converter(val)
+                    key, val = converter.to_internal(key, val, app_id, user_id)
                 internal[key] = val
         return internal
 
@@ -348,6 +301,48 @@ def _from_external_to_internal(app_id, user_id, bucket, doc):
         return internal
 
     return _from_dict(doc)
+
+
+def _from_internal_to_external(doc):
+    """
+    Convert document from internal view to the external.
+    If document contains external fields/data types, convert its values to the internal fields/types.
+    {<int_1>:[{<int_2>:10}, {'key':20}]} => {<ext_1>:[{<ext_2>:10}, {'key':20}]}
+    """
+    def _from_dict(doc):
+        external = {}
+        for key in doc:
+            val = doc[key]
+            converter = None
+            if type(val) == dict:
+                # due to absence internal data type for geo point
+                # we need to check every type whether it can be geo data.
+                # Key of geo data starts with special prefix.
+                converter = try_get_geopoint_external_converter(key)
+                if not converter:
+                    val = _from_dict(val)
+            elif type(val) == list:
+                val = _from_list(val)
+            else:
+                # val type is not dict, not list, and most likely it is internal data type
+                converter = get_external_converter(val)
+            if converter:
+                key, val = converter.to_external(key, val)
+            external[key] = val
+        return external
+
+    def _from_list(l):
+        internal = []
+        for val in l:
+            if type(val) == list:
+                val = _from_list(val)
+            elif type(val) == dict:
+                val = _from_dict(val)
+            internal.append(val)
+        return internal
+
+    return _from_dict(doc)
+
 
 
 

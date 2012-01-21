@@ -2,16 +2,23 @@ import json
 import unittest
 import datetime
 import time
-from coltrane.rest import api_v1
+from bson.binary import Binary
+from bson.dbref import DBRef
+from pymongo import GEO2D
+from coltrane import appstorage
+from coltrane.appstorage import reservedf
+from coltrane.appstorage.datatypes import Pointer, Blob, GeoPoint
+from coltrane.rest.api import api_v1
 from coltrane.rest.api import v1
+from coltrane.rest.api.datatypes import DataTypes, TYPE_VAR_NAME
 from coltrane.rest.utils import resp_msgs, forbidden_fields
 from coltrane.rest.api.v1 import from_json, storage
-from coltrane.rest.api.statuses import app, STATUS_CODE, http
 from coltrane.rest.app import create_app
 from coltrane.rest.extensions import mongodb
-from coltrane.rest.config import TestConfig, DefaultConfig
-from coltrane.rest import exceptions
-from coltrane.appstorage.storage import AppdataStorage, extf, intf
+from coltrane.rest.config import TestConfig
+from coltrane.rest import STATUS_CODE, app_status, http_status
+from coltrane.appstorage.storage import extf, intf
+from coltrane.appstorage import storage as storage_module
 
 __author__ = 'pshkitin'
 
@@ -59,7 +66,7 @@ class ApiTestCase(ApiBaseTestClass):
     def test_get_all_request(self):
         rv = self.app.get(API_V1 + '/books')
         res = from_json(rv.data)
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app_status.NOT_FOUND}
 
 
     def test_get_by_multiple_keys(self):
@@ -67,7 +74,7 @@ class ApiTestCase(ApiBaseTestClass):
             data='{"title": "Title3", "author": "Pasha Shkitin"}',
             follow_redirects=True
         )
-        assert rv.status_code == http.CREATED
+        assert rv.status_code == http_status.CREATED
         assert from_json(rv.data)[extf.KEY] == 'key_1'
 
         rv = self.app.post(API_V1 + '/books/key_2',
@@ -83,7 +90,7 @@ class ApiTestCase(ApiBaseTestClass):
         assert from_json(rv.data)[extf.KEY] == 'key_4'
 
         rv = self.app.get(API_V1 + '/books/key_1, key_2, key_3')
-        assert rv.status_code == http.NOT_FOUND
+        assert rv.status_code == http_status.NOT_FOUND
 
 
     def test_get_with_no_keys(self):
@@ -108,13 +115,13 @@ class ApiTestCase(ApiBaseTestClass):
         assert from_json(resp.data)[extf.KEY] == key
 
         resp = self.app.delete(API_V1 + '/books/' + key)
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED, STATUS_CODE: app.OK}
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED, STATUS_CODE: app_status.OK}
 
     def test_fail_delete_request(self):
         rv = self.app.delete(API_V1 + '/books/4')
         assert  from_json(rv.data) ==\
-                {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
-        assert rv.status_code == http.NOT_FOUND
+                {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app_status.NOT_FOUND}
+        assert rv.status_code == http_status.NOT_FOUND
 
 
     def test_forbidden_where_field(self):
@@ -124,7 +131,7 @@ class ApiTestCase(ApiBaseTestClass):
         )
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
-                                  (forbidden_fields.WHERE, intf.ID), STATUS_CODE: app.BAD_REQUEST}
+                                  (forbidden_fields.WHERE, intf.ID), STATUS_CODE: app_status.BAD_REQUEST}
 
         filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
@@ -132,7 +139,7 @@ class ApiTestCase(ApiBaseTestClass):
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
                                   (forbidden_fields.WHERE, intf.ID),
-                       STATUS_CODE: app.BAD_REQUEST}
+                       STATUS_CODE: app_status.BAD_REQUEST}
 
         filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
@@ -140,7 +147,7 @@ class ApiTestCase(ApiBaseTestClass):
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
                                   (forbidden_fields.WHERE, intf.ID),
-                       STATUS_CODE: app.BAD_REQUEST}
+                       STATUS_CODE: app_status.BAD_REQUEST}
 
         filter = {'a':21, intf.ID:'app_id', 'b':[1,2,3],
                   'c': {'d': {'e': {forbidden_fields.WHERE:[1,2,3]}}}}
@@ -151,7 +158,7 @@ class ApiTestCase(ApiBaseTestClass):
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
                                   (forbidden_fields.WHERE, intf.ID),
-                       STATUS_CODE: app.BAD_REQUEST}
+                       STATUS_CODE: app_status.BAD_REQUEST}
 
 
         filter = {'a':21, 'b':[1,2,3],
@@ -163,7 +170,7 @@ class ApiTestCase(ApiBaseTestClass):
         res = from_json(rv.data)
         assert res == {"message": "Document contains forbidden fields [%s,%s]" %
                                   (forbidden_fields.WHERE, intf.ID),
-                       STATUS_CODE: app.BAD_REQUEST}
+                       STATUS_CODE: app_status.BAD_REQUEST}
 
 
     def test_where_field_as_string(self):
@@ -187,7 +194,7 @@ class ApiTestCase(ApiBaseTestClass):
         rv = self.app.get(API_V1 + '/books?filter=\'this.a > 3\'')
         res = from_json(rv.data)
         assert res == {"message": "Invalid json object \"\'this.a > 3\'\"",
-                       STATUS_CODE: app.BAD_REQUEST}
+                       STATUS_CODE: app_status.BAD_REQUEST}
 
 
     def test_creating_docs_with_same_key(self):
@@ -199,7 +206,7 @@ class ApiTestCase(ApiBaseTestClass):
             data=json.dumps({'b':1}),
             follow_redirects=True
         )
-        assert res.status_code == http.CONFLICT
+        assert res.status_code == http_status.CONFLICT
         assert from_json(res.data)['message'] ==\
                "Document with key [key1] and bucket [books] already exists"
 
@@ -237,7 +244,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
 
         filter = {extf.KEY: 5, 'age':25}
         res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
-        assert res.status_code == http.NOT_FOUND
+        assert res.status_code == http_status.NOT_FOUND
 
     def test_inner_query(self):
         filter = {'$and': [{extf.KEY: 5}, {'age':15}]}
@@ -246,7 +253,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
 
         filter = {'$and': [{extf.KEY: {'$gt':3}}, {extf.KEY: {'$lt':5}}]}
         res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
-        assert res.status_code == http.NOT_FOUND
+        assert res.status_code == http_status.NOT_FOUND
 
 
     def test_put_not_existing_document(self):
@@ -260,13 +267,13 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         print rv.data
         data = from_json(rv.data)
         res = data
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app_status.NOT_FOUND}
 
 
     def test_put_with_forbidden_fields(self):
         src_key = "my_key"
-        src = {extf.KEY: src_key, intf.APP_ID: "123", extf.BUCKET: "books",
-               intf.CREATED_AT: "12.12.1222", "title": "Title3", "author": "Vasya Shkitin"}
+        src = {extf.KEY: src_key, intf.APP_ID: "123", reservedf.BUCKET: "books",
+               reservedf.CREATED_AT: "12.12.1222", "title": "Title3", "author": "Vasya Shkitin"}
         rv = self.app.put(API_V1 + '/books/' + src_key,
             data=json.dumps(src),
             follow_redirects=True
@@ -275,10 +282,10 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         print rv.data
         data = from_json(rv.data)
         res = data['message']
-        assert res == 'Document contains forbidden fields [%s,%s]' % (
-            extf.KEY, extf.BUCKET)
+        assert res == 'Document contains forbidden fields [%s,%s,%s]' % (
+            extf.KEY, reservedf.CREATED_AT, reservedf.BUCKET)
 
-        src = {intf.APP_ID: "123", intf.CREATED_AT: "12.12.1222",
+        src = {intf.APP_ID: "123",
                "title": "Title3", "author": "Vasya Shkitin"}
         rv = self.app.put(API_V1 + '/books/' + src_key,
             data=json.dumps(src),
@@ -286,8 +293,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         )
         data = from_json(rv.data)
         res = data['message']
-        assert res == 'Document key has invalid format [%s,%s]' % (
-            intf.APP_ID, intf.CREATED_AT)
+        assert res == 'Document key has invalid format [%s]' % (
+            intf.APP_ID)
 
 
     def test_put_by_filter_with_force(self):
@@ -313,7 +320,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         print rv.data
         data = from_json(rv.data)
         res = data
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app_status.NOT_FOUND}
 
 
     def test_put_existing_document(self):
@@ -335,7 +342,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         )
 
         data = from_json(rv.data)
-        assert data == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
+        assert data == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app_status.OK}
 
     def test_update_all(self):
         resp = self.app.get(API_V1 + '/books')
@@ -345,8 +352,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         src_update = {"age": 50}
         resp = self.app.put(API_V1 + '/books',
             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
-        assert resp.status_code == http.OK
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app_status.OK}
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -359,8 +366,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
-        assert resp.status_code == http.OK
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app_status.OK}
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -373,8 +380,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
             data=json.dumps(src_update))
         assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED,
-                                        STATUS_CODE: app.OK}
-        assert resp.status_code == http.OK
+                                        STATUS_CODE: app_status.OK}
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -386,8 +393,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         filter_opts = {"age": {"$lt": 20}, "cources.one": {"$lt": 3}}
         resp = self.app.put(API_V1 + '/books?filter=' + json.dumps(filter_opts),
             data=json.dumps(src_update))
-        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}
-        assert resp.status_code == http.OK
+        assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app_status.OK}
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -400,8 +407,8 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         resp = self.app.put(API_V1 + '/books',
             data=json.dumps(src_update))
         assert from_json(resp.data) == {'message': resp_msgs.DOC_UPDATED,
-                                        STATUS_CODE: app.OK}
-        assert resp.status_code == http.OK
+                                        STATUS_CODE: app_status.OK}
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -412,7 +419,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
     def test_update_with_dot(self):
         src = {"cources.one": 2}
         resp = self.app.put(API_V1 + '/books/5', data=json.dumps(src))
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books/5')
         data = from_json(resp.data)
@@ -426,7 +433,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         resp = self.app.put(API_V1 + '/books?filter=%s&force=true' % json.dumps(filter),
             data=json.dumps(src_update))
         data = from_json(resp.data)
-        assert resp.status_code == http.CREATED
+        assert resp.status_code == http_status.CREATED
         assert data['message'] == resp_msgs.DOC_CREATED
         key = data[extf.KEY]
 
@@ -468,23 +475,23 @@ class ApiDeleteManyCase(ApiBaseTestClass):
 
         resp = self.app.delete(API_V1 + '/books')
         assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        assert resp.status_code == http.NOT_FOUND
+        assert resp.status_code == http_status.NOT_FOUND
         assert from_json(resp.data) == {'message': resp_msgs.DOC_NOT_EXISTS,
-                                        STATUS_CODE: app.NOT_FOUND}
+                                        STATUS_CODE: app_status.NOT_FOUND}
 
     def test_delete_all_with_wrong_filter(self):
         resp = self.app.get(API_V1 + '/books?filter=all')
         assert from_json(resp.data) == {'message': 'Invalid json object "all"',
-                                        STATUS_CODE: app.BAD_REQUEST}
+                                        STATUS_CODE: app_status.BAD_REQUEST}
 
     def test_delete_two_by_age(self):
         filter_opts = '{"age":10}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -502,7 +509,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         filter_opts = '{"age":10, "name":"Sasha"}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -513,7 +520,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         filter_opts = '{"age": { "$lt" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -530,7 +537,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         filter_opts = '{"age": { "$gt" : 10 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -548,7 +555,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         filter_opts = '{"age": { "$ne" : 15 }}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -566,7 +573,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         filter_opts = '{"age": { "$ne" : 15 }, "name": {"$ne" : "Sasha"}}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         assert from_json(resp.data) == {'message': resp_msgs.DOC_DELETED}
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -584,8 +591,8 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         filter_opts = '{"age":10, "name":"Sergey"}'
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         assert  from_json(resp.data) == {'message': resp_msgs.DOC_NOT_EXISTS,
-                                         STATUS_CODE: app.NOT_FOUND}
-        assert resp.status_code == http.NOT_FOUND
+                                         STATUS_CODE: app_status.NOT_FOUND}
+        assert resp.status_code == http_status.NOT_FOUND
 
         resp = self.app.get(API_V1 + '/books')
         books = from_json(resp.data)['response']
@@ -598,7 +605,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         resp = self.app.delete(API_V1 + '/books?filter=' + filter_opts)
         resp = from_json(resp.data)
         expected = {'message': 'Invalid json object \"{"age":10, name:"Sergey"all}\"',
-                    STATUS_CODE: app.BAD_REQUEST}
+                    STATUS_CODE: app_status.BAD_REQUEST}
         assert resp == expected
 
 
@@ -608,7 +615,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         resp = from_json(resp.data)
         print resp
         expected = {'message': 'Invalid request syntax. Filter options were not specified',
-                    STATUS_CODE: app.BAD_REQUEST}
+                    STATUS_CODE: app_status.BAD_REQUEST}
         assert resp == expected
 
 
@@ -715,19 +722,19 @@ class PaginatingQueryCase(ApiBaseTestClass):
         res = from_json(rv.data)
         assert res['message'] == 'Invalid request syntax. '\
                                  'Parameters skip or limit have invalid value.'
-        assert rv.status_code == http.BAD_REQUEST
+        assert rv.status_code == http_status.BAD_REQUEST
 
         rv = self.app.get(API_V1 + '/books?filter=%s&limit=10&skip=-1' % json.dumps(filter))
         res = from_json(rv.data)
         assert res['message'] == 'Invalid request syntax. '\
                                  'Parameters skip or limit have invalid value.'
-        assert rv.status_code == http.BAD_REQUEST
+        assert rv.status_code == http_status.BAD_REQUEST
 
         rv = self.app.get(API_V1 + '/books?filter=%s&limit=0&skip=0' % json.dumps(filter))
         res = from_json(rv.data)
         assert res['message'] == 'Invalid request syntax. '\
                                  'Parameters skip or limit have invalid value.'
-        assert rv.status_code == http.BAD_REQUEST
+        assert rv.status_code == http_status.BAD_REQUEST
 
 
 class KeysValidationCase(ApiBaseTestClass):
@@ -755,7 +762,7 @@ class KeysValidationCase(ApiBaseTestClass):
 
         filter = {'b.b.c':{'d.e':10}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        assert res.status_code == http.NOT_FOUND
+        assert res.status_code == http_status.NOT_FOUND
 
 
         filter = {'b.__b.c': {'_d': {'e__': 10}}}
@@ -768,7 +775,7 @@ class KeysValidationCase(ApiBaseTestClass):
         resp = self.app.post(API_V1 + '/books',
             data=json.dumps(data))
         data = from_json(resp.data)
-        assert resp.status_code == http.BAD_REQUEST
+        assert resp.status_code == http_status.BAD_REQUEST
         assert data['message'] == "Document key has invalid format [b*s]"
 
 
@@ -776,7 +783,7 @@ class KeysValidationCase(ApiBaseTestClass):
         resp = self.app.post(API_V1 + '/books',
             data=json.dumps(data))
         data = from_json(resp.data)
-        assert resp.status_code == http.BAD_REQUEST
+        assert resp.status_code == http_status.BAD_REQUEST
         assert data['message'] == "Document key has invalid format [%s*w,d#2,b*s]"
 
 
@@ -796,23 +803,23 @@ class KeysValidationCase(ApiBaseTestClass):
     def test_get_filter(self):
         filter = {"a.b": 50, '$and': [{'b': [1,2,3]}, {'c':10}]}
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        assert resp.status_code == http.NOT_FOUND
+        assert resp.status_code == http_status.NOT_FOUND
 
 
         data = {"-a":{"-b": 50}, 'b': [1,2,3], 'c':10}
         resp = self.app.post(API_V1 + '/books',
             data = json.dumps(data))
-        assert resp.status_code == http.BAD_REQUEST
+        assert resp.status_code == http_status.BAD_REQUEST
 
         filter = {"-a.-b": 50, '$and': [{'b': [1,2,3]}, {'c':10}]}
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        assert resp.status_code == http.BAD_REQUEST
+        assert resp.status_code == http_status.BAD_REQUEST
         data = from_json(resp.data)
         assert data['message'] == "Document key has invalid format [-a,-b]"
 
         filter = {'$and': [{'_id': {'$gt': 20}}, {'_id': {'$lt': 80}, 'a':[1,2, {'$where':1}]}]}
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        assert resp.status_code == http.BAD_REQUEST
+        assert resp.status_code == http_status.BAD_REQUEST
         assert from_json(resp.data)['message'] ==\
                "Document contains forbidden fields [_id,$where]"
 
@@ -822,19 +829,19 @@ class KeysValidationCase(ApiBaseTestClass):
         data = {"a":{"b": 50}, 'b': [1,2,3], 'c':10}
         resp = self.app.post(API_V1 + '/books/*key1',
             data = json.dumps(data))
-        assert resp.status_code == http.CREATED
+        assert resp.status_code == http_status.CREATED
         resp = self.app.post(API_V1 + '/books/|',
             data = json.dumps(data))
-        assert resp.status_code == http.CREATED
+        assert resp.status_code == http_status.CREATED
 
         resp = self.app.get(API_V1 + '/books/*key1')
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books/|')
-        assert resp.status_code == http.OK
+        assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books/-ke|y1_')
-        assert resp.status_code == http.NOT_FOUND
+        assert resp.status_code == http_status.NOT_FOUND
 
 
 class FilterByDateCase(ApiBaseTestClass):
@@ -858,11 +865,11 @@ class FilterByDateCase(ApiBaseTestClass):
         self.app.post(API_V1 + '/books',
             data = json.dumps(data))
 
-        filter = {extf.CREATED_AT: {'$gt': now}}
+        filter = {reservedf.CREATED_AT: {'$gt': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': now.isoformat()}}}
         filter = self.to_json(filter)
         res = self.app.get(API_V1 + '/books?filter=%s' % filter)
         res = from_json(res.data)['response']
-        v = datetime.datetime.strptime(res[0][extf.CREATED_AT], '%Y-%m-%dT%H:%M:%S.%f')
+        v = datetime.datetime.strptime(res[0][reservedf.CREATED_AT], '%Y-%m-%dT%H:%M:%S.%f')
         assert now.microsecond < v.microsecond
         assert len(res) == 1
 
@@ -897,6 +904,248 @@ class FilterByDateCase(ApiBaseTestClass):
         res = from_json(res.data)['response']
         assert len(res) == 2
 
+
+class CustomDataTypesCase(ApiBaseTestClass):
+    def setUp(self):
+        super(CustomDataTypesCase, self).setUpClass()
+
+    def tearDown(self):
+        super(CustomDataTypesCase, self).tearDownClass()
+
+
+    def test_date_save(self):
+        dt = datetime.datetime.utcnow().isoformat()
+        res = self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            follow_redirects=True
+        )
+        key = from_json(res.data)[extf.KEY]
+        res = self.app.get(API_V1 + '/books/%s' % key)
+        res = from_json(res.data)
+        assert res['b'] == dt
+        assert isinstance(res[reservedf.CREATED_AT], basestring)
+        assert 'iso' in res['c'] and TYPE_VAR_NAME in res['c']
+
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', key)
+        assert isinstance(obj['b'], basestring)
+        assert isinstance(obj['c'], datetime.datetime)
+        assert isinstance(obj[reservedf.CREATED_AT], datetime.datetime)
+
+    def test_date_filter(self):
+        dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
+        self.app.post(API_V1 + '/books',
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            follow_redirects=True
+        )
+        dt = datetime.datetime(2012, 1, 20, 10, 10, 10).isoformat()
+        self.app.post(API_V1 + '/books',
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            follow_redirects=True
+        )
+        dt = datetime.datetime(2012, 1, 20, 10, 10, 15).isoformat()
+        filter = {'c': {'$gt': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+
+        dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
+        filter = {'c': {'$lte': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 2
+
+    def test_date_update(self):
+        dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            follow_redirects=True
+        )
+        dt = datetime.datetime(2012, 1, 20, 10, 10, 10).isoformat()
+        self.app.put(API_V1 + '/books/1',
+            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/books/1')
+        res = from_json(res.data)
+        assert reservedf.UPDATED_AT in res and res['c']['iso'] == dt
+
+
+    def test_pointer_save(self):
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c': 2}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/boobs/1',
+            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/boobs/1')
+        res = from_json(res.data)
+        assert TYPE_VAR_NAME in res['c'] and Pointer.BUCKET in res['c'] and Pointer.KEY in res['c']
+
+        old_to_ext = storage_module._to_external
+        storage_module._to_external = lambda x: x
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'boobs', '1')
+        c = obj['c']
+        assert isinstance(c, DBRef)
+        assert c.collection == 'books'
+        assert c.id == appstorage._internal_id(v1.get_app_id(), v1.get_user_id(), 'books', 0, '1')
+        storage_module._to_external = old_to_ext
+
+    def test_pointer_filter(self):
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c': 2}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/boobs',
+            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/boobs',
+            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/boobs')
+        res = from_json(res.data)['response']
+        assert len(res) == 2
+        filter = {'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}
+        res = self.app.get(API_V1 + '/boobs?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['c'][Pointer.BUCKET] == 'books' and res['c'][Pointer.KEY] == '1'
+
+    def test_pointer_update(self):
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c': 2}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/boobs/1',
+            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
+            follow_redirects=True
+        )
+        self.app.put(API_V1 + '/boobs/1',
+            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/boobs/1')
+        res = from_json(res.data)
+        assert res['c'][Pointer.BUCKET] == 'books' and res['c'][Pointer.KEY] == '2'
+
+    def test_blob_save(self):
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c': {TYPE_VAR_NAME: DataTypes.BLOB,
+                                           Blob.BASE64: 'VGhpcyBpcyBhbiBlbmNvZGVkIHN0cmluZw=='}}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/books/1')
+        res = from_json(res.data)
+        assert res['c'][Blob.BASE64] == 'VGhpcyBpcyBhbiBlbmNvZGVkIHN0cmluZw=='
+
+        old_to_ext = storage_module._to_external
+        storage_module._to_external = lambda x: x
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
+        c = obj['c']
+        assert isinstance(c, Binary)
+        storage_module._to_external = old_to_ext
+
+    def test_geo_save(self):
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/books/1')
+        res = from_json(res.data)
+        assert res['c'] == {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+
+        old_to_ext = storage_module._to_external
+        storage_module._to_external = lambda x: x
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
+        c = obj['__geo_c']
+        assert c == {GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+        storage_module._to_external = old_to_ext
+
+    def test_geo_filter(self):
+        storage.entities.ensure_index([("__geo_c", GEO2D)])
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/2',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/3',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/4',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 4.786, GeoPoint.LONGITUDE: 4}}),
+            follow_redirects=True
+        )
+        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}}
+        res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 3
+
+        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+                       '$maxDistanceInKilometers': 10000}}
+        res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 3
+
+        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+                       '$maxDistanceInMiles': 70000}}
+        res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 3
+
+        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+                       '$maxDistanceInRadians': 3}}
+        res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 3
+
+    def test_geo_update(self):
+        storage.entities.ensure_index([("__geo_c", GEO2D)])
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/2',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/3',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/4',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 4.786, GeoPoint.LONGITUDE: 4}}),
+            follow_redirects=True
+        )
+        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+                       '$maxDistanceInKilometers': 10000}}
+        res = self.app.put(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter),
+            data=json.dumps({'b': 10}),
+            follow_redirects=True)
+        assert res.status_code == http_status.OK
+
+        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+                       '$maxDistanceInKilometers': 10000}}
+        res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        for r in res:
+            assert r['b'] == 10
 
 
 if __name__ == '__main__':

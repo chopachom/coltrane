@@ -1,10 +1,10 @@
 from coltrane.rest.utils import resp_msgs
-from coltrane.rest.api.statuses import http, STATUS_CODE, app
+from coltrane.rest import http_status, app_status, STATUS_CODE
 
 __author__ = 'qweqwe'
 import unittest
 from coltrane.rest.app import create_app
-from coltrane.rest import api_v1
+from coltrane.rest.api import api_v1
 from coltrane.rest.api.v1 import from_json
 from coltrane.rest.config import TestConfig
 from coltrane.tests.stubs import fake_guard
@@ -34,8 +34,8 @@ class GuardTestCase(unittest.TestCase):
     def test_allow_access(self):
         rv = self.app.get('/v1/books')
         res = from_json(rv.data)
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
-        assert rv.status_code == http.NOT_FOUND
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app_status.NOT_FOUND}
+        assert rv.status_code == http_status.NOT_FOUND
 
     def test_deny_access_for_auth_token(self):
         fake_guard.AUTH_TOKEN = 'Hui'

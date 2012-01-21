@@ -1,4 +1,5 @@
 import copy
+from coltrane.appstorage import reservedf
 
 __author__ = 'nik'
 
@@ -36,12 +37,12 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
             data = {'test': 'test_data'}
             key = storage.create(app_id, user_id, bucket, self.ip, data)
             data[extf.KEY] = key
-            data[extf.BUCKET] = bucket
+            data[reservedf.BUCKET] = bucket
             expected_boobs.append(data)
 
         for buck in expected_boobs:
             document = storage.get(app_id, user_id, bucket, key=buck[extf.KEY])
-            del document[extf.CREATED_AT]
+            del document[reservedf.CREATED_AT]
             # asserts
             assert document[extf.KEY] ==\
                    buck[extf.KEY]
@@ -190,13 +191,13 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
         # define new dict for update
         updated_data = {'test': 'updated_data',
-                        extf.BUCKET: bucket}
+                        reservedf.BUCKET: bucket}
         storage.update(app_id, user_id, bucket, self.ip,
             copy.deepcopy(updated_data), key=key)
 
         # assert entity was updated
         actual_data = storage.get(app_id, user_id, bucket, key)
-        del actual_data[extf.CREATED_AT]
+        del actual_data[reservedf.CREATED_AT]
         for key in updated_data.keys():
             val1 = actual_data[key]
             val2 = updated_data[key]
@@ -222,14 +223,14 @@ class DocumentStorageIntegrationTestCase(unittest.TestCase):
 
     def test_from_int_to_ext(self):
         d = {extf.KEY:'key', 'a':{'b':[{'a':10},10,
-                {extf.KEY:15, extf.BUCKET:'buck'}, {extf.CREATED_AT:'10.10.2010'}]}}
+                {extf.KEY:15, reservedf.BUCKET:'buck'}, {reservedf.CREATED_AT:'10.10.2010'}]}}
         res = _from_external_to_internal('a', 'b', 'c', d)
         assert res == {'a':
                            {'b':
                               [
                                  {'a': 10}, 10,
-                                 {intf.BUCKET: 'buck', intf.ID: 'a|b|c|0|15'},
-                                 {intf.CREATED_AT: '10.10.2010'}
+                                 {reservedf.BUCKET: 'buck', intf.ID: 'a|b|c|0|15'},
+                                 {reservedf.CREATED_AT: '10.10.2010'}
                               ]
                            },
                        '_id': 'a|b|c|0|key'}
