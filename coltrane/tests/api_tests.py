@@ -730,7 +730,7 @@ class PaginatingQueryCase(ApiBaseTestClass):
                                  'Parameters skip or limit have invalid value.'
         assert rv.status_code == http_status.BAD_REQUEST
 
-        rv = self.app.get(API_V1 + '/books?filter=%s&limit=0&skip=0' % json.dumps(filter))
+        rv = self.app.get(API_V1 + '/books?filter=%s&limit=-1&skip=0' % json.dumps(filter))
         res = from_json(rv.data)
         assert res['message'] == 'Invalid request syntax. '\
                                  'Parameters skip or limit have invalid value.'
@@ -1146,6 +1146,30 @@ class CustomDataTypesCase(ApiBaseTestClass):
         res = from_json(res.data)['response']
         for r in res:
             assert r['b'] == 10
+
+
+class FetchWithCountCase(ApiBaseTestClass):
+
+    def setUp(self):
+        super(FetchWithCountCase, self).setUpClass()
+
+        for i in range(10):
+            self.app.post(API_V1 + '/books',
+                data=json.dumps({'a':10, 'b': i}),
+                follow_redirects=True)
+
+    def tearDown(self):
+        super(FetchWithCountCase, self).tearDownClass()
+
+    def test_count_only(self):
+        res = self.app.get(API_V1 + '/books?count=true&limit=0&filter=%s' % json.dumps({'b': {'$lt': 5}}))
+        res = from_json(res.data)
+        assert res == {'response':[], 'count': 5}
+
+    def test_count_with_data(self):
+        res = self.app.get(API_V1 + '/books?count=true&filter=%s' % json.dumps({'b': {'$lt': 5}}))
+        res = from_json(res.data)
+        assert len(res['response']) == res['count'] == 5
 
 
 if __name__ == '__main__':

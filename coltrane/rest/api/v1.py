@@ -37,14 +37,25 @@ def get_by_filter_handler(bucket):
 
     filter_opts = extract_filter_opts()
     skip, limit = extract_pagination_data()
+    count = extract_counting_data() # count flag
+    count_only = count
+    # if limit greater then 0 it means that documents have to be returned as well as count parameter
+    if limit:
+        count_only = False
 
-    documents = storage.find(get_app_id(), get_user_id(), bucket,
-                             filter_opts, skip, limit)
-    if len(documents):
-        return {'response': documents}, http_status.OK
+    response = storage.find(get_app_id(), get_user_id(), bucket,
+                             filter_opts, skip, limit, count_only)
+    if count_only:
+        return {'response': [], 'count': response}, http_status.OK
+    else:
+        if len(response):
+            resp = {'response': response}
+            if count:
+                resp.update({'count': len(response)})
+            return resp, http_status.OK
 
-    return {'message': resp_msgs.DOC_NOT_EXISTS,
-            STATUS_CODE: app_status.NOT_FOUND}, http_status.NOT_FOUND
+        return {'message': resp_msgs.DOC_NOT_EXISTS,
+                STATUS_CODE: app_status.NOT_FOUND}, http_status.NOT_FOUND
 
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
@@ -271,6 +282,16 @@ def is_force_mode():
         force = True
     return force
 
+
+def extract_counting_data():
+    """Extract count flag. If it has true value it means that count
+    parameter should be added to the response."""
+    count = False
+    if request.args.get('count', '').strip() == 'true':
+        count = True
+    return count
+
+
 def extract_pagination_data():
     """
         Extracts pagination data
@@ -280,7 +301,7 @@ def extract_pagination_data():
     try:
         skip = int(skip)
         limit  = int(limit)
-        if limit <= 0 or skip < 0:
+        if limit < 0 or skip < 0:
             raise Exception()
     except Exception:
         raise exceptions.InvalidRequestError(

@@ -127,20 +127,24 @@ class AppdataStorage(object):
 
     @verify_tokens
     def find(self, app_id, user_id, bucket, filter_opts=None,
-             skip=0, limit=1000):
+             skip=0, limit=1000, count=False):
 
         criteria = _generate_criteria(app_id, user_id, bucket, filter_opts=filter_opts)
 
         opt_criteria = {}
         if skip < 0:
             raise RuntimeError("offset parameter must not be less then 0")
-        if limit <= 0:
+        if limit < 0:
             raise RuntimeError("limit parameter must be greater then 0")
         opt_criteria['skip']  = skip
         opt_criteria['limit'] = limit
 
-        documents = list(self.entities.find(criteria, **opt_criteria))
-        return map(_to_external, documents)
+        cursor = self.entities.find(criteria, **opt_criteria)
+        if count:
+            return cursor.count(with_limit_and_skip=True)
+        else:
+            documents = list(cursor)
+            return map(_to_external, documents)
 
 
     @verify_tokens
