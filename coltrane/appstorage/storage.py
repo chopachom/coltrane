@@ -127,7 +127,7 @@ class AppdataStorage(object):
 
     @verify_tokens
     def find(self, app_id, user_id, bucket, filter_opts=None,
-             skip=0, limit=1000, count=False):
+             sort=None, skip=0, limit=1000, count=False):
 
         criteria = _generate_criteria(app_id, user_id, bucket, filter_opts=filter_opts)
 
@@ -138,6 +138,7 @@ class AppdataStorage(object):
             raise RuntimeError("limit parameter must be greater then 0")
         opt_criteria['skip']  = skip
         opt_criteria['limit'] = limit
+        opt_criteria['sort'] = sort
 
         cursor = self.entities.find(criteria, **opt_criteria)
         if count:

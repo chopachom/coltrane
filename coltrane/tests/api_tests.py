@@ -1297,5 +1297,33 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
         assert res['arr1'] == [1,2,3,4] and res['arr2'] == [4,5,6]
 
 
+class SortFieldsCase(ApiBaseTestClass):
+
+    def setUp(self):
+        super(SortFieldsCase, self).setUpClass()
+
+        for i in range(20):
+            self.app.post(API_V1 + '/books',
+                data=json.dumps({'b': i, 's': i}),
+                follow_redirects=True)
+
+    def tearDown(self):
+        super(SortFieldsCase, self).tearDownClass()
+
+    def test_desc_sort(self):
+        res = self.app.get(API_V1 + '/books?limit=5&sort=-b')
+        res = from_json(res.data)['response']
+        assert len(res) == 5
+        for i in range(5):
+            assert res[i]['b'] == 19 - i
+
+    def test_asc_sort(self):
+        res = self.app.get(API_V1 + '/books?limit=5&sort=s')
+        res = from_json(res.data)['response']
+        assert len(res) == 5
+        for i in range(5):
+            assert res[i]['s'] == i
+
+
 if __name__ == '__main__':
     unittest.main()

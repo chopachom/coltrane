@@ -37,6 +37,7 @@ def get_by_filter_handler(bucket):
 
     filter_opts = extract_filter_opts()
     skip, limit = extract_pagination_data()
+    sort = extract_sort_data()
     count = extract_counting_data() # count flag
     count_only = count
     # if limit greater then 0 it means that documents have to be returned as well as count parameter
@@ -44,7 +45,7 @@ def get_by_filter_handler(bucket):
         count_only = False
 
     response = storage.find(get_app_id(), get_user_id(), bucket,
-                             filter_opts, skip, limit, count_only)
+                             filter_opts, sort, skip, limit, count_only)
     if count_only:
         return {'response': [], 'count': response}, http_status.OK
     else:
@@ -281,6 +282,19 @@ def is_force_mode():
     if request.args.get('force', '').strip() == 'true':
         force = True
     return force
+
+
+def extract_sort_data():
+    sort_data = request.args.get('sort')
+    if sort_data:
+        order = 1
+        if sort_data[0] == '-':
+            sort_field = sort_data[1:]
+            order = -1
+        else:
+            sort_field = sort_data
+        return [(sort_field, order),]
+    return None
 
 
 def extract_counting_data():
