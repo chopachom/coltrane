@@ -9,7 +9,7 @@ from datetime import datetime
 from uuid import uuid4
 from functools import wraps
 from hashlib import sha1
-from coltrane.appstorage import _external_key, _internal_id, intf, extf, reservedf
+from coltrane.appstorage import _external_key, _internal_id, intf, extf, reservedf, atomic_operations
 from coltrane.appstorage.datatypes import BaseType
 from coltrane.appstorage.typeconverters import get_external_converter, try_get_geopoint_external_converter, get_internal_converter
 
@@ -175,7 +175,10 @@ class AppdataStorage(object):
 
         document[intf.IP_ADDRESS] = ip_address
         document[reservedf.UPDATED_AT] = datetime.utcnow()
-        self.entities.update(criteria, {'$set': document}, multi=True, safe=True)
+
+        update = self._make_doc_for_update(document)
+
+        self.entities.update(criteria, update, multi=True, safe=True)
 
 
     @verify_tokens
@@ -197,13 +200,22 @@ class AppdataStorage(object):
         }, multi=True)
 
 
-
     def is_document_exists(self, app_id, user_id, bucket, filter_opts=None):
         """ Function for the external performing
         """
         criteria = _generate_criteria(app_id, user_id, bucket, filter_opts)
         return self._is_document_exists(criteria)
 
+    def _make_doc_for_update(self, document):
+        update = {}
+        for k, v in document.items():
+            if k in atomic_operations:
+                values = update.setdefault(k, {})
+                values.update(v)
+            else:
+                values = update.setdefault('$set', {})
+                values.update({k: v})
+        return update
 
     def _is_document_exists(self, criteria):
          """ Function for the internal performing

@@ -6,12 +6,12 @@ from bson.binary import Binary
 from bson.dbref import DBRef
 from pymongo import GEO2D
 from coltrane import appstorage
-from coltrane.appstorage import reservedf
+from coltrane.appstorage import reservedf, forbidden_fields
 from coltrane.appstorage.datatypes import Pointer, Blob, GeoPoint
 from coltrane.rest.api import api_v1
 from coltrane.rest.api import v1
 from coltrane.rest.api.datatypes import DataTypes, TYPE_VAR_NAME
-from coltrane.rest.utils import resp_msgs, forbidden_fields
+from coltrane.rest.utils import resp_msgs
 from coltrane.rest.api.v1 import from_json, storage
 from coltrane.rest.app import create_app
 from coltrane.rest.extensions import mongodb
@@ -1170,6 +1170,131 @@ class FetchWithCountCase(ApiBaseTestClass):
         res = self.app.get(API_V1 + '/books?count=true&filter=%s' % json.dumps({'b': {'$lt': 5}}))
         res = from_json(res.data)
         assert len(res['response']) == res['count'] == 5
+
+
+class IncrementDecrementVarsCase(ApiBaseTestClass):
+
+    def setUp(self):
+        super(IncrementDecrementVarsCase, self).setUpClass()
+
+        for i in range(10):
+            self.app.post(API_V1 + '/books',
+                data=json.dumps({'a':10, 'b': i, 's': 15, 'arr1': [1,2,3], 'arr2': [4,5,6]}),
+                follow_redirects=True)
+
+    def tearDown(self):
+        super(IncrementDecrementVarsCase, self).tearDownClass()
+
+    def test_increment(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$inc': {'a':1}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['a'] == 11 and res['c'] and res['d']['e']
+
+    def test_decrement(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$inc': {'a':-1, 'b': 1}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['a'] == 9 and res['b'] == 10 and res['c'] and res['d']['e']
+
+    def test_unset(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$unset': {'a': 1, 's': 15}, '$inc': {'b': 1}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert not res.get('a') and \
+               not res.get('s') and \
+               res['b'] == 10 and \
+               res['c'] and res['d']['e']
+
+    def test_push(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$push': {'arr1': 4, 'arr2': 7}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['arr1'] == [1,2,3,4] and res['arr2'] == [4,5,6,7]
+
+    def test_pushAll(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$pushAll': {'arr1': [4,5,6], 'arr2': [7,8,9]}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['arr1'] == [1,2,3,4,5,6] and res['arr2'] == [4,5,6,7,8,9]
+
+    def test_pop(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$pop': {'arr1': 1, 'arr2': -1}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['arr1'] == [1,2] and res['arr2'] == [5,6]
+
+    def test_pull(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$gt':10, '$pull': {'arr1': 2, 'arr2': {'$mod': [2, 1]}}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['arr1'] == [1,3] and res['arr2'] == [4, 6]
+
+    def test_pullAll(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$gt':10, '$pullAll': {'arr1': [1,2], 'arr2': [4,5]}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['arr1'] == [3] and res['arr2'] == [6]
+
+    def test_addToSet(self):
+        filter = {'b': {'$gt': 8}}
+        update = {'c': 20, 'd':{'e':30}, '$gt':10, '$addToSet': {'arr1': { '$each' :[1,2,4]}, 'arr2': 6}}
+        self.app.put(API_V1 + '/books?filter=%s' % json.dumps(filter),
+            data=json.dumps(update),
+            follow_redirects=True)
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        res = res[0]
+        assert res['arr1'] == [1,2,3,4] and res['arr2'] == [4,5,6]
 
 
 if __name__ == '__main__':

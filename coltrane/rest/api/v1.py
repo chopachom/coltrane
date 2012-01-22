@@ -1,6 +1,6 @@
 import logging
 from flask import Blueprint
-from coltrane.appstorage import reservedf
+from coltrane.appstorage import reservedf, forbidden_fields
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf
 from coltrane.rest.api.datatypes import serialize, deserialize

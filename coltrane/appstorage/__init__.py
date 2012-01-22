@@ -34,6 +34,21 @@ class intf(Enum):
 class extf(Enum):
     KEY         = '_key'
 
+# Atomic operations for mongodb and their service fields such as $gt for $pullAll
+atomic_operations = ['$set', '$unset', '$inc',
+                     '$push', '$pushAll', '$pop',
+                     '$pull', '$pullAll', '$addToSet', '$each']
+
+service_fields_for_atomic = ['$gt', '$gte', '$lt', '$lte', '$ne', '$in', '$nin', '$mod']
+
+
+class forbidden_fields(Enum):
+    WHERE      = '$where'
+    EXISTS     = '$exists'
+    TYPE       = '$type'
+    ID         = intf.ID
+
+
 def auto_reconnect(func):
     """
     Function wrapper to automatically reconnect if AutoReconnect is raised.

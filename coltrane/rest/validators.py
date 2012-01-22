@@ -1,5 +1,6 @@
 import abc
 import re
+from coltrane.appstorage import atomic_operations, service_fields_for_atomic
 from coltrane.rest import exceptions
 
 __author__ = 'Pasha'
@@ -120,6 +121,7 @@ class KeyValidator(Validator):
     #Allowed: _a-bc_
     # Forbidden: __a, b__, -c, d.e
     key_re = re.compile(r'^(?!__)\w[\w-]*(?<!__)$')
+    exceptions = {}
 
     def __init__(self, data):
         self.data = data
@@ -131,6 +133,7 @@ class KeyValidator(Validator):
             found_keys = self._wrong_data(self.data)
         else:
             found_keys = self._wrong_data_simple(self.data)
+        found_keys.difference_update(self.exceptions)
         if len(found_keys):
             raise exceptions.InvalidKeyNameError(
                 'Document key has invalid format [%s]' % ','.join(found_keys))
@@ -209,6 +212,7 @@ class UpdateDocumentKeysValidator(KeyValidator):
     #Allowed: _a-b.c_
     # Forbidden: __a, b__, -c
     key_re = re.compile(r'^(?!__)\w[\w\.-]*(?<!__)$')
+    exceptions = set(atomic_operations + service_fields_for_atomic)
 
     def __init__(self, update_doc):
         super(UpdateDocumentKeysValidator, self).__init__(update_doc)
