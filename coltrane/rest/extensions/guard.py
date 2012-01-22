@@ -1,8 +1,10 @@
+from coltrane.rest import STATUS_CODE, http_status, app_status as app_status
+
 __author__ = 'apetrovich'
 
 from flask import request, g, jsonify
 from coltrane import config
-from coltrane.rest.api import statuses
+#from coltrane.rest.api import statuses
 
 
 class Guard(object):
@@ -54,13 +56,13 @@ class Guard(object):
         if not self.get_auth_token():
             return jsonify({
                 'message': 'User is not authorized',
-                statuses.STATUS_CODE: statuses.app.USER_UNAUTHORIZED
-            }), statuses.http.UNAUTHORIZED
+                STATUS_CODE: app_status.USER_UNAUTHORIZED
+            }), http_status.UNAUTHORIZED
         if not self.get_app_token():
             return jsonify({
                 'message': 'App is not authorized',
-                statuses.STATUS_CODE: statuses.app.APP_UNAUTHORIZED
-            }), statuses.http.UNAUTHORIZED
+                STATUS_CODE: app_status.APP_UNAUTHORIZED
+            }), http_status.UNAUTHORIZED
 
         user = self.manager.authenticate_user(self.get_auth_token())
         app = self.manager.authenticate_app(self.get_app_token())
@@ -68,13 +70,13 @@ class Guard(object):
         if not user:
             return jsonify({
                 'message': 'User is not authorized',
-                statuses.STATUS_CODE: statuses.app.USER_UNAUTHORIZED
-            }), statuses.http.UNAUTHORIZED
+                STATUS_CODE: app_status.USER_UNAUTHORIZED
+            }), http_status.UNAUTHORIZED
         if not app:
             return jsonify({
                 'message': 'App is not authorized',
-                statuses.STATUS_CODE: statuses.app.APP_UNAUTHORIZED
-            }), statuses.http.UNAUTHORIZED
+                STATUS_CODE: app_status.APP_UNAUTHORIZED
+            }), http_status.UNAUTHORIZED
 
         g.current_user = user
         g.current_app = app

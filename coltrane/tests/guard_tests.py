@@ -5,12 +5,12 @@ from coltrane.rest.utils import resp_msgs
 __author__ = 'qweqwe'
 import unittest
 from coltrane.rest.app import create_app
-from coltrane.rest import api_v1
+from coltrane.rest.api import api_v1
 from coltrane.rest.api.v1 import from_json
 from coltrane.rest.lib.guard_manager import GuardManager
 from coltrane.rest.extensions import guard
 from coltrane.rest.config import TestConfig
-from coltrane.rest.api.statuses import http, app, STATUS_CODE
+from coltrane.rest import http_status, app_status, STATUS_CODE
 from coltrane.db.models import User, AppToken, Application
 from coltrane.db.extension import db
 from coltrane import config
@@ -56,8 +56,8 @@ class GuardTestCase(unittest.TestCase):
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN)
         res = from_json(rv.data)
-        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app.NOT_FOUND}
-        assert rv.status_code == http.NOT_FOUND
+        assert res == {'message': resp_msgs.DOC_NOT_EXISTS, STATUS_CODE: app_status.NOT_FOUND}
+        assert rv.status_code == http_status.NOT_FOUND
 
 
     def test_deny_access_for_auth_token(self):
@@ -66,7 +66,7 @@ class GuardTestCase(unittest.TestCase):
         res = self.client.get('/v1/books')
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN)
-        assert res._status_code == http.UNAUTHORIZED
+        assert res._status_code == http_status.UNAUTHORIZED
 
 
     def test_deny_access_for_app_token(self):
@@ -75,7 +75,7 @@ class GuardTestCase(unittest.TestCase):
         res = self.client.get('/v1/books')
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_USER_AUTH_TOKEN)
         self.client.delete_cookie(self.app.config.get('SERVER_NAME'), config.COOKIE_APP_TOKEN)
-        assert res._status_code == http.UNAUTHORIZED
+        assert res._status_code == http_status.UNAUTHORIZED
 
     @classmethod
     def tearDownClass(cls):

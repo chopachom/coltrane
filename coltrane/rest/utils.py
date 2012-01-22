@@ -24,12 +24,6 @@ class resp_msgs(Enum):
     INTERNAL_ERROR  = "Internal server error"
 
 
-class forbidden_fields(Enum):
-    WHERE      = '$where'
-    ID         = intf.ID
-
-
-
 class lazy_coll(object):
     """
         This class is used to initialize mongodb collection lazily.

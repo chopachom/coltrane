@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
+from coltrane.rest import ERROR_INFO_MATCHING, http_status, app_status as app_status
 from coltrane.rest.utils import resp_msgs
-from coltrane.rest.api.statuses import ERROR_INFO_MATCHING, http, app as app_status
 from coltrane.rest.utils import jsonify
 
 __author__ = 'apetrovich'
@@ -115,6 +115,6 @@ def configure_errorhandlers(app):
                 raise
 
         app_code, http_code = ERROR_INFO_MATCHING.get(
-            error_class, (app_status.SERVER_ERROR, http.SERVER_ERROR))
+            error_class, (app_status.SERVER_ERROR, http_status.SERVER_ERROR))
 
         return {'message': message, 'code': app_code}, http_code

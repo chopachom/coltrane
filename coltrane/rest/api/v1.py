@@ -1,11 +1,11 @@
 import logging
-
 from flask import Blueprint
+from coltrane.appstorage import reservedf, forbidden_fields
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf
+from coltrane.rest.api.datatypes import serialize, deserialize
 from coltrane.rest.extensions import guard
-from coltrane.rest.api.statuses import *
-from coltrane.rest import exceptions, validators
+from coltrane.rest import exceptions, validators, http_status, STATUS_CODE, app_status
 from coltrane.rest.utils import *
 
 
@@ -19,35 +19,50 @@ api = Blueprint("api_v1", __name__)
 
 @api.route('/<bucket:bucket>/<key:key>', methods=['GET'])
 @jsonify
+@serialize
 def get_by_keys_handler(bucket, key):
 
     doc = storage.get(get_app_id(), get_user_id(), bucket, key)
     if doc:
-        return doc, http.OK
+        return doc, http_status.OK
     else:
-        return {STATUS_CODE: app.NOT_FOUND,
-                'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+        return {STATUS_CODE: app_status.NOT_FOUND,
+                'message': resp_msgs.DOC_NOT_EXISTS}, http_status.NOT_FOUND
 
 
 @api.route('/<bucket:bucket>', methods=['GET'])
 @jsonify
+@serialize
 def get_by_filter_handler(bucket):
 
     filter_opts = extract_filter_opts()
     skip, limit = extract_pagination_data()
+    sort = extract_sort_data()
+    count = extract_counting_data() # count flag
+    count_only = count
+    # if limit greater then 0 it means that documents have to be returned as well as count parameter
+    if limit:
+        count_only = False
 
-    documents = storage.find(get_app_id(), get_user_id(), bucket,
-                             filter_opts, skip, limit)
-    if len(documents):
-        return {'response': documents}, http.OK
+    response = storage.find(get_app_id(), get_user_id(), bucket,
+                             filter_opts, sort, skip, limit, count_only)
+    if count_only:
+        return {'response': [], 'count': response}, http_status.OK
+    else:
+        if len(response):
+            resp = {'response': response}
+            if count:
+                resp.update({'count': len(response)})
+            return resp, http_status.OK
 
-    return {'message': resp_msgs.DOC_NOT_EXISTS,
-            STATUS_CODE: app.NOT_FOUND}, http.NOT_FOUND
+        return {'message': resp_msgs.DOC_NOT_EXISTS,
+                STATUS_CODE: app_status.NOT_FOUND}, http_status.NOT_FOUND
 
 
 @api.route('/<bucket:bucket>', defaults={'key': None}, methods=['POST'])
 @api.route('/<bucket:bucket>/<key:key>', methods=['POST'])
 @jsonify
+@serialize
 def post_handler(bucket, key):
     """ Create new document and get _key back
     """
@@ -67,11 +82,12 @@ def post_handler(bucket, key):
 
     document_key = storage.create(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                                   document)
-    return {extf.KEY: document_key}, http.CREATED
+    return {extf.KEY: document_key}, http_status.CREATED
 
 
 @api.route('/<bucket:bucket>/<key:key>', methods=['PUT'])
 @jsonify
+@serialize
 def put_by_keys_handler(bucket, key):
     """ Update existing documents by keys.
         If document with any key doesn't exist then create it
@@ -88,19 +104,20 @@ def put_by_keys_handler(bucket, key):
             document = generate_normal_view(document)
             storage.create(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                 document)
-            return {extf.KEY: key}, http.CREATED
+            return {extf.KEY: key}, http_status.CREATED
         else:
-            return {STATUS_CODE: app.NOT_FOUND,
-                    'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+            return {STATUS_CODE: app_status.NOT_FOUND,
+                    'message': resp_msgs.DOC_NOT_EXISTS}, http_status.NOT_FOUND
     else:
         storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
             document, key=key)
-        return {STATUS_CODE: app.OK,
-                'message': resp_msgs.DOC_UPDATED}, http.OK
+        return {STATUS_CODE: app_status.OK,
+                'message': resp_msgs.DOC_UPDATED}, http_status.OK
 
 
 @api.route('/<bucket:bucket>', methods=['PUT'])
 @jsonify
+@serialize
 def put_by_filter_handler(bucket):
     """ Update existing filtered documents.
         If document doesn't match the filter then create it
@@ -119,40 +136,42 @@ def put_by_filter_handler(bucket):
             )
             return {
                 extf.KEY: key, 'message': resp_msgs.DOC_CREATED,
-                STATUS_CODE: app.CREATED
-            }, http.CREATED
+                STATUS_CODE: app_status.CREATED
+            }, http_status.CREATED
 
         else:
             return {
                 'message': resp_msgs.DOC_NOT_EXISTS,
-                STATUS_CODE: app.NOT_FOUND
-            }, http.NOT_FOUND
+                STATUS_CODE: app_status.NOT_FOUND
+            }, http_status.NOT_FOUND
 
     storage.update(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                    document, filter_opts=filter_opts)
 
-    return {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app.OK}, http.OK
+    return {'message': resp_msgs.DOC_UPDATED, STATUS_CODE: app_status.OK}, http_status.OK
 
 
 @api.route('/<bucket:bucket>/<key:key>', methods=['DELETE'])
 @jsonify
+@serialize
 def delete_by_keys_handler(bucket, key):
     """ Deletes existing document (C.O.)
     """
     filter_opts = {extf.KEY: key}
     if not storage.is_document_exists(get_app_id(), get_user_id(),
         bucket, filter_opts):
-        return {STATUS_CODE: app.NOT_FOUND,
-                'message': resp_msgs.DOC_NOT_EXISTS}, http.NOT_FOUND
+        return {STATUS_CODE: app_status.NOT_FOUND,
+                'message': resp_msgs.DOC_NOT_EXISTS}, http_status.NOT_FOUND
     else:
         storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip(),
             filter_opts=filter_opts)
-        return {STATUS_CODE: app.OK,
-                'message': resp_msgs.DOC_DELETED}, http.OK
+        return {STATUS_CODE: app_status.OK,
+                'message': resp_msgs.DOC_DELETED}, http_status.OK
 
 
 @api.route('/<bucket:bucket>', methods=['DELETE'])
 @jsonify
+@serialize
 def delete_by_filter_handler(bucket):
     """ Delete all documents matched with filter
     """
@@ -160,12 +179,12 @@ def delete_by_filter_handler(bucket):
     if not storage.is_document_exists(get_app_id(), get_user_id(),
                                       bucket, filter_opts):
         return {'message': resp_msgs.DOC_NOT_EXISTS,
-                STATUS_CODE: app.NOT_FOUND}, http.NOT_FOUND
+                STATUS_CODE: app_status.NOT_FOUND}, http_status.NOT_FOUND
     
     storage.delete(get_app_id(), get_user_id(), bucket, get_remote_ip(),
                     filter_opts=filter_opts)
 
-    return {'message': resp_msgs.DOC_DELETED}, http.OK
+    return {'message': resp_msgs.DOC_DELETED}, http_status.OK
 
 
 
@@ -177,8 +196,7 @@ def validate_forbidden_fields(doc, fields=None):
 
     
 def validate_document(document):
-    fields = forbidden_fields.values() + \
-             [v for v in extf.values() if v != extf.KEY]
+    fields = forbidden_fields.values() + reservedf.values()
     validate_forbidden_fields(document, fields)
     validators.SaveDocumentKeysValidator(document).validate()
 
@@ -189,7 +207,7 @@ def validate_filter(filter):
 
 
 def validate_doc_for_update(update_doc):
-    fields = forbidden_fields.values() + extf.values()
+    fields = forbidden_fields.values() + extf.values() + reservedf.values()
     validate_forbidden_fields(update_doc, fields)
     validators.UpdateDocumentKeysValidator(update_doc).validate()
 
@@ -231,13 +249,15 @@ def extract_form_data():
         #FIXME: DIRTY DIRTY DIRTY SUCKER
         obj = from_json(request.form.keys()[0])
 
+    document = deserialize(obj)
+
     if request.method == 'POST':
         validate_document(obj)
     elif request.method == 'PUT':
         normal_view = generate_normal_view(obj)
         validate_doc_for_update(normal_view)
     
-    return obj
+    return document
 
 
 def extract_filter_opts():
@@ -253,6 +273,7 @@ def extract_filter_opts():
                 'Invalid request syntax. Filter options were not specified')
         normal_view = generate_normal_view(filter)
         validate_filter(normal_view)
+        filter = deserialize(filter)
     return filter
 
 
@@ -261,6 +282,29 @@ def is_force_mode():
     if request.args.get('force', '').strip() == 'true':
         force = True
     return force
+
+
+def extract_sort_data():
+    sort_data = request.args.get('sort')
+    if sort_data:
+        order = 1
+        if sort_data[0] == '-':
+            sort_field = sort_data[1:]
+            order = -1
+        else:
+            sort_field = sort_data
+        return [(sort_field, order),]
+    return None
+
+
+def extract_counting_data():
+    """Extract count flag. If it has true value it means that count
+    parameter should be added to the response."""
+    count = False
+    if request.args.get('count', '').strip() == 'true':
+        count = True
+    return count
+
 
 def extract_pagination_data():
     """
@@ -271,7 +315,7 @@ def extract_pagination_data():
     try:
         skip = int(skip)
         limit  = int(limit)
-        if limit <= 0 or skip < 0:
+        if limit < 0 or skip < 0:
             raise Exception()
     except Exception:
         raise exceptions.InvalidRequestError(
