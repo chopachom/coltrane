@@ -15,6 +15,7 @@
               
     <!-- JPA -->
     <jpa:repositories base-package="io.coltrane.auth.repository"/>
+    <tx:annotation-driven transaction-manager="transactionManager"/>
     
     <bean id="entityManagerFactory"
 		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
