@@ -1,3 +1,4 @@
+import base64
 import json
 import unittest
 import datetime
@@ -1033,14 +1034,19 @@ class CustomDataTypesCase(ApiBaseTestClass):
         assert res['c'][Pointer.BUCKET] == 'books' and res['c'][Pointer.KEY] == '2'
 
     def test_blob_save(self):
+        source = 'This is an encoded string'
+        encoded = base64.encodestring(source)
+
         self.app.post(API_V1 + '/books/1',
             data=json.dumps({'a': 1, 'c': {TYPE_VAR_NAME: DataTypes.BLOB,
-                                           Blob.BASE64: 'VGhpcyBpcyBhbiBlbmNvZGVkIHN0cmluZw=='}}),
+                                           Blob.BASE64: encoded}}),
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/books/1')
         res = from_json(res.data)
-        assert res['c'][Blob.BASE64] == 'VGhpcyBpcyBhbiBlbmNvZGVkIHN0cmluZw=='
+        binary_field = base64.decodestring(res['c'][Blob.BASE64])
+
+        assert source == binary_field
 
         old_to_ext = storage_module._to_external
         storage_module._to_external = lambda x: x

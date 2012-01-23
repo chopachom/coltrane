@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime
 import abc
 from bson.binary import Binary
@@ -60,12 +61,12 @@ class BlobConverter(BaseConverter):
     def to_internal(cls, key, blob, *args, **kwargs):
         """
         :param key: document key,
-        :param blob: coltrane.appstorage.datatypes.Pointer
-        :return: internal view of Pointer
-        :rtype: :class:`DbRef`
+        :param blob: coltrane.appstorage.datatypes.Blob
+        :return: internal view of Blob
+        :rtype: :class:`bson.binary.Binary`
         """
-        base64 = str(blob.base64)
-        return key, Binary(base64)
+        data = base64.decodestring(blob.base64)
+        return key, Binary(data)
 
     @classmethod
     def to_external(cls, key, binary, *args, **kwargs):
@@ -75,8 +76,8 @@ class BlobConverter(BaseConverter):
         :return: external view of binary data
         :rtype: :class:`Blob`
         """
-        base64 = binary.__str__()
-        return key, Blob(base64)
+        base64str = base64.encodestring(binary)
+        return key, Blob(base64str)
 
 
 class GeoPointConverter(BaseConverter):
@@ -128,7 +129,7 @@ class GeoPointConverter(BaseConverter):
         """
         :param key: document key,
         :return: external view
-        :rtype: :class:`Blob`
+        :rtype: :class:`coltrane.appstorage.datatypes.GeoPoint`
         """
         key = key[len(cls.START_FOR_GEO_KEY):]
         latitude = value.get(GeoPoint.LATITUDE)
