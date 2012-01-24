@@ -11,7 +11,7 @@ from coltrane.appstorage import reservedf, forbidden_fields
 from coltrane.appstorage.datatypes import Pointer, Blob, GeoPoint
 from coltrane.rest.api import api_v1
 from coltrane.rest.api import v1
-from coltrane.rest.api.datatypes import DataTypes, TYPE_VAR_NAME
+from coltrane.rest.api.datatypes import type_codes, TYPE_FIELD
 from coltrane.rest.utils import resp_msgs
 from coltrane.rest.api.v1 import from_json, storage
 from coltrane.rest.app import create_app
@@ -866,7 +866,7 @@ class FilterByDateCase(ApiBaseTestClass):
         self.app.post(API_V1 + '/books',
             data = json.dumps(data))
 
-        filter = {reservedf.CREATED_AT: {'$gt': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': now.isoformat()}}}
+        filter = {reservedf.CREATED_AT: {'$gt': {TYPE_FIELD: type_codes.DATE, 'iso': now.isoformat()}}}
         filter = self.to_json(filter)
         res = self.app.get(API_V1 + '/books?filter=%s' % filter)
         res = from_json(res.data)['response']
@@ -917,7 +917,7 @@ class CustomDataTypesCase(ApiBaseTestClass):
     def test_date_save(self):
         dt = datetime.datetime.utcnow().isoformat()
         res = self.app.post(API_V1 + '/books/1',
-            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}),
             follow_redirects=True
         )
         key = from_json(res.data)[extf.KEY]
@@ -925,7 +925,7 @@ class CustomDataTypesCase(ApiBaseTestClass):
         res = from_json(res.data)
         assert res['b'] == dt
         assert isinstance(res[reservedf.CREATED_AT], basestring)
-        assert 'iso' in res['c'] and TYPE_VAR_NAME in res['c']
+        assert 'iso' in res['c'] and TYPE_FIELD in res['c']
 
         obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', key)
         assert isinstance(obj['b'], basestring)
@@ -935,22 +935,22 @@ class CustomDataTypesCase(ApiBaseTestClass):
     def test_date_filter(self):
         dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
         self.app.post(API_V1 + '/books',
-            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}),
             follow_redirects=True
         )
         dt = datetime.datetime(2012, 1, 20, 10, 10, 10).isoformat()
         self.app.post(API_V1 + '/books',
-            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}),
             follow_redirects=True
         )
         dt = datetime.datetime(2012, 1, 20, 10, 10, 15).isoformat()
-        filter = {'c': {'$gt': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}}
+        filter = {'c': {'$gt': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 1
 
         dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
-        filter = {'c': {'$lte': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}}
+        filter = {'c': {'$lte': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 2
@@ -958,12 +958,12 @@ class CustomDataTypesCase(ApiBaseTestClass):
     def test_date_update(self):
         dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
         self.app.post(API_V1 + '/books/1',
-            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            data=json.dumps({'a':1, 'b': dt, 'c': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}),
             follow_redirects=True
         )
         dt = datetime.datetime(2012, 1, 20, 10, 10, 10).isoformat()
         self.app.put(API_V1 + '/books/1',
-            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.DATE, 'iso': dt}}),
+            data=json.dumps({'c': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}),
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/books/1')
@@ -977,12 +977,12 @@ class CustomDataTypesCase(ApiBaseTestClass):
             follow_redirects=True
         )
         self.app.post(API_V1 + '/boobs/1',
-            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
+            data=json.dumps({'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/boobs/1')
         res = from_json(res.data)
-        assert TYPE_VAR_NAME in res['c'] and Pointer.BUCKET in res['c'] and Pointer.KEY in res['c']
+        assert TYPE_FIELD in res['c'] and Pointer.BUCKET in res['c'] and Pointer.KEY in res['c']
 
         old_to_ext = storage_module._to_external
         storage_module._to_external = lambda x: x
@@ -999,17 +999,17 @@ class CustomDataTypesCase(ApiBaseTestClass):
             follow_redirects=True
         )
         self.app.post(API_V1 + '/boobs',
-            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
+            data=json.dumps({'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
             follow_redirects=True
         )
         self.app.post(API_V1 + '/boobs',
-            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}}),
+            data=json.dumps({'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}}),
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/boobs')
         res = from_json(res.data)['response']
         assert len(res) == 2
-        filter = {'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}
+        filter = {'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}
         res = self.app.get(API_V1 + '/boobs?filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 1
@@ -1022,11 +1022,11 @@ class CustomDataTypesCase(ApiBaseTestClass):
             follow_redirects=True
         )
         self.app.post(API_V1 + '/boobs/1',
-            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
+            data=json.dumps({'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}),
             follow_redirects=True
         )
         self.app.put(API_V1 + '/boobs/1',
-            data=json.dumps({'c': {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}}),
+            data=json.dumps({'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}}),
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/boobs/1')
@@ -1038,7 +1038,7 @@ class CustomDataTypesCase(ApiBaseTestClass):
         encoded = base64.encodestring(source)
 
         self.app.post(API_V1 + '/books/1',
-            data=json.dumps({'a': 1, 'c': {TYPE_VAR_NAME: DataTypes.BLOB,
+            data=json.dumps({'a': 1, 'c': {TYPE_FIELD: type_codes.BLOB,
                                            Blob.BASE64: encoded}}),
             follow_redirects=True
         )
@@ -1058,12 +1058,12 @@ class CustomDataTypesCase(ApiBaseTestClass):
     def test_geo_save(self):
         self.app.post(API_V1 + '/books/1',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}}),
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/books/1')
         res = from_json(res.data)
-        assert res['c'] == {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+        assert res['c'] == {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
 
         old_to_ext = storage_module._to_external
         storage_module._to_external = lambda x: x
@@ -1076,42 +1076,42 @@ class CustomDataTypesCase(ApiBaseTestClass):
         storage.entities.ensure_index([("__geo_c", GEO2D)])
         self.app.post(API_V1 + '/books/1',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}),
             follow_redirects=True
         )
         self.app.post(API_V1 + '/books/2',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}}),
             follow_redirects=True
         )
         self.app.post(API_V1 + '/books/3',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}}),
             follow_redirects=True
         )
         self.app.post(API_V1 + '/books/4',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 4.786, GeoPoint.LONGITUDE: 4}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 4.786, GeoPoint.LONGITUDE: 4}}),
             follow_redirects=True
         )
-        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}}
+        filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 3
 
-        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+        filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInKilometers': 10000}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 3
 
-        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+        filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInMiles': 70000}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 3
 
-        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+        filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInRadians': 3}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
@@ -1121,32 +1121,32 @@ class CustomDataTypesCase(ApiBaseTestClass):
         storage.entities.ensure_index([("__geo_c", GEO2D)])
         self.app.post(API_V1 + '/books/1',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}),
             follow_redirects=True
         )
         self.app.post(API_V1 + '/books/2',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}}),
             follow_redirects=True
         )
         self.app.post(API_V1 + '/books/3',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}}),
             follow_redirects=True
         )
         self.app.post(API_V1 + '/books/4',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 4.786, GeoPoint.LONGITUDE: 4}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 4.786, GeoPoint.LONGITUDE: 4}}),
             follow_redirects=True
         )
-        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+        filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInKilometers': 10000}}
         res = self.app.put(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter),
             data=json.dumps({'b': 10}),
             follow_redirects=True)
         assert res.status_code == http_status.OK
 
-        filter = {'c':{"$nearSphere": {TYPE_VAR_NAME: DataTypes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
+        filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInKilometers': 10000}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']

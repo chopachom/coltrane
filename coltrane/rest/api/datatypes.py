@@ -8,9 +8,9 @@ from coltrane.utils import traverse, Enum
 
 __author__ = 'pshkitin'
 
-TYPE_VAR_NAME = '_type'
+TYPE_FIELD = '_type'
 
-class DataTypes(Enum):
+class type_codes(Enum):
     DATE = 'Date'
     POINTER = 'Pointer'
     GEO_POINT = 'GeoPoint'
@@ -43,7 +43,7 @@ class DateCaster(BaseCaster):
         iso = date.isoformat()
         if key in reservedf.values():
             return iso
-        return {TYPE_VAR_NAME: DataTypes.DATE, 'iso': iso}
+        return {TYPE_FIELD: type_codes.DATE, 'iso': iso}
 
     @classmethod
     def deserialize(cls, obj):
@@ -58,7 +58,7 @@ class PointerCaster(BaseCaster):
         :param pointer: coltrane.appstorage.datatypes.Pointer,
         :return: pointer view for client
         """
-        pview = {TYPE_VAR_NAME: DataTypes.POINTER,
+        pview = {TYPE_FIELD: type_codes.POINTER,
                  Pointer.BUCKET: pointer.bucket, Pointer.KEY: pointer.key}
         return pview
 
@@ -78,7 +78,7 @@ class BlobCaster(BaseCaster):
         :param blob: coltrane.appstorage.datatypes.Blob,
         :return: blob view for client
         """
-        bview = {TYPE_VAR_NAME: DataTypes.BLOB,
+        bview = {TYPE_FIELD: type_codes.BLOB,
                  Blob.BASE64: blob.base64}
         return bview
 
@@ -98,7 +98,7 @@ class GeoPointCaster(BaseCaster):
         :param geo_point: coltrane.appstorage.datatypes.GeoPoint,
         :return: geo point view for client
         """
-        gp_view = {TYPE_VAR_NAME: DataTypes.GEO_POINT,
+        gp_view = {TYPE_FIELD: type_codes.GEO_POINT,
                  GeoPoint.LATITUDE: geo_point.latitude,
                  GeoPoint.LONGITUDE: geo_point.longitude}
         return gp_view
@@ -120,45 +120,23 @@ class GeoPointCaster(BaseCaster):
                 'For GeoPoint type you should pass latitude and longitude fields')
         return GeoPoint(latitude, longitude, searching)
 
+SERIALISATORS = {
+    dt: DateCaster,
+    Pointer: PointerCaster,
+    Blob: BlobCaster,
+    GeoPoint: GeoPointCaster,
+}
 
-MAPPING = ((DataTypes.DATE, dt, DateCaster),
-           (DataTypes.POINTER, Pointer, PointerCaster),
-           (DataTypes.BLOB, Blob, BlobCaster),
-           (DataTypes.GEO_POINT, GeoPoint, GeoPointCaster))
-
-
-def try_get_serialize_caster(obj):
-    """
-    :param obj: external obj to serialize,
-    :return: special caster
-    :rtype: :class:`BaseCaster`
-    """
-    for v in MAPPING:
-        if obj.__class__ == v[1]:
-            return v[2]
-    return None
-
-def try_get_deserialize_caster(obj):
-    """
-    :param obj: external obj to deserialize,
-    :return: special type caster
-    :rtype: :class:`BaseCaster`
-    """
-    if GeoPoint.NEAR_SPHERE in obj:
-        obj = obj.get(GeoPoint.NEAR_SPHERE)
-        if type(obj) is not dict:
-            return None
-    str_type = obj.get(TYPE_VAR_NAME)
-    if str_type:
-        for v in MAPPING:
-            if v[0] == str_type:
-                return v[2]
-    return None
-
+DESERIALISATORS = {
+    type_codes.DATE: DateCaster,
+    type_codes.POINTER: PointerCaster,
+    type_codes.BLOB: BlobCaster,
+    type_codes.GEO_POINT: GeoPointCaster
+}
 
 def serialize(f):
     def walker(key, value):
-        caster = try_get_serialize_caster(value)
+        caster = serialisator(value)
         if caster:
             return key, caster.serialize(key, value)
 
@@ -170,13 +148,34 @@ def serialize(f):
     return wrapper
 
 
-
 def deserialize(obj):
     def walker(key, value):
         if isinstance(value, dict):
-            caster = try_get_deserialize_caster(value)
+            caster = deserialisator(value)
             if caster:
                 return key, caster.deserialize(value)
     return traverse(obj, walker)
 
+
+def serialisator(obj):
+    """
+    :param obj: external obj to serialize,
+    :return: special caster
+    :rtype: :class:`BaseCaster`
+    """
+    return SERIALISATORS.get(obj.__class__)
+
+
+def deserialisator(obj):
+    """
+    :param obj: external obj to deserialize,
+    :return: special type caster
+    :rtype: :class:`BaseCaster`
+    """
+    if GeoPoint.NEAR_SPHERE in obj:
+        obj = obj.get(GeoPoint.NEAR_SPHERE)
+        if type(obj) is not dict:
+            return None
+    if TYPE_FIELD in obj:
+        return DESERIALISATORS.get(obj[TYPE_FIELD])
 
