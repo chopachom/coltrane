@@ -44,7 +44,6 @@ def get_by_filter_handler(bucket):
     skip, limit = extract_pagination_data()
     sort = extract_sort_data()
     count = extract_counting_data() # count flag
-    include_fields = extract_include_data()
     count_only = count
     # if limit greater then 0 it means that documents have to be returned as well as count parameter
     if limit:
@@ -56,9 +55,6 @@ def get_by_filter_handler(bucket):
         return {'response': [], 'count': storage_response}, http_status.OK
     else:
         if len(storage_response):
-            if include_fields:
-                fetch_embed_documents(storage_response, include_fields)
-
             response = {'response': storage_response}
             if count:
                 response.update({'count': len(storage_response)})
