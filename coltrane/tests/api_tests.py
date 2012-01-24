@@ -1382,5 +1382,73 @@ class FetchEmbedDocsCase(ApiBaseTestClass):
             assert res['books'][2][k] == v
 
 
+class RegexFiltersCase(ApiBaseTestClass):
+
+    def setUp(self):
+        super(RegexFiltersCase, self).setUpClass()
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a':10, 'b': 'acmeblahcorp'}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/2',
+            data=json.dumps({'a':10, 'b': 'acmeblaahcorp'}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/3',
+            data=json.dumps({'a':10, 'b': 'acmeblabahcorp'}),
+            follow_redirects=True
+        )
+
+
+    def tearDown(self):
+        super(RegexFiltersCase, self).tearDownClass()
+
+    def test_simple_regex(self):
+        filter = {'b':  {'$regex' : 'acme.*corp'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 3
+
+    def test_regex_with_options(self):
+        filter = {'b':  {'$regex' : 'acme.*corp', '$nin': ['acmeblaahcorp', 'acmeblabahcorp']}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        assert res[0]['b'] == 'acmeblahcorp'
+
+    def test_regex_case_insensitive(self):
+        self.app.post(API_V1 + '/books/4',
+            data=json.dumps({'a':10, 'b': 'AcMeBlaBahCorP'}),
+            follow_redirects=True
+        )
+        filter = {'b':  {'$regex' : 'acme.*corp', '$options': 'i', '$nin': ['acmeblaahcorp', 'acmeblabahcorp']}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 2
+        assert res[0]['b'] == 'acmeblahcorp'
+        assert res[1]['b'] == 'AcMeBlaBahCorP'
+
+    def test_regex_another(self):
+        self.app.post(API_V1 + '/books/4',
+            data=json.dumps({'a':10, 'b': 'ABC5678'}),
+            follow_redirects=True
+        )
+        filter = {'b':  {'$regex' : '^[A-Z]{3}[\d]{4}$'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        assert res[0]['b'] == 'ABC5678'
+
+        filter = {'b':  {'$regex' : '^[A-Z]{4}[\d]{4}$'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert res.status_code == http_status.NOT_FOUND
+
+        filter = {'b':  {'$regex' : '^[A-Z]{3}[\d]{2}'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        assert res[0]['b'] == 'ABC5678'
+
+        
 if __name__ == '__main__':
     unittest.main()
