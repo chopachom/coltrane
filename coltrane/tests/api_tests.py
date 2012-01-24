@@ -932,6 +932,27 @@ class CustomDataTypesCase(ApiBaseTestClass):
         assert isinstance(obj['c'], datetime.datetime)
         assert isinstance(obj[reservedf.CREATED_AT], datetime.datetime)
 
+    def test_list_date(self):
+        dt = datetime.datetime.utcnow().isoformat()
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a':1, 'b': dt,
+                             'c': [{TYPE_FIELD: type_codes.DATE, 'iso': dt},
+                                   {TYPE_FIELD: type_codes.DATE, 'iso': dt}]}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/books/1')
+        res = from_json(res.data)
+        assert type(res['c']) == list
+        for v in res['c']:
+            assert 'iso' in v and TYPE_FIELD in v
+
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
+        assert isinstance(obj[reservedf.CREATED_AT], datetime.datetime)
+        assert type(obj['c']) == list
+        for v in obj['c']:
+            assert isinstance(v, datetime.datetime)
+
+
     def test_date_filter(self):
         dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
         self.app.post(API_V1 + '/books',
@@ -954,6 +975,29 @@ class CustomDataTypesCase(ApiBaseTestClass):
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 2
+
+    def test_list_date_filter(self):
+        dt1 = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
+        dt2 = datetime.datetime(2012, 1, 20, 10, 10, 30).isoformat()
+        self.app.post(API_V1 + '/books',
+            data=json.dumps({'a':1, 'c':
+                [{TYPE_FIELD: type_codes.DATE, 'iso': dt1}, {TYPE_FIELD: type_codes.DATE, 'iso': dt2}]}),
+            follow_redirects=True
+        )
+        dt1 = datetime.datetime(2012, 1, 20, 10, 10, 30).isoformat()
+        dt2 = datetime.datetime(2012, 1, 20, 10, 10, 40).isoformat()
+        self.app.post(API_V1 + '/books',
+            data=json.dumps({'a':2, 'c':
+                [{TYPE_FIELD: type_codes.DATE, 'iso': dt1}, {TYPE_FIELD: type_codes.DATE, 'iso': dt2}]}),
+            follow_redirects=True
+        )
+        dt = datetime.datetime(2012, 1, 20, 10, 10, 35).isoformat()
+        filter = {'c': {'$gt': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        assert res[0]['a'] == 2
+
 
     def test_date_update(self):
         dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
@@ -993,6 +1037,36 @@ class CustomDataTypesCase(ApiBaseTestClass):
         assert c.id == appstorage._internal_id(v1.get_app_id(), v1.get_user_id(), 'books', 0, '1')
         storage_module._to_external = old_to_ext
 
+
+    def test_list_pointer_save(self):
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c': 2}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/orders/1',
+            data=json.dumps({'c':
+                [{TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'},
+                {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}]}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/orders/1')
+        res = from_json(res.data)
+
+        assert type(res['c']) == list
+        for v in res['c']:
+            assert Pointer.KEY in v and Pointer.BUCKET in v
+
+        old_to_ext = storage_module._to_external
+        storage_module._to_external = lambda x: x
+
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'orders', '1')
+        assert type(obj['c']) == list
+        for v in obj['c']:
+            assert isinstance(v, DBRef)
+            assert v.collection == 'books'
+            assert v.id == appstorage._internal_id(v1.get_app_id(), v1.get_user_id(), 'books', 0, '1')
+        storage_module._to_external = old_to_ext
+
     def test_pointer_filter(self):
         self.app.post(API_V1 + '/books/1',
             data=json.dumps({'a': 1, 'c': 2}),
@@ -1015,6 +1089,27 @@ class CustomDataTypesCase(ApiBaseTestClass):
         assert len(res) == 1
         res = res[0]
         assert res['c'][Pointer.BUCKET] == 'books' and res['c'][Pointer.KEY] == '1'
+
+    def test_list_pointer_filter(self):
+        self.app.post(API_V1 + '/orders',
+            data=json.dumps({'a':1, 'c':
+                                 [{TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'},
+                                {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}]}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/orders',
+            data=json.dumps({'a':2, 'c':
+                [{TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '3'},
+                        {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '4'}]}),
+            follow_redirects=True
+        )
+        filter = {'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '3'}}
+        res = self.app.get(API_V1 + '/orders?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+
+        assert len(res) == 1
+        assert type(res[0]['c']) == list
+        assert res[0]['a'] == 2
 
     def test_pointer_update(self):
         self.app.post(API_V1 + '/books/1',
@@ -1055,6 +1150,33 @@ class CustomDataTypesCase(ApiBaseTestClass):
         assert isinstance(c, Binary)
         storage_module._to_external = old_to_ext
 
+    def test_list_blob_save(self):
+        source = 'This is an encoded string'
+        encoded = base64.encodestring(source)
+
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c':
+                    [{TYPE_FIELD: type_codes.BLOB, Blob.BASE64: encoded},
+                    {TYPE_FIELD: type_codes.BLOB, Blob.BASE64: encoded}]}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/books/1')
+        res = from_json(res.data)
+        assert type(res['c']) == list
+        assert len(res['c']) == 2
+        assert base64.decodestring(res['c'][0][Blob.BASE64]) == \
+               base64.decodestring(res['c'][1][Blob.BASE64])
+
+        binary_field = base64.decodestring(res['c'][0][Blob.BASE64])
+        assert source == binary_field
+
+        old_to_ext = storage_module._to_external
+        storage_module._to_external = lambda x: x
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
+        c = obj['c'][0]
+        assert isinstance(c, Binary)
+        storage_module._to_external = old_to_ext
+
     def test_geo_save(self):
         self.app.post(API_V1 + '/books/1',
             data=json.dumps({'a': 1, 'c':
@@ -1070,6 +1192,27 @@ class CustomDataTypesCase(ApiBaseTestClass):
         obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
         c = obj['__geo_c']
         assert c == {GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+        storage_module._to_external = old_to_ext
+
+    def test_list_geo_save(self):
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c':
+          [{'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}},
+           {'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}}]}),
+            follow_redirects=True
+        )
+        res = self.app.get(API_V1 + '/books/1')
+        res = from_json(res.data)
+        assert type(res['c']) == list and len(res['c']) == 2
+        for v in res['c']:
+            assert v['geo'] == {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+
+        old_to_ext = storage_module._to_external
+        storage_module._to_external = lambda x: x
+        obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
+        c = obj['c']
+        for v in c:
+            assert v['__geo_geo'] == {GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
         storage_module._to_external = old_to_ext
 
     def test_geo_filter(self):
@@ -1116,6 +1259,38 @@ class CustomDataTypesCase(ApiBaseTestClass):
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
         res = from_json(res.data)['response']
         assert len(res) == 3
+
+    def test_list_geo_filter(self):
+
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c':
+                [{'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}},
+                        {'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}}]}),
+            follow_redirects=True
+        )
+        storage.entities.ensure_index([("c.__geo_geo", GEO2D)])
+        self.app.post(API_V1 + '/books/2',
+            data=json.dumps({'a': 1, 'c':
+                [{'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}},
+                        {'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 6, GeoPoint.LONGITUDE: 6}}]}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/3',
+            data=json.dumps({'a': 1, 'c':
+                [{'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 3, GeoPoint.LONGITUDE: 3}},
+                        {'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 4, GeoPoint.LONGITUDE: 4}}]}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/4',
+            data=json.dumps({'a': 1, 'c':
+                [{'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 4, GeoPoint.LONGITUDE: 4}},
+                        {'geo': {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 5, GeoPoint.LONGITUDE: 5}}]}),
+            follow_redirects=True
+        )
+        filter = {'c': {'geo':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}}}
+        res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
+        assert res.status_code == http_status.NOT_FOUND
+        #It is better not to use list of geopoint because of searching is not working now
 
     def test_geo_update(self):
         storage.entities.ensure_index([("__geo_c", GEO2D)])
@@ -1331,5 +1506,124 @@ class SortFieldsCase(ApiBaseTestClass):
             assert res[i]['s'] == i
 
 
+class FetchEmbedDocsCase(ApiBaseTestClass):
+
+    def setUp(self):
+        super(FetchEmbedDocsCase, self).setUpClass()
+
+    def tearDown(self):
+        super(FetchEmbedDocsCase, self).tearDownClass()
+
+    def test_pointer_fetch_embed(self):
+        source1 = {'title': 'Java', 'price': 200}
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps(source1),
+            follow_redirects=True
+        )
+        source2 = {'title': 'Python', 'price': 200}
+        self.app.post(API_V1 + '/books/2',
+            data=json.dumps(source2),
+            follow_redirects=True
+        )
+        book1 = {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}
+        book2 = {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}
+        self.app.post(API_V1 + '/order/1',
+            data=json.dumps({'user': 'Programmer',
+                'book1': book1,
+                'book2': book2,
+                'books': [book1, {'a': 10}, book2]}),
+            follow_redirects=True
+        )
+
+        res = self.app.get(API_V1 + '/order/1?include=book1')
+        res = from_json(res.data)
+        assert res['book1'][TYPE_FIELD] == 'Object'
+        assert res['book2'][TYPE_FIELD] == type_codes.POINTER
+        for k,v in source1.items():
+            assert res['book1'][k] == v
+
+        res = self.app.get(API_V1 + '/order/1?include=book1, book2, books')
+        res = from_json(res.data)
+        assert res['book1'][TYPE_FIELD] == 'Object'
+        assert res['book2'][TYPE_FIELD] == 'Object'
+        assert res['books'][0][TYPE_FIELD] == 'Object'
+        assert res['books'][1] == {'a': 10}
+        assert res['books'][2][TYPE_FIELD] == 'Object'
+        for k,v in source1.items():
+            assert res['book1'][k] == v
+            assert res['books'][0][k] == v
+        for k,v in source2.items():
+            assert res['book2'][k] == v
+            assert res['books'][2][k] == v
+
+
+class RegexFiltersCase(ApiBaseTestClass):
+
+    def setUp(self):
+        super(RegexFiltersCase, self).setUpClass()
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a':10, 'b': 'acmeblahcorp'}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/2',
+            data=json.dumps({'a':10, 'b': 'acmeblaahcorp'}),
+            follow_redirects=True
+        )
+        self.app.post(API_V1 + '/books/3',
+            data=json.dumps({'a':10, 'b': 'acmeblabahcorp'}),
+            follow_redirects=True
+        )
+
+
+    def tearDown(self):
+        super(RegexFiltersCase, self).tearDownClass()
+
+    def test_simple_regex(self):
+        filter = {'b':  {'$regex' : 'acme.*corp'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 3
+
+    def test_regex_with_options(self):
+        filter = {'b':  {'$regex' : 'acme.*corp', '$nin': ['acmeblaahcorp', 'acmeblabahcorp']}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        assert res[0]['b'] == 'acmeblahcorp'
+
+    def test_regex_case_insensitive(self):
+        self.app.post(API_V1 + '/books/4',
+            data=json.dumps({'a':10, 'b': 'AcMeBlaBahCorP'}),
+            follow_redirects=True
+        )
+        filter = {'b':  {'$regex' : 'acme.*corp', '$options': 'i', '$nin': ['acmeblaahcorp', 'acmeblabahcorp']}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 2
+        assert res[0]['b'] == 'acmeblahcorp'
+        assert res[1]['b'] == 'AcMeBlaBahCorP'
+
+    def test_regex_another(self):
+        self.app.post(API_V1 + '/books/4',
+            data=json.dumps({'a':10, 'b': 'ABC5678'}),
+            follow_redirects=True
+        )
+        filter = {'b':  {'$regex' : '^[A-Z]{3}[\d]{4}$'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        assert res[0]['b'] == 'ABC5678'
+
+        filter = {'b':  {'$regex' : '^[A-Z]{4}[\d]{4}$'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        assert res.status_code == http_status.NOT_FOUND
+
+        filter = {'b':  {'$regex' : '^[A-Z]{3}[\d]{2}'}}
+        res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
+        res = from_json(res.data)['response']
+        assert len(res) == 1
+        assert res[0]['b'] == 'ABC5678'
+
+        
 if __name__ == '__main__':
     unittest.main()

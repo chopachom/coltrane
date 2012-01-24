@@ -41,7 +41,7 @@ class DateCaster(BaseCaster):
         :return: datetime iso format
         """
         iso = date.isoformat()
-        if key in reservedf.values():
+        if key and key in reservedf.values():
             return iso
         return {TYPE_FIELD: type_codes.DATE, 'iso': iso}
 

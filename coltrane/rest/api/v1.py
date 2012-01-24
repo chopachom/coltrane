@@ -1,9 +1,10 @@
 import logging
 from flask import Blueprint
 from coltrane.appstorage import reservedf, forbidden_fields
+from coltrane.appstorage.datatypes import Pointer
 from coltrane.appstorage.storage import AppdataStorage
 from coltrane.appstorage.storage import extf
-from coltrane.rest.api.datatypes import serialize, deserialize
+from coltrane.rest.api.datatypes import serialize, deserialize, TYPE_FIELD
 from coltrane.rest.extensions import guard
 from coltrane.rest import exceptions, validators, http_status, STATUS_CODE, app_status
 from coltrane.rest.utils import *
@@ -22,8 +23,12 @@ api = Blueprint("api_v1", __name__)
 @serialize
 def get_by_keys_handler(bucket, key):
 
+    include_fields = extract_include_data()
+
     doc = storage.get(get_app_id(), get_user_id(), bucket, key)
     if doc:
+        if include_fields:
+            fetch_embed_documents([doc], include_fields)
         return doc, http_status.OK
     else:
         return {STATUS_CODE: app_status.NOT_FOUND,
@@ -44,16 +49,16 @@ def get_by_filter_handler(bucket):
     if limit:
         count_only = False
 
-    response = storage.find(get_app_id(), get_user_id(), bucket,
+    storage_response = storage.find(get_app_id(), get_user_id(), bucket,
                              filter_opts, sort, skip, limit, count_only)
     if count_only:
-        return {'response': [], 'count': response}, http_status.OK
+        return {'response': [], 'count': storage_response}, http_status.OK
     else:
-        if len(response):
-            resp = {'response': response}
+        if len(storage_response):
+            response = {'response': storage_response}
             if count:
-                resp.update({'count': len(response)})
-            return resp, http_status.OK
+                response.update({'count': len(storage_response)})
+            return response, http_status.OK
 
         return {'message': resp_msgs.DOC_NOT_EXISTS,
                 STATUS_CODE: app_status.NOT_FOUND}, http_status.NOT_FOUND
@@ -187,6 +192,34 @@ def delete_by_filter_handler(bucket):
     return {'message': resp_msgs.DOC_DELETED}, http_status.OK
 
 
+def fetch_embed_documents(documents, include_fields):
+    """Check whether document contain each of include_fields.
+    If it has such key and its value is Pointer then make fetching document
+    corresponding to Pointer object. Also make fetching embedded documents if a value
+    by specified key is list and have all or some Pointer objects."""
+
+    def fetch_by_pointer(pointer):
+        embed_doc = storage.get(get_app_id(),
+            get_user_id(), pointer.bucket, pointer.key)
+        embed_doc_view = {TYPE_FIELD: 'Object',
+                          Pointer.BUCKET: pointer.bucket, Pointer.KEY: pointer.key}
+        if embed_doc:
+            embed_doc_view.update(embed_doc)
+        return embed_doc_view
+
+    for field in include_fields:
+        for doc in documents:
+            val = doc.get(field)
+            if val:
+                if isinstance(val, Pointer):
+                    doc[field] = fetch_by_pointer(val)
+                elif type(val) == list:
+                    for i in range(len(val)):
+                        v = val[i]
+                        if not isinstance(v, Pointer):
+                            continue
+                        val[i] = fetch_by_pointer(v)
+
 
 def validate_forbidden_fields(doc, fields=None):
     if not fields:
@@ -252,9 +285,9 @@ def extract_form_data():
     document = deserialize(obj)
 
     if request.method == 'POST':
-        validate_document(obj)
+        validate_document(document)
     elif request.method == 'PUT':
-        normal_view = generate_normal_view(obj)
+        normal_view = generate_normal_view(document)
         validate_doc_for_update(normal_view)
     
     return document
@@ -271,9 +304,11 @@ def extract_filter_opts():
         if not len(filter):
             raise exceptions.InvalidRequestError(
                 'Invalid request syntax. Filter options were not specified')
+
+        filter = deserialize(filter)
         normal_view = generate_normal_view(filter)
         validate_filter(normal_view)
-        filter = deserialize(filter)
+
     return filter
 
 
@@ -304,6 +339,14 @@ def extract_counting_data():
     if request.args.get('count', '').strip() == 'true':
         count = True
     return count
+
+
+def extract_include_data():
+    include = request.args.get('include', '').strip()
+    if include:
+        return [f.strip() for f in include.split(',')]
+    else:
+        return None
 
 
 def extract_pagination_data():

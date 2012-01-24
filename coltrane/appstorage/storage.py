@@ -276,6 +276,11 @@ def _from_external_to_internal(app_id, user_id, bucket, doc):
     If document contains external fields, convert its values to the internal fields.
     {<ext_1>:[{<ext_2>:10}, {'key':20}]} => {<int_1>:[{<int_2>:10}, {'key':20}]}
     """
+    def _convert_custom_type(key, val):
+        converter = get_internal_converter(val)
+        key, val = converter.to_internal(key, val, app_id, user_id)
+        return key, val
+
     def _from_dict(doc):
         """
             Gets document as a parameter of dict type.
@@ -296,8 +301,7 @@ def _from_external_to_internal(app_id, user_id, bucket, doc):
                 elif type(val) == list:
                     val = _from_list(val)
                 elif isinstance(val, BaseType):
-                    converter = get_internal_converter(val)
-                    key, val = converter.to_internal(key, val, app_id, user_id)
+                    key, val = _convert_custom_type(key, val)
                 internal[key] = val
         return internal
 
@@ -310,6 +314,8 @@ def _from_external_to_internal(app_id, user_id, bucket, doc):
         """
         internal = []
         for val in l:
+            if isinstance(val, BaseType):
+                _, val = _convert_custom_type(None, val)
             if type(val) == list:
                 val = _from_list(val)
             elif type(val) == dict:
@@ -355,6 +361,11 @@ def _from_internal_to_external(doc):
                 val = _from_list(val)
             elif type(val) == dict:
                 val = _from_dict(val)
+            else:
+                # val type is not dict, not list, and most likely it is internal data type
+                converter = get_external_converter(val)
+                if converter:
+                    _, val = converter.to_external(None, val)
             internal.append(val)
         return internal
 

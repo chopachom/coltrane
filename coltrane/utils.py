@@ -3,15 +3,19 @@ from UserDict import DictMixin
 def traverse(dct, f):
     def traverse_list(lst, f):
         new = []
-        for e in lst:
-            if isinstance(e, dict):
-                e = traverse_dict(e, f)
-            elif isinstance(e, list):
-                e = traverse_list(e, f)
-            new.append(e)
+        for obj in lst:
+            res = f(None, obj)
+            if res:
+                obj = res[1]
+            elif isinstance(obj, dict):
+                obj = traverse_dict(obj, f)
+            elif isinstance(obj, list):
+                obj = traverse_list(obj, f)
+            new.append(obj)
         return new
 
     def traverse_dict(dct, f):
+
         new = {}
         for key, value in dct.items():
             res = f(key, value)
