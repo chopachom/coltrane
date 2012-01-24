@@ -1,27 +1,30 @@
 from UserDict import DictMixin
 
-class attrdict(dict):
-    """A dict whose items can also be accessed as member variables.
+def traverse(dct, f):
+    def traverse_list(lst, f):
+        new = []
+        for e in lst:
+            if isinstance(e, dict):
+                e = traverse_dict(e, f)
+            elif isinstance(e, list):
+                e = traverse_list(e, f)
+            new.append(e)
+        return new
 
-    >>> d = attrdict(a=1, b=2)
-    >>> d['c'] = 3
-    >>> print d.a, d.b, d.c
-    1 2 3
-    >>> d.b = 10
-    >>> print d['b']
-    10
-
-    # but be careful, it's easy to hide methods
-    >>> print d.get('c')
-    3
-    >>> d['get'] = 4
-    >>> print d.get('a')
-    Traceback (most recent call last):
-    TypeError: 'int' object is not callable
-    """
-    def __init__(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-        self.__dict__ = self
+    def traverse_dict(dct, f):
+        new = {}
+        for key, value in dct.items():
+            res = f(key, value)
+            if res:
+                new[res[0]] = res[1]
+            elif isinstance(value, dict):
+                new[key] = traverse_dict(value, f)
+            elif isinstance(value, list):
+                new[key] = traverse_list(value, f)
+            else:
+                new[key] = value
+        return new
+    return traverse_dict(dct, f)
 
 
 class EnumMetaclass(type, DictMixin):

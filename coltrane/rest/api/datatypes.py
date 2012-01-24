@@ -4,7 +4,7 @@ from functools import wraps
 from coltrane.appstorage import try_convert_to_date, reservedf
 from coltrane.appstorage.datatypes import Pointer, Blob, GeoPoint
 from coltrane.rest import exceptions
-from coltrane.utils import Enum
+from coltrane.utils import traverse, Enum
 
 __author__ = 'pshkitin'
 
@@ -157,65 +157,26 @@ def try_get_deserialize_caster(obj):
 
 
 def serialize(f):
-    def _from_dict(doc):
-        internal = {}
-        for key in doc:
-            val = doc[key]
-            caster = try_get_serialize_caster(val)
-            if caster:
-                val = caster.serialize(key, val)
-            elif type(val) == dict:
-                val = _from_dict(val)
-            elif type(val) == list:
-                val = _from_list(val)
-            internal[key] = val
-        return internal
-
-    def _from_list(l):
-        internal = []
-        for val in l:
-            if type(val) == list:
-                val = _from_list(val)
-            elif type(val) == dict:
-                val = _from_dict(val)
-            internal.append(val)
-        return internal
+    def walker(key, value):
+        caster = try_get_serialize_caster(value)
+        if caster:
+            return key, caster.serialize(key, value)
 
     @wraps(f)
     def wrapper(*args, **kwargs):
         resp = f(*args, **kwargs)
         body, code = resp
-        return _from_dict(body), code
+        return traverse(body, walker), code
     return wrapper
 
 
 
 def deserialize(obj):
-    def _from_dict(doc):
-        internal = {}
-        for key in doc:
-            val = doc[key]
-            if type(val) is dict:
-                caster = try_get_deserialize_caster(val)
-                if caster:
-                    val = caster.deserialize(val)
-                else:
-                    val = _from_dict(val)
-            elif type(val) == list:
-                val = _from_list(val)
-            internal[key] = val
-        return internal
-
-    def _from_list(l):
-        internal = []
-        for val in l:
-            if type(val) == list:
-                val = _from_list(val)
-            elif type(val) == dict:
-                val = _from_dict(val)
-            internal.append(val)
-        return internal
-
-    return _from_dict(obj)
+    def walker(key, value):
+        if isinstance(value, dict):
+            caster = try_get_deserialize_caster(value)
+            if caster:
+                return key, caster.deserialize(value)
+    return traverse(obj, walker)
 
 
