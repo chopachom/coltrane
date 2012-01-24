@@ -13,7 +13,7 @@ from coltrane.rest.api import api_v1
 from coltrane.rest.api import v1
 from coltrane.rest.api.datatypes import type_codes, TYPE_FIELD
 from coltrane.rest.utils import resp_msgs
-from coltrane.rest.api.v1 import from_json, storage
+from coltrane.rest.api.v1 import from_json, storage, RESULTS
 from coltrane.rest.app import create_app
 from coltrane.rest.extensions import mongodb
 from coltrane.rest.config import TestConfig
@@ -241,7 +241,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
     def test_get_by_filter_with_key(self):
         filter = {extf.KEY: 5, 'age':15}
         res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
-        assert len(from_json(res.data)['response']) == 1
+        assert len(from_json(res.data)[RESULTS]) == 1
 
         filter = {extf.KEY: 5, 'age':25}
         res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
@@ -250,7 +250,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
     def test_inner_query(self):
         filter = {'$and': [{extf.KEY: 5}, {'age':15}]}
         res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
-        assert len(from_json(res.data)['response']) == 1
+        assert len(from_json(res.data)[RESULTS]) == 1
 
         filter = {'$and': [{extf.KEY: {'$gt':3}}, {extf.KEY: {'$lt':5}}]}
         res = self.app.get(API_V1 + '/books?filter=' + json.dumps(filter))
@@ -347,7 +347,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
 
     def test_update_all(self):
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 5
 
         src_update = {"age": 50}
@@ -357,7 +357,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         for b in books:
             assert b['age'] == 50
 
@@ -371,7 +371,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         res = filter(lambda b: b['age'] == 50, books)
         assert len(res) == 4
 
@@ -385,7 +385,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         res = filter(lambda b: b['age'] == 50 and b['name'] == 'Pasha', books)
         assert len(res) == 1
 
@@ -398,7 +398,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         res = filter(lambda b: b['age'] == 50 and b['cources']['two'] == 5, books)
         assert len(res) == 2
 
@@ -412,7 +412,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         res = filter(lambda b: b.get('new_field') == 100, books)
         assert len(res) == 5
 
@@ -439,7 +439,7 @@ class ApiUpdateManyCase(ApiBaseTestClass):
         key = data[extf.KEY]
 
         resp = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(src_update))
-        resp = from_json(resp.data)['response'][0]
+        resp = from_json(resp.data)[RESULTS][0]
         resp2 = self.app.get(API_V1 + '/books/%s' % key)
         resp2 = from_json(resp2.data)
 
@@ -471,7 +471,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
 
     def test_delete_all_with_filter_opts(self):
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 5
 
         resp = self.app.delete(API_V1 + '/books')
@@ -495,7 +495,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 3
 
         success = True
@@ -513,7 +513,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 4
 
 
@@ -524,7 +524,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 3
 
         success = True
@@ -541,7 +541,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 2
 
         success = True
@@ -559,7 +559,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 2
 
         success = True
@@ -577,7 +577,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.OK
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 4
 
         success = True
@@ -596,7 +596,7 @@ class ApiDeleteManyCase(ApiBaseTestClass):
         assert resp.status_code == http_status.NOT_FOUND
 
         resp = self.app.get(API_V1 + '/books')
-        books = from_json(resp.data)['response']
+        books = from_json(resp.data)[RESULTS]
         assert len(books) == 5
 
 
@@ -666,7 +666,7 @@ class PaginatingQueryCase(ApiBaseTestClass):
 
     def test_get_all(self):
         rv = self.app.get(API_V1 + '/books')
-        res = from_json(rv.data)['response']
+        res = from_json(rv.data)[RESULTS]
         assert len(res) == 100
 
 
@@ -674,13 +674,13 @@ class PaginatingQueryCase(ApiBaseTestClass):
         with self._app.test_client() as c:
             self._app.config['DEFAULT_QUERY_LIMIT'] = 50
             rv = c.get(API_V1 + '/books')
-            res = from_json(rv.data)['response']
+            res = from_json(rv.data)[RESULTS]
             assert len(res) == 50
 
 
     def test_get_paginating1(self):
         rv = self.app.get(API_V1 + '/books?limit=10&skip=50')
-        res = from_json(rv.data)['response']
+        res = from_json(rv.data)[RESULTS]
         assert len(res) == 10
         assert res[0][extf.KEY] == '50_key'
 
@@ -688,7 +688,7 @@ class PaginatingQueryCase(ApiBaseTestClass):
     def test_get_paginating2(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 80}}]}
         rv = self.app.get(API_V1 + '/books?filter=%s&limit=30&skip=20' % json.dumps(filter))
-        res = from_json(rv.data)['response']
+        res = from_json(rv.data)[RESULTS]
         assert len(res) == 30
         assert res[0][extf.KEY] == '41_key'
 
@@ -696,7 +696,7 @@ class PaginatingQueryCase(ApiBaseTestClass):
     def test_get_paginating3(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
         rv = self.app.get(API_V1 + '/books?filter=%s&limit=30&skip=20' % json.dumps(filter))
-        res = from_json(rv.data)['response']
+        res = from_json(rv.data)[RESULTS]
         assert len(res) == 19
         assert res[0][extf.KEY] == '41_key'
 
@@ -704,7 +704,7 @@ class PaginatingQueryCase(ApiBaseTestClass):
     def test_get_paginating4(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
         rv = self.app.get(API_V1 + '/books?filter=%s&skip=10' % json.dumps(filter))
-        res = from_json(rv.data)['response']
+        res = from_json(rv.data)[RESULTS]
         assert len(res) == 29
         assert res[0][extf.KEY] == '31_key'
 
@@ -712,7 +712,7 @@ class PaginatingQueryCase(ApiBaseTestClass):
     def test_get_paginating5(self):
         filter = {'$and': [{'age': {'$gt': 20}}, {'age': {'$lt': 60}}]}
         rv = self.app.get(API_V1 + '/books?filter=%s&limit=30' % json.dumps(filter))
-        res = from_json(rv.data)['response']
+        res = from_json(rv.data)[RESULTS]
         assert len(res) == 30
         assert res[0][extf.KEY] == '21_key'
 
@@ -748,17 +748,17 @@ class KeysValidationCase(ApiBaseTestClass):
 
         filter = {'b.b.c':{'d':{'e':10}}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
 
         filter = {'c.d.e.0.j':1}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
 
         filter = {'c.d.e.j':1}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
 
         filter = {'b.b.c':{'d.e':10}}
@@ -869,7 +869,7 @@ class FilterByDateCase(ApiBaseTestClass):
         filter = {reservedf.CREATED_AT: {'$gt': {TYPE_FIELD: type_codes.DATE, 'iso': now.isoformat()}}}
         filter = self.to_json(filter)
         res = self.app.get(API_V1 + '/books?filter=%s' % filter)
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         v = datetime.datetime.strptime(res[0][reservedf.CREATED_AT], '%Y-%m-%dT%H:%M:%S.%f')
         assert now.microsecond < v.microsecond
         assert len(res) == 1
@@ -890,19 +890,19 @@ class FilterByDateCase(ApiBaseTestClass):
         filter = {'date1': {'$gt': "2002-12-12T12:12:12.12Z"}}
         filter = self.to_json(filter)
         res = self.app.get(API_V1 + '/books?filter=%s' % filter)
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
 
         filter = {'date1': {'$gt': "2002-12-12T12:12:11.12Z"}}
         filter = self.to_json(filter)
         res = self.app.get(API_V1 + '/books?filter=%s' % filter)
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 2
 
         filter = {'date1': {'$lt': "2003-12-12T12:12:13.12Z"}, 'date2': {'$gt': "2009-12-12T12:12:13.12Z"}}
         filter = self.to_json(filter)
         res = self.app.get(API_V1 + '/books?filter=%s' % filter)
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 2
 
 
@@ -967,13 +967,13 @@ class CustomDataTypesCase(ApiBaseTestClass):
         dt = datetime.datetime(2012, 1, 20, 10, 10, 15).isoformat()
         filter = {'c': {'$gt': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
 
         dt = datetime.datetime(2012, 1, 20, 10, 10, 20).isoformat()
         filter = {'c': {'$lte': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 2
 
     def test_list_date_filter(self):
@@ -994,7 +994,7 @@ class CustomDataTypesCase(ApiBaseTestClass):
         dt = datetime.datetime(2012, 1, 20, 10, 10, 35).isoformat()
         filter = {'c': {'$gt': {TYPE_FIELD: type_codes.DATE, 'iso': dt}}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         assert res[0]['a'] == 2
 
@@ -1081,11 +1081,11 @@ class CustomDataTypesCase(ApiBaseTestClass):
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/boobs')
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 2
         filter = {'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}}
         res = self.app.get(API_V1 + '/boobs?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['c'][Pointer.BUCKET] == 'books' and res['c'][Pointer.KEY] == '1'
@@ -1105,7 +1105,7 @@ class CustomDataTypesCase(ApiBaseTestClass):
         )
         filter = {'c': {TYPE_FIELD: type_codes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '3'}}
         res = self.app.get(API_V1 + '/orders?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
 
         assert len(res) == 1
         assert type(res[0]['c']) == list
@@ -1239,25 +1239,25 @@ class CustomDataTypesCase(ApiBaseTestClass):
         )
         filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2}}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 3
 
         filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInKilometers': 10000}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 3
 
         filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInMiles': 70000}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 3
 
         filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInRadians': 3}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 3
 
     def test_list_geo_filter(self):
@@ -1324,7 +1324,7 @@ class CustomDataTypesCase(ApiBaseTestClass):
         filter = {'c':{"$nearSphere": {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 2, GeoPoint.LONGITUDE: 2},
                        '$maxDistanceInKilometers': 10000}}
         res = self.app.get(API_V1 + '/books?limit=3&filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         for r in res:
             assert r['b'] == 10
 
@@ -1345,12 +1345,12 @@ class FetchWithCountCase(ApiBaseTestClass):
     def test_count_only(self):
         res = self.app.get(API_V1 + '/books?count=true&limit=0&filter=%s' % json.dumps({'b': {'$lt': 5}}))
         res = from_json(res.data)
-        assert res == {'response':[], 'count': 5}
+        assert res == {RESULTS:[], 'count': 5}
 
     def test_count_with_data(self):
         res = self.app.get(API_V1 + '/books?count=true&filter=%s' % json.dumps({'b': {'$lt': 5}}))
         res = from_json(res.data)
-        assert len(res['response']) == res['count'] == 5
+        assert len(res[RESULTS]) == res['count'] == 5
 
 
 class IncrementDecrementVarsCase(ApiBaseTestClass):
@@ -1373,7 +1373,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['a'] == 11 and res['c'] and res['d']['e']
@@ -1385,7 +1385,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['a'] == 9 and res['b'] == 10 and res['c'] and res['d']['e']
@@ -1397,7 +1397,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert not res.get('a') and \
@@ -1412,7 +1412,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['arr1'] == [1,2,3,4] and res['arr2'] == [4,5,6,7]
@@ -1424,7 +1424,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['arr1'] == [1,2,3,4,5,6] and res['arr2'] == [4,5,6,7,8,9]
@@ -1436,7 +1436,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['arr1'] == [1,2] and res['arr2'] == [5,6]
@@ -1448,7 +1448,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['arr1'] == [1,3] and res['arr2'] == [4, 6]
@@ -1460,7 +1460,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['arr1'] == [3] and res['arr2'] == [6]
@@ -1472,7 +1472,7 @@ class IncrementDecrementVarsCase(ApiBaseTestClass):
             data=json.dumps(update),
             follow_redirects=True)
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         res = res[0]
         assert res['arr1'] == [1,2,3,4] and res['arr2'] == [4,5,6]
@@ -1493,14 +1493,14 @@ class SortFieldsCase(ApiBaseTestClass):
 
     def test_desc_sort(self):
         res = self.app.get(API_V1 + '/books?limit=5&sort=-b')
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 5
         for i in range(5):
             assert res[i]['b'] == 19 - i
 
     def test_asc_sort(self):
         res = self.app.get(API_V1 + '/books?limit=5&sort=s')
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 5
         for i in range(5):
             assert res[i]['s'] == i
@@ -1581,13 +1581,13 @@ class RegexFiltersCase(ApiBaseTestClass):
     def test_simple_regex(self):
         filter = {'b':  {'$regex' : 'acme.*corp'}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 3
 
     def test_regex_with_options(self):
         filter = {'b':  {'$regex' : 'acme.*corp', '$nin': ['acmeblaahcorp', 'acmeblabahcorp']}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         assert res[0]['b'] == 'acmeblahcorp'
 
@@ -1598,7 +1598,7 @@ class RegexFiltersCase(ApiBaseTestClass):
         )
         filter = {'b':  {'$regex' : 'acme.*corp', '$options': 'i', '$nin': ['acmeblaahcorp', 'acmeblabahcorp']}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 2
         assert res[0]['b'] == 'acmeblahcorp'
         assert res[1]['b'] == 'AcMeBlaBahCorP'
@@ -1610,7 +1610,7 @@ class RegexFiltersCase(ApiBaseTestClass):
         )
         filter = {'b':  {'$regex' : '^[A-Z]{3}[\d]{4}$'}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         assert res[0]['b'] == 'ABC5678'
 
@@ -1620,7 +1620,7 @@ class RegexFiltersCase(ApiBaseTestClass):
 
         filter = {'b':  {'$regex' : '^[A-Z]{3}[\d]{2}'}}
         res = self.app.get(API_V1 + '/books?filter=%s' % json.dumps(filter))
-        res = from_json(res.data)['response']
+        res = from_json(res.data)[RESULTS]
         assert len(res) == 1
         assert res[0]['b'] == 'ABC5678'
 

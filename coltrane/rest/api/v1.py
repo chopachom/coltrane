@@ -9,6 +9,7 @@ from coltrane.rest.extensions import guard
 from coltrane.rest import exceptions, validators, http_status, STATUS_CODE, app_status
 from coltrane.rest.utils import *
 
+RESULTS = 'results'
 
 LOG = logging.getLogger('coltrane.rest.api.v1')
 LOG.debug('starting rest api')
@@ -52,10 +53,10 @@ def get_by_filter_handler(bucket):
     storage_response = storage.find(get_app_id(), get_user_id(), bucket,
                              filter_opts, sort, skip, limit, count_only)
     if count_only:
-        return {'response': [], 'count': storage_response}, http_status.OK
+        return {RESULTS: [], 'count': storage_response}, http_status.OK
     else:
         if len(storage_response):
-            response = {'response': storage_response}
+            response = {RESULTS: storage_response}
             if count:
                 response.update({'count': len(storage_response)})
             return response, http_status.OK
