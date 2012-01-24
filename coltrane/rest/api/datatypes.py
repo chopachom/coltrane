@@ -41,7 +41,7 @@ class DateCaster(BaseCaster):
         :return: datetime iso format
         """
         iso = date.isoformat()
-        if key in reservedf.values():
+        if key and key in reservedf.values():
             return iso
         return {TYPE_VAR_NAME: DataTypes.DATE, 'iso': iso}
 
@@ -161,13 +161,14 @@ def serialize(f):
         internal = {}
         for key in doc:
             val = doc[key]
-            caster = try_get_serialize_caster(val)
-            if caster:
-                val = caster.serialize(key, val)
-            elif type(val) == dict:
+            if type(val) == dict:
                 val = _from_dict(val)
             elif type(val) == list:
                 val = _from_list(val)
+            else:
+                caster = try_get_serialize_caster(val)
+                if caster:
+                    val = caster.serialize(key, val)
             internal[key] = val
         return internal
 
@@ -178,6 +179,10 @@ def serialize(f):
                 val = _from_list(val)
             elif type(val) == dict:
                 val = _from_dict(val)
+            else:
+                caster = try_get_serialize_caster(val)
+                if caster:
+                    val = caster.serialize(None, val)
             internal.append(val)
         return internal
 
@@ -192,15 +197,14 @@ def serialize(f):
 
 def deserialize(obj):
     def _from_dict(doc):
+        caster = try_get_deserialize_caster(doc)
+        if caster:
+            return caster.deserialize(doc)
         internal = {}
         for key in doc:
             val = doc[key]
-            if type(val) is dict:
-                caster = try_get_deserialize_caster(val)
-                if caster:
-                    val = caster.deserialize(val)
-                else:
-                    val = _from_dict(val)
+            if type(val) == dict:
+                val = _from_dict(val)
             elif type(val) == list:
                 val = _from_list(val)
             internal[key] = val

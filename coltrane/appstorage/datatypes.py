@@ -6,8 +6,8 @@ class BaseType(object):
     pass
 
 class Pointer(BaseType):
-    BUCKET = 'bucket'
-    KEY = 'key'
+    BUCKET = '_bucket'
+    KEY = '_key'
 
     def __init__(self, bucket, key):
         self.bucket = bucket

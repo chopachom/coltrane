@@ -1331,5 +1331,56 @@ class SortFieldsCase(ApiBaseTestClass):
             assert res[i]['s'] == i
 
 
+class FetchEmbedDocsCase(ApiBaseTestClass):
+
+    def setUp(self):
+        super(FetchEmbedDocsCase, self).setUpClass()
+
+    def tearDown(self):
+        super(FetchEmbedDocsCase, self).tearDownClass()
+
+    def test_pointer_fetch_embed(self):
+        source1 = {'title': 'Java', 'price': 200}
+        self.app.post(API_V1 + '/books/1',
+            data=json.dumps(source1),
+            follow_redirects=True
+        )
+        source2 = {'title': 'Python', 'price': 200}
+        self.app.post(API_V1 + '/books/2',
+            data=json.dumps(source2),
+            follow_redirects=True
+        )
+        book1 = {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '1'}
+        book2 = {TYPE_VAR_NAME: DataTypes.POINTER, Pointer.BUCKET: 'books', Pointer.KEY: '2'}
+        self.app.post(API_V1 + '/order/1',
+            data=json.dumps({'user': 'Programmer',
+                'book1': book1,
+                'book2': book2,
+                'books': [book1, {'a': 10}, book2]}),
+            follow_redirects=True
+        )
+
+        res = self.app.get(API_V1 + '/order/1?include=book1')
+        res = from_json(res.data)
+        assert res['book1'][TYPE_VAR_NAME] == 'Object'
+        assert res['book2'][TYPE_VAR_NAME] == DataTypes.POINTER
+        for k,v in source1.items():
+            assert res['book1'][k] == v
+
+        res = self.app.get(API_V1 + '/order/1?include=book1, book2, books')
+        res = from_json(res.data)
+        assert res['book1'][TYPE_VAR_NAME] == 'Object'
+        assert res['book2'][TYPE_VAR_NAME] == 'Object'
+        assert res['books'][0][TYPE_VAR_NAME] == 'Object'
+        assert res['books'][1] == {'a': 10}
+        assert res['books'][2][TYPE_VAR_NAME] == 'Object'
+        for k,v in source1.items():
+            assert res['book1'][k] == v
+            assert res['books'][0][k] == v
+        for k,v in source2.items():
+            assert res['book2'][k] == v
+            assert res['books'][2][k] == v
+
+
 if __name__ == '__main__':
     unittest.main()
