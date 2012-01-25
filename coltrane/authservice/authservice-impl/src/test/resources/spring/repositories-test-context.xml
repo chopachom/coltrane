@@ -19,17 +19,19 @@
     
     <bean id="entityManagerFactory"
 		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource" />
         <property name="jpaVendorAdapter">
             <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
                 <property name="generateDdl" value="true" />
             </bean>
         </property>
-        <property name="persistenceUnitName" value="MySQL-PU" />
+        <property name="persistenceUnitName" value="HSQL-PU" />
         <property name="persistenceXmlLocation" value="META-INF/persistence.xml" />
     </bean>
 
     <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
         <property name="entityManagerFactory" ref="entityManagerFactory" />
     </bean>
-
+    
+    <jdbc:embedded-database id="dataSource" type="HSQL" />
 </beans>

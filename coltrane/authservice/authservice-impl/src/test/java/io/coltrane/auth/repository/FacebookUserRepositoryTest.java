@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
  * @author nik
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration("/spring/repositories-context.xml")
+@ContextConfiguration("/spring/repositories-test-context.xml")
 @Transactional
 public class FacebookUserRepositoryTest {
     
