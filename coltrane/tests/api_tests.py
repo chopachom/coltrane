@@ -1180,19 +1180,27 @@ class CustomDataTypesCase(ApiBaseTestClass):
     def test_geo_save(self):
         self.app.post(API_V1 + '/books/1',
             data=json.dumps({'a': 1, 'c':
-                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}}),
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 90, GeoPoint.LONGITUDE: -180}}),
             follow_redirects=True
         )
         res = self.app.get(API_V1 + '/books/1')
         res = from_json(res.data)
-        assert res['c'] == {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+        assert res['c'] == {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 90, GeoPoint.LONGITUDE: -180}
 
         old_to_ext = storage_module._to_external
         storage_module._to_external = lambda x: x
         obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
         c = obj['__geo_c']
-        assert c == {GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+        assert c == [-180, 90]
         storage_module._to_external = old_to_ext
+
+    def test_geo_wrong_save(self):
+        res = self.app.post(API_V1 + '/books/1',
+            data=json.dumps({'a': 1, 'c':
+                    {TYPE_FIELD: type_codes.GEO_POINT, GeoPoint.LATITUDE: 90, GeoPoint.LONGITUDE: -190}}),
+            follow_redirects=True
+        )
+        assert res.status_code == http_status.BAD_REQUEST
 
     def test_list_geo_save(self):
         self.app.post(API_V1 + '/books/1',
@@ -1212,7 +1220,7 @@ class CustomDataTypesCase(ApiBaseTestClass):
         obj = storage.get(v1.get_app_id(), v1.get_user_id(), 'books', '1')
         c = obj['c']
         for v in c:
-            assert v['__geo_geo'] == {GeoPoint.LATITUDE: 10, GeoPoint.LONGITUDE: 10}
+            assert v['__geo_geo'] == [10, 10]
         storage_module._to_external = old_to_ext
 
     def test_geo_filter(self):

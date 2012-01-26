@@ -118,6 +118,12 @@ class GeoPointCaster(BaseCaster):
         if not latitude or not longitude:
             raise exceptions.InvalidRequestError(
                 'For GeoPoint type you should pass latitude and longitude fields')
+        if not -90 <= latitude <= 90:
+            raise exceptions.InvalidRequestError(
+                'For GeoPoint type latitude field should be: -90 <= latitude <= 90')
+        if not -180 <= longitude < 180:
+            raise exceptions.InvalidRequestError(
+                'For GeoPoint type longitude field should be: -180 <= latitude < 180')
         return GeoPoint(latitude, longitude, searching)
 
 SERIALISATORS = {

@@ -333,22 +333,22 @@ def _from_internal_to_external(doc):
     {<int_1>:[{<int_2>:10}, {'key':20}]} => {<ext_1>:[{<ext_2>:10}, {'key':20}]}
     """
     def _from_dict(doc):
+
         external = {}
         for key in doc:
             val = doc[key]
-            converter = None
-            if type(val) == dict:
-                # due to absence internal data type for geo point
-                # we need to check every type whether it can be geo data.
-                # Key of geo data starts with special prefix.
-                converter = try_get_geopoint_external_converter(key)
-                if not converter:
+            # due to absence internal data type for geo point
+            # we need to check every type whether it can be geo data.
+            # Key of geo data starts with special prefix.
+            converter = try_get_geopoint_external_converter(key)
+            if not converter:
+                if type(val) == dict:
                     val = _from_dict(val)
-            elif type(val) == list:
-                val = _from_list(val)
-            else:
-                # val type is not dict, not list, and most likely it is internal data type
-                converter = get_external_converter(val)
+                elif type(val) == list:
+                    val = _from_list(val)
+                else:
+                    # val type is not dict, not list, and most likely it is internal data type
+                    converter = get_external_converter(val)
             if converter:
                 key, val = converter.to_external(key, val)
             external[key] = val

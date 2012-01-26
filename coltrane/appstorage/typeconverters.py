@@ -110,8 +110,7 @@ class GeoPointConverter(BaseConverter):
         :rtype: :class:`dict`
         """
         key = cls.START_FOR_GEO_KEY + key
-        geo_data = {GeoPoint.LATITUDE: point.latitude,
-                    GeoPoint.LONGITUDE: point.longitude}
+        geo_data = [point.longitude, point.latitude]
         res = {}
         searching = point.searching
         if searching[GeoPoint.SEARCHING]:
@@ -132,8 +131,8 @@ class GeoPointConverter(BaseConverter):
         :rtype: :class:`coltrane.appstorage.datatypes.GeoPoint`
         """
         key = key[len(cls.START_FOR_GEO_KEY):]
-        latitude = value.get(GeoPoint.LATITUDE)
-        longitude = value.get(GeoPoint.LONGITUDE)
+        latitude = value[1]
+        longitude = value[0]
         value = GeoPoint(latitude, longitude)
         return key, value
 
