@@ -6,7 +6,8 @@
 from coltrane import config
 
 class DefaultConfig(object):
-    DEFAULT_QUERY_LIMIT = 1000
+    DEFAULT_QUERY_LIMIT = 100
+    MAX_QUERY_LIMIT = 1000
     LOGGER_NAME        ='coltrane.rest'
     SQLALCHEMY_DATABASE_URI = config.MYSQL_URI
     MONGODB_HOST       ='127.0.0.1'
@@ -22,7 +23,8 @@ class DefaultConfig(object):
 class TestConfig(object):
     TESTING            = True
     SQLALCHEMY_DATABASE_URI = config.MYSQL_TEST_URI
-    DEFAULT_QUERY_LIMIT = 1000
+    DEFAULT_QUERY_LIMIT = 100
+    MAX_QUERY_LIMIT = 1000
     LOGGER_NAME        ='coltrane.rest'
     MONGODB_HOST       ='127.0.0.1'
     MONGODB_PORT       = 27017

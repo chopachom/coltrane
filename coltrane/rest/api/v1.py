@@ -355,11 +355,12 @@ def extract_pagination_data():
         Extracts pagination data
     """
     skip = request.args.get('skip', 0)
-    limit = request.args.get('limit', current_app.config.get('DEFAULT_QUERY_LIMIT', 1000))
+    limit = request.args.get('limit', current_app.config.get('DEFAULT_QUERY_LIMIT', 100))
     try:
         skip = int(skip)
         limit  = int(limit)
-        if limit < 0 or skip < 0:
+        max_limit = current_app.config.get('MAX_QUERY_LIMIT', 1000)
+        if limit < 0 or limit > max_limit or skip < 0:
             raise Exception()
     except Exception:
         raise exceptions.InvalidRequestError(
